@@ -1,0 +1,189 @@
+require(rrapply)
+
+cat("Running rrapply unit tests...\n")
+
+## rrapply unit tests
+dotest <- function(itest, observed, expected) {
+  if(!identical(observed, expected)) stop(sprintf("Test %.1f failed", itest), call. = FALSE) 
+}
+
+## input list
+xin <- list(a = 1L, b = list(b1 = 2L, b2 = 3L), c = 4L)
+
+## f argument
+xout0.1 <- rapply(xin, f = `-`, classes = "ANY", how = "replace")
+xout0.2 <- rapply(xin, f = `+`, e2 = 1L, how = "replace")
+xout0.3 <- list(a = 1L, b = list(b1 = c(2L, 1L), b2 = c(2L, 2L)), c = 3L)
+xout0.4 <- rapply(xin, f = function(x) 1L, how = "replace")
+xout0.5 <- list(a = "a", b = list(b1 = "b1", b2 = "b2"), c = "c")
+xout0.6 <- rapply(xin, f = function(x) "a", how = "replace")
+xout0.7 <- list(a = c("a", "1"), b = list(b1 = c("b1", "2", "1"), b2 = c("b2", "2", "2")), c = c("c", "3"))
+xout0.8 <- rapply(xin, f = function(x) c("a", "1"), how = "replace")
+xout0.9 <- list(a = c("a", "1"), b = list(b1 = c("a", "1"), b2 = c("a", "1")), c = c("a", "1"))
+
+dotest(0.1, rrapply(xin, f = `-`, classes = "ANY"), xout0.1)
+dotest(0.2, rrapply(xin, f = `+`, e2 = 1L), xout0.2)
+
+.xpos <- .xname <- 1L
+
+dotest(0.3, rrapply(xin, f = function(x) .xpos), xout0.3)
+dotest(0.4, rrapply(xin, f = function(x, .xpos) .xpos, .xpos = 1L), xout0.4)
+dotest(0.5, rrapply(xin, f = function(x) .xname), xout0.5)
+dotest(0.6, rrapply(xin, f = function(x, .xname) .xname, .xname = "a"), xout0.6)
+dotest(0.7, rrapply(xin, f = function(x) c(.xname, .xpos)), xout0.7)
+dotest(0.8, rrapply(xin, f = function(x, .xpos, .xname) c(.xname, .xpos), .xpos = 1L, .xname = "a"), xout0.8)
+dotest(0.9, rrapply(xin, f = function(x) {.xpos = 1L; .xname = "a"; c(.xname, .xpos)}), xout0.9)
+    
+## condition argument
+xout1.1 <- list(a = -1L, b = list(b1 = 2L, b2 = 3L), c = 4L)
+xout1.2 <- list(a = 0L, b = list(b1 = 2L, b2 = 3L), c = 4L)
+xout1.3 <- xout1.1
+xout1.4 <- xout0.1
+xout1.5 <- xout1.1
+xout1.6 <- xout0.1
+
+dotest(1.1, rrapply(xin, f = `-`, condition = function(x) x == 1L), xout1.1)
+dotest(1.2, rrapply(xin, f = `-`, condition = `==`, e2 = 1L), xout1.2)
+dotest(1.3, rrapply(xin, f = `-`, condition = function(x) .xpos == 1L), xout1.3)
+dotest(1.4, rrapply(xin, f = function(x, .xpos) -x, condition = function(x, .xpos) .xpos == 1L, .xpos = 1L), xout1.4)
+dotest(1.5, rrapply(xin, f = `-`, condition = function(x) .xname == names(xin)[1]), xout1.5)
+dotest(1.6, rrapply(xin, f = function(x, .xname) -x, condition = function(x, .xname) .xname == "a", .xname = "a"), xout1.6)
+
+dotest(1.7, .xpos, 1L)
+dotest(1.8, .xname, 1L)
+rm(.xpos, .xname)
+
+## how argument
+xout2.1 <- list(a = -1L, b = list(b1 = 2L, b2 = 3L), c = -4L)
+xout2.2 <- list(a = -1L, b = list(b1 = NULL, b2 = NULL), c = -4L)
+xout2.3 <- c(a = -1L, c = -4L)
+xout2.4 <- as.list(xout2.3)
+xout2.5 <- xout2.4
+
+dotest(2.1, rrapply(xin, f = `-`, condition = function(x) .xpos %in% c(1L, length(xin)), how = "replace"), xout2.1)
+dotest(2.2, rrapply(xin, f = `-`, condition = function(x) .xpos %in% c(1L, length(xin)), how = "list"), xout2.2)
+dotest(2.3, rrapply(xin, f = `-`, condition = function(x) .xpos %in% c(1L, length(xin)), how = "unlist"), xout2.3)
+dotest(2.4, rrapply(xin, f = `-`, condition = function(x) .xpos %in% c(1L, length(xin)), how = "prune"), xout2.4)
+dotest(2.5, rrapply(xin, f = `-`, condition = function(x) .xpos %in% c(1L, length(xin)), how = "flatten"), xout2.5)
+
+## classes argument
+xout3.1 <- list(a = structure(-1L, .Dim = c(1L, 1L)), b = list(b1 = 2L, b2 = 3L), c = 4L)
+xout3.2 <- list(a = structure(1L, .Dim = c(1L, 1L)), b = list(b1 = -2L, b2 = -3L), c = -4L)
+xout3.3 <- xout0.1
+xout3.4 <- list(a = structure(-1L, class = "user-class"), b = list(b1 = 2L, b2 = 3L), c = 4L)
+xout3.5 <- list(a = -1, b = list(b1 = 2L, b2 = 3L), c = 4L)
+xout3.6 <- list(a = -1, b = list(b1 = -2L, b2 = -3L), c = -4L)
+
+xin[[1]] <- as.matrix(xin[[1]])
+dotest(3.1, rrapply(xin, f = `-`, classes = "matrix"), xout3.1)
+dotest(3.2, rrapply(xin, f = `-`, classes = "integer"), xout3.2)
+xin[[1]] <- as.integer(xin[[1]])
+dotest(3.3, rrapply(xin, f = `-`, classes = "integer"), xout3.3)
+class(xin[[1]]) <- "user-class"
+dotest(3.4, rrapply(xin, f = `-`, classes = "user-class"), xout3.4)
+xin[[1]] <- as.numeric(xin[[1]])
+dotest(3.5, rrapply(xin, f = `-`, classes = "numeric"), xout3.5)
+dotest(3.6, rrapply(xin, f = `-`, classes = c("numeric", "integer")), xout3.6)
+
+## deflt argument
+xin <- list(a = 1L, b = list(b1 = 2L, b2 = 3L), c = 4L)
+xout4.1 <- list(a = -1L, b = list(b1 = NA_character_, b2 = NA_character_), c = NA_character_)
+xout4.2 <- list(a = 1L, b = list(b1 = NA_real_, b2 = NA_real_), c = NA_real_)
+xout4.3 <- c(a = 1, b.b1 = NA, b.b2 = NA, c = NA)
+
+dotest(4.1, rrapply(xin, f = `-`, condition = function(x) .xpos == 1L, deflt = NA_character_, how = "list"), xout4.1)
+dotest(4.2, rrapply(xin, condition = function(x) .xpos == 1L, deflt = NA_real_, how = "list"), xout4.2)
+dotest(4.3, rrapply(xin, condition = function(x) .xpos == 1L, deflt = NA_real_, how = "unlist"), xout4.3)
+
+## dfAsList argument
+xin[[1]] <- data.frame(x = 1L, y = 2L)
+
+xout5.1 <- list(a = structure(list(x = 1L, y = 2L), class = "data.frame", row.names = c(NA, -1L)), b = list(b1 = 2L, b2 = 3L), c = 4L)
+xout5.2 <- list(a = "a", b = list(b1 = 2L, b2 = 3L), c = 4L)
+xout5.3 <- list(a = structure(list(x = "x", y = "y"), class = "data.frame", row.names = c(NA, -1L)), b = list(b1 = 2L, b2 = 3L), c = 4L)
+xout5.4 <- xout5.2
+    
+dotest(5.1, rrapply(xin, f = function(x) .xname, classes = "data.frame"), xout5.1)
+dotest(5.2, rrapply(xin, f = function(x) .xname, classes = "data.frame", dfAsList = FALSE), xout5.2)
+dotest(5.3, rrapply(xin, f = function(x) .xname, condition = function(x) .xpos[1] == 1L), xout5.3)
+dotest(5.4, rrapply(xin, f = function(x) .xname, condition = function(x) .xpos[1] == 1L, dfAsList = FALSE), xout5.4)
+
+## named flat list
+xin <- list(a = 1L, b = 2L, c = 3L)
+
+xout6.1 <- list(a = -1L, b = 2L, c = -3L)
+xout6.2 <- list(a = -1L, b = NULL, c = -3L)
+xout6.3 <- list(a = -1L, c = -3L)
+xout6.4 <- xout6.3
+
+dotest(6.1, rrapply(xin, f = `-`, condition = function(x) .xpos %in% c(1L, length(xin)), how = "replace"), xout6.1)
+dotest(6.2, rrapply(xin, f = `-`, condition = function(x) .xpos %in% c(1L, length(xin)), how = "list"), xout6.2)
+dotest(6.3, rrapply(xin, f = `-`, condition = function(x) .xpos %in% c(1L, length(xin)), how = "prune"), xout6.3)
+dotest(6.4, rrapply(xin, f = `-`, condition = function(x) .xpos %in% c(1L, length(xin)), how = "flatten"), xout6.4)
+
+## unnamed nested list
+xin <- list(1L, 2L, list(3L, 4L))
+
+xout7.1 <- list(-1L, 2L, list(3L, 4L))
+xout7.2 <- list(-1L, NULL, list(NULL, NULL))
+xout7.3 <- list(-1L)
+xout7.4 <- xout7.3
+xout7.5 <- list(-1L, -2L, list(-3L, -4L))
+
+dotest(7.1, rrapply(xin, f = `-`, condition = function(x) .xpos %in% c(1L, length(xin)), how = "replace"), xout7.1)
+dotest(7.2, rrapply(xin, f = `-`, condition = function(x) .xpos %in% c(1L, length(xin)), how = "list"), xout7.2)
+dotest(7.3, rrapply(xin, f = `-`, condition = function(x) .xpos %in% c(1L, length(xin)), how = "prune"), xout7.3)
+dotest(7.4, rrapply(xin, f = `-`, condition = function(x) .xpos %in% c(1L, length(xin)), how = "flatten"), xout7.4)
+dotest(7.5, rrapply(xin, f = `-`, condition = function(x) is.na(.xname)), xout7.5)
+
+## partially named list 1
+xin <- list(a = 1L, 2L, list(c1 = 3L, 4L))
+
+xout8.1 <- list(a = -1L, 2L, list(c1 = -3L, 4L))
+xout8.2 <- list(a = -1L, NULL, list(c1 = -3L, NULL))
+xout8.3 <- list(a = -1L, list(c1 = -3L))
+xout8.4 <- list(a = -1L, c1 = -3L)
+xout8.5 <- list(a = -1L)
+
+dotest(8.1, rrapply(xin, f = `-`, condition = function(x) nzchar(.xname), how = "replace"), xout8.1)
+dotest(8.2, rrapply(xin, f = `-`, condition = function(x) nzchar(.xname), how = "list"), xout8.2)
+dotest(8.3, rrapply(xin, f = `-`, condition = function(x) nzchar(.xname), how = "prune"), xout8.3)
+dotest(8.4, rrapply(xin, f = `-`, condition = function(x) nzchar(.xname), how = "flatten"), xout8.4)
+dotest(8.5, rrapply(xin, f = `-`, condition = function(x) .xpos == 1L, how = "prune"), xout8.5)
+
+## partially named list 2
+xin <- list(1L, 2L, list(c1 = 3L, c2 = 4L))
+
+xout9.1 <- list(1L, 2L, list(c1 = -3L, c2 = -4L))
+xout9.2 <- list(NULL, NULL, list(c1 = -3L, c2 = -4L))
+xout9.3 <- list(list(-3L, -4L))  ## no names present on L1 so no names returned
+xout9.4 <- list(-3L, -4L)  ## no names present on L1 so no names returned
+xout9.5 <- list(list(-3L))
+
+dotest(9.1, rrapply(xin, f = `-`, condition = function(x) !is.na(.xname), how = "replace"), xout9.1)
+dotest(9.2, rrapply(xin, f = `-`, condition = function(x) !is.na(.xname), how = "list"), xout9.2)
+dotest(9.3, rrapply(xin, f = `-`, condition = function(x) !is.na(.xname), how = "prune"), xout9.3)
+dotest(9.4, rrapply(xin, f = `-`, condition = function(x) !is.na(.xname), how = "flatten"), xout9.4)
+dotest(9.5, rrapply(xin, f = `-`, condition = function(x) identical(.xpos, c(3L, 1L)), how = "prune"), xout9.5)
+
+## empty lists
+xin1 <- list(a = 1L, b = list(list(2L)))
+xin2 <- list(1L)
+
+xout10.1 <- structure(list(), .Names = character(0))
+xout10.2 <- list()
+
+dotest(10.1, rrapply(xin1, f = `-`, condition = function(x) FALSE, how = "prune"), xout10.1)
+dotest(10.2, rrapply(xin1, f = `-`, condition = function(x) FALSE, how = "flatten"), xout10.1)
+dotest(10.3, rrapply(xin1, f = `-`, classes = "user-class", how = "prune"), xout10.1)
+dotest(10.4, rrapply(xin1, f = `-`, classes = "user-class", how = "flatten"), xout10.1)
+dotest(10.5, rrapply(xin2, f = `-`, condition = function(x) FALSE, how = "prune"), xout10.2)
+dotest(10.6, rrapply(xin2, f = `-`, condition = function(x) FALSE, how = "flatten"), xout10.2)
+dotest(10.7, rrapply(xin2, f = `-`, classes = "user-class", how = "prune"), xout10.2)
+dotest(10.8, rrapply(xin2, f = `-`, classes = "user-class", how = "flatten"), xout10.2)
+
+cat("Completed rrapply unit tests\n")
+
+
+
+

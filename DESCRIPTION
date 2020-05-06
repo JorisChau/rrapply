@@ -1,0 +1,13 @@
+Package: rrapply
+Type: Package
+Title: Revisiting base rapply
+Version: 1.0
+Date: 2020-05-06
+Authors@R: person("Joris", "Chau", email = "joris.chau@openanalytics.eu", role = c("aut", "cre"))
+Description: A reimplementation of base-R's rapply function.
+Depends: 
+    R (>= 3.6)
+Encoding: UTF-8
+License: GPL-3
+LazyData: true
+RoxygenNote: 7.1.0

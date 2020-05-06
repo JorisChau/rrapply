@@ -1,0 +1,11 @@
+\BOOKMARK [1][-]{section.1}{Quick review of <rapply>}{}% 1
+\BOOKMARK [1][-]{section.2}{When to use <rrapply>}{}% 2
+\BOOKMARK [2][-]{subsection.2.1}{List pruning}{section.2}% 3
+\BOOKMARK [2][-]{subsection.2.2}{Condition function}{section.2}% 4
+\BOOKMARK [3][-]{subsubsection.2.2.1}{Using the <...> argument}{subsection.2.2}% 5
+\BOOKMARK [2][-]{subsection.2.3}{Special symbols <.xname> and <.xpos>}{section.2}% 6
+\BOOKMARK [2][-]{subsection.2.4}{Miscellanous}{section.2}% 7
+\BOOKMARK [3][-]{subsubsection.2.4.1}{Data.frames as lists}{subsection.2.4}% 8
+\BOOKMARK [3][-]{subsubsection.2.4.2}{List attributes}{subsection.2.4}% 9
+\BOOKMARK [2][-]{subsection.2.5}{Using <rrapply> on data.frames}{section.2}% 10
+\BOOKMARK [3][-]{subsubsection.2.5.1}{Computational effort}{subsection.2.5}% 11
