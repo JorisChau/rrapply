@@ -4,7 +4,9 @@
 # rrapply: revisiting R-base rapply
 
 <!-- badges: start -->
-[![Build Status](https://travis-ci.org/JorisChau/rrapply.svg?branch=master)](https://travis-ci.org/JorisChau/rrapply)
+
+[![Build
+Status](https://travis-ci.org/JorisChau/rrapply.svg?branch=master)](https://travis-ci.org/JorisChau/rrapply)
 <!-- badges: end -->
 
 The rrapply-package contains a single function `rrapply`, providing an
@@ -55,7 +57,6 @@ str(renewable_oceania, list.len = 3, give.attr = FALSE)
 #>   .. ..$ Marshall Islands                    : num 11.8
 #>   .. .. [list output truncated]
 #>   .. [list output truncated]
-
 ## Drop all logical NA's while preserving list structure 
 na_drop_oceania <- rrapply(
   renewable_oceania,
@@ -141,7 +142,6 @@ str(na_drop_oceania3, list.len = 3, give.attr = FALSE)
 #>   .. ..$ Marshall Islands                : num 11.8
 #>   .. .. [list output truncated]
 #>   .. [list output truncated]
-
 ## Filter all countries with values above 85%
 renewable_energy_above_85 <- rrapply(
   renewable_energy_by_country,
@@ -199,7 +199,6 @@ str(renewable_oceania4, list.len = 10)
 #>  $ Kiribati                        : chr "Renewable energy in Kiribati: 45.43%"
 #>  $ Marshall Islands                : chr "Renewable energy in Marshall Islands: 11.75%"
 #>   [list output truncated]
-
 ## Extract values based on country names
 renewable_benelux <- rrapply(
   renewable_energy_by_country,
@@ -214,7 +213,6 @@ str(renewable_benelux, give.attr = FALSE)
 #>   .. .. ..$ Belgium    : num 9.14
 #>   .. .. ..$ Luxembourg : num 13.5
 #>   .. .. ..$ Netherlands: num 5.78
-
 ## Filter European countries with value above 50%
 renewable_europe_above_50 <- rrapply(
   renewable_energy_by_country,
@@ -231,7 +229,6 @@ str(renewable_europe_above_50, give.attr = FALSE)
 #>   .. .. ..$ Sweden : num 51.4
 #>   .. ..$ Western Europe :List of 1
 #>   .. .. ..$ Liechtenstein: num 62.9
-
 ## Return position of Sweden in list
 (xpos_sweden <- rrapply(
   renewable_energy_by_country,
@@ -277,7 +274,6 @@ head(iris_standard_sepal)
 #> 4   -1.5014904  0.09788935          1.5         0.2  setosa
 #> 5   -1.0184372  1.24503015          1.4         0.2  setosa
 #> 6   -0.5353840  1.93331463          1.7         0.4  setosa
-
 ## Scale and keep only numeric columns
 iris_standard_transmute <- rrapply(
   iris,
@@ -293,7 +289,6 @@ head(iris_standard_transmute)
 #> 4   -1.5014904  0.09788935    -1.279104   -1.311052
 #> 5   -1.0184372  1.24503015    -1.335752   -1.311052
 #> 6   -0.5353840  1.93331463    -1.165809   -1.048667
-
 ## Summarize only numeric columns with how = "flatten"
 iris_standard_summarize <- rrapply(
   iris,
