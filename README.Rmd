@@ -15,6 +15,10 @@ library(rrapply)
 
 # rrapply: revisiting R-base rapply
 
+<!-- badges: start -->
+[![Build Status](https://travis-ci.org/JorisChau/rrapply.svg?branch=master)](https://travis-ci.org/JorisChau/rrapply)
+<!-- badges: end -->
+
 The rrapply-package contains a single function `rrapply`, providing an extended implementation of R-base's `rapply` function, which applies a function `f` to all elements of a nested list recursively. rrapply is implemented using R's native C API and for this reason requires no external R-package dependencies.
 
 ## Installation

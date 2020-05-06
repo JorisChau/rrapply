@@ -3,6 +3,10 @@
 
 # rrapply: revisiting R-base rapply
 
+<!-- badges: start -->
+[![Build Status](https://travis-ci.org/JorisChau/rrapply.svg?branch=master)](https://travis-ci.org/JorisChau/rrapply)
+<!-- badges: end -->
+
 The rrapply-package contains a single function `rrapply`, providing an
 extended implementation of R-base’s `rapply` function, which applies a
 function `f` to all elements of a nested list recursively. rrapply is
@@ -28,9 +32,9 @@ from a nested
 list,
 
 ``` r
-# Nested list of renewable energy as a percentage of total energy consumption per country in 2016
+## Nested list of renewable energy as a percentage of total energy consumption per country in 2016
 data("renewable_energy_by_country")
-# Subset values for countries and areas in Oceania
+## Subset values for countries and areas in Oceania
 renewable_oceania <- renewable_energy_by_country[["World"]]["Oceania"]
 str(renewable_oceania, list.len = 3, give.attr = FALSE)
 #> List of 1
@@ -52,7 +56,7 @@ str(renewable_oceania, list.len = 3, give.attr = FALSE)
 #>   .. .. [list output truncated]
 #>   .. [list output truncated]
 
-# Drop all logical NA's while preserving list structure 
+## Drop all logical NA's while preserving list structure 
 na_drop_oceania <- rrapply(
   renewable_oceania,
   f = function(x) x,

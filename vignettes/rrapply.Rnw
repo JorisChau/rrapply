@@ -11,7 +11,6 @@
 
 \documentclass[10pt]{article}
 \usepackage{graphicx}
-\usepackage[english]{babel}
 \usepackage{hyperref}
 \usepackage{xcolor}
 \definecolor{light-gray}{gray}{0.95}
