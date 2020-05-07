@@ -1,31 +1,53 @@
+#define R_NO_REMAP
 #include <R.h>
 #include <Rinternals.h>
+#include <string.h>
+
+/* ---------------------- */
+
+/* prototypes */
+static void do_copyAttrs(SEXP obj, SEXP ans, SEXP names, Rboolean copyAttrs);
+static Rboolean do_matchClass(SEXP obj, SEXP classes);
+static R_xlen_t do_rrcount(SEXP X, R_xlen_t n, R_xlen_t *maxNodes, R_xlen_t *maxDepth, R_xlen_t depth);
+static void do_updateNode(int *xinfo, int node, Rboolean doEval, int parent, int depth, int child);
+static SEXP do_rreval_list(SEXP env, SEXP enclos, SEXP Xi, SEXP fcall, SEXP pcall, SEXP classes,
+						   SEXP deflt, SEXP xname, SEXP xsym, SEXP xpos, SEXP xnameChar,
+						   int howInt, int **xloc, R_xlen_t depth, R_xlen_t maxDepth, Rboolean useFun,
+						   Rboolean usePred, Rboolean dfList);
+static void do_rreval_flat(SEXP env, SEXP enclos, SEXP Xflat, SEXP Xnames, SEXP Xi, SEXP fcall, SEXP pcall,
+						   SEXP classes, SEXP deflt, SEXP xname, SEXP xsym, SEXP xpos, SEXP xnameChar,
+						   int *xinfo, int *xloc, R_xlen_t depth, int *node, int parent, Rboolean useFun,
+						   Rboolean usePred, Rboolean dfList, int howInt);
+static SEXP do_rrfill(SEXP Xflat, SEXP Xnames, SEXP Xi, int *xinfo, int maxNodes, int depth, int node, Rboolean useNames);
+
+/* ---------------------- */
+
 
 /* copies only name attribute or all attributes */
-void do_copyAttrs(SEXP obj, SEXP ans, SEXP names, Rboolean copyAttrs)
+static void do_copyAttrs(SEXP obj, SEXP ans, SEXP names, Rboolean copyAttrs)
 {
-	if (!isNull(names))
-		setAttrib(ans, R_NamesSymbol, names);
+	if (!Rf_isNull(names))
+		Rf_setAttrib(ans, R_NamesSymbol, names);
 	if (copyAttrs)
 	{
-		copyMostAttrib(obj, ans);
-		setAttrib(ans, R_DimSymbol, getAttrib(ans, R_DimSymbol));
-		setAttrib(ans, R_DimNamesSymbol, getAttrib(ans, R_DimNamesSymbol));
+		Rf_copyMostAttrib(obj, ans);
+		Rf_setAttrib(ans, R_DimSymbol, Rf_getAttrib(ans, R_DimSymbol));
+		Rf_setAttrib(ans, R_DimNamesSymbol, Rf_getAttrib(ans, R_DimNamesSymbol));
 	}
 }
 
 /* adapted from R_data_class in Defn.h */
-Rboolean do_matchClass(SEXP obj, SEXP classes)
+static Rboolean do_matchClass(SEXP obj, SEXP classes)
 {
-	SEXP klass = getAttrib(obj, R_ClassSymbol);
-	int n = xlength(klass);
+	SEXP klass = Rf_getAttrib(obj, R_ClassSymbol);
+	int n = Rf_xlength(klass);
 
 	Rboolean matched = FALSE;
 	/* match classes to R_ClassSymbol attribute */
 	if (n > 0)
 	{
 		for (int i = 0; i < n; i++)
-			for (int j = 0; j < xlength(classes); j++)
+			for (int j = 0; j < Rf_xlength(classes); j++)
 				if (strcmp(CHAR(STRING_ELT(klass, i)), CHAR(STRING_ELT(classes, j))) == 0)
 					matched = TRUE;
 
@@ -34,20 +56,20 @@ Rboolean do_matchClass(SEXP obj, SEXP classes)
 	else
 	{
 		/* match to specific types */
-		SEXP dim = getAttrib(obj, R_DimSymbol);
-		int nd = xlength(dim);
+		SEXP dim = Rf_getAttrib(obj, R_DimSymbol);
+		int nd = Rf_xlength(dim);
 		if (nd > 0)
 		{
 			if (nd == 2)
 			{
-				for (int j = 0; j < xlength(classes); j++)
+				for (int j = 0; j < Rf_xlength(classes); j++)
 					if (strcmp(CHAR(STRING_ELT(classes, j)), "matrix") == 0 ||
 						strcmp(CHAR(STRING_ELT(classes, j)), "array") == 0)
 						matched = TRUE;
 			}
 			else
 			{
-				for (int j = 0; j < xlength(classes); j++)
+				for (int j = 0; j < Rf_xlength(classes); j++)
 					if (strcmp(CHAR(STRING_ELT(classes, j)), "array") == 0)
 						matched = TRUE;
 			}
@@ -71,10 +93,10 @@ Rboolean do_matchClass(SEXP obj, SEXP classes)
 				typename = "name";
 				break;
 			default:
-				typename = CHAR(type2str(type));
+				typename = CHAR(Rf_type2str(type));
 			}
 
-			for (int j = 0; j < xlength(classes); j++)
+			for (int j = 0; j < Rf_xlength(classes); j++)
 				if (strcmp(CHAR(STRING_ELT(classes, j)), typename) == 0)
 					matched = TRUE;
 		}
@@ -83,7 +105,7 @@ Rboolean do_matchClass(SEXP obj, SEXP classes)
 	}
 }
 
-R_xlen_t do_rrcount(SEXP X, R_xlen_t n, R_xlen_t *maxNodes, R_xlen_t *maxDepth, R_xlen_t depth)
+static R_xlen_t do_rrcount(SEXP X, R_xlen_t n, R_xlen_t *maxNodes, R_xlen_t *maxDepth, R_xlen_t depth)
 {
 	SEXP Xi;
 	for (R_xlen_t i = 0; i < n; i++)
@@ -91,18 +113,18 @@ R_xlen_t do_rrcount(SEXP X, R_xlen_t n, R_xlen_t *maxNodes, R_xlen_t *maxDepth, 
 		*maxNodes += 1;
 		Xi = VECTOR_ELT(X, i);
 		/* descend one level */
-		if (isVectorList(Xi))
+		if (Rf_isVectorList(Xi))
 		{
 			depth += 1;
 			/* increment maxDepth if current depth is higher than maxDepth */
 			*maxDepth += depth > *maxDepth;
-			depth = do_rrcount(Xi, xlength(Xi), maxNodes, maxDepth, depth);
+			depth = do_rrcount(Xi, Rf_xlength(Xi), maxNodes, maxDepth, depth);
 		}
 	}
 	return depth - 1;
 }
 
-void do_updateNode(int *xinfo, int node, Rboolean doEval, int parent, int depth, int child)
+static void do_updateNode(int *xinfo, int node, Rboolean doEval, int parent, int depth, int child)
 {
 	/* current node counter */
 	xinfo[node * 5] = node;
@@ -116,20 +138,20 @@ void do_updateNode(int *xinfo, int node, Rboolean doEval, int parent, int depth,
 	xinfo[node * 5 + 4] = child;
 }
 
-SEXP do_rreval_list(SEXP env, SEXP enclos, SEXP Xi, SEXP fcall, SEXP pcall, SEXP classes,
+static SEXP do_rreval_list(SEXP env, SEXP enclos, SEXP Xi, SEXP fcall, SEXP pcall, SEXP classes,
 					SEXP deflt, SEXP xname, SEXP xsym, SEXP xpos, SEXP xnameChar,
-					int howInt, int **xloc, int depth, R_xlen_t maxDepth, Rboolean useFun,
+					int howInt, int **xloc, R_xlen_t depth, R_xlen_t maxDepth, Rboolean useFun,
 					Rboolean usePred, Rboolean dfList)
 {
-	SEXP predVal, funVal;
+	SEXP funVal;
 
 	/* if Xi is list (and data.frame is treated as list) recurse, otherwise call function */
 	Rboolean doRecurse = FALSE;
 
-	if (isVectorList(Xi))
+	if (Rf_isVectorList(Xi))
 	{
 		doRecurse = TRUE;
-		if (!dfList && do_matchClass(Xi, ScalarString(mkChar("data.frame"))))
+		if (!dfList && do_matchClass(Xi, Rf_ScalarString(Rf_mkChar("data.frame"))))
 			doRecurse = FALSE;
 	}
 
@@ -137,17 +159,17 @@ SEXP do_rreval_list(SEXP env, SEXP enclos, SEXP Xi, SEXP fcall, SEXP pcall, SEXP
 	{
 		/* descend one level */
 		depth += 1;
-		R_xlen_t m = xlength(Xi);
-		SEXP names = getAttrib(Xi, R_NamesSymbol);
+		R_xlen_t m = Rf_xlength(Xi);
+		SEXP names = Rf_getAttrib(Xi, R_NamesSymbol);
 
 		if (howInt == 0)
 		{
-			funVal = PROTECT(shallow_duplicate(Xi));
+			funVal = PROTECT(Rf_shallow_duplicate(Xi));
 		}
 		else
 		{
 			/* VECEXP initializes with R_NilValues */
-			funVal = PROTECT(allocVector(VECSXP, m));
+			funVal = PROTECT(Rf_allocVector(VECSXP, m));
 			do_copyAttrs(Xi, funVal, names, TRUE);
 		}
 
@@ -165,7 +187,7 @@ SEXP do_rreval_list(SEXP env, SEXP enclos, SEXP Xi, SEXP fcall, SEXP pcall, SEXP
 
 			/* evaluate list element */
 			SET_VECTOR_ELT(funVal, j, do_rreval_list(env, enclos, VECTOR_ELT(Xi, j), fcall, pcall, classes, deflt, xname, xsym, xpos, 
-						   isNull(names) ? NA_STRING : STRING_ELT(names, j), howInt, xloc, depth, maxDepth, useFun, usePred, dfList));
+						   Rf_isNull(names) ? NA_STRING : STRING_ELT(names, j), howInt, xloc, depth, maxDepth, useFun, usePred, dfList));
 		}
 
 		UNPROTECT(1);
@@ -176,22 +198,22 @@ SEXP do_rreval_list(SEXP env, SEXP enclos, SEXP Xi, SEXP fcall, SEXP pcall, SEXP
 		SEXP xname_val, xpos_val;
 
 		/* define X argument */
-		defineVar(xsym, Xi, env);
+		Rf_defineVar(xsym, Xi, env);
 		INCREMENT_NAMED(Xi);
 
 		/* define .xname argument */
-		xname_val = PROTECT(ScalarString(xnameChar));
-		defineVar(xname, xname_val, enclos);
+		xname_val = PROTECT(Rf_ScalarString(xnameChar));
+		Rf_defineVar(xname, xname_val, enclos);
 		INCREMENT_NAMED(xname_val);
 		UNPROTECT(1);
 
 		/* define .xpos argument */
-		xpos_val = PROTECT(allocVector(INTSXP, depth + 1));
+		xpos_val = PROTECT(Rf_allocVector(INTSXP, depth + 1));
 
 		for (R_xlen_t k = 0; k < (depth + 1); k++)
 			SET_INTEGER_ELT(xpos_val, k, (*xloc)[k]);
 
-		defineVar(xpos, xpos_val, enclos);
+		Rf_defineVar(xpos, xpos_val, enclos);
 		INCREMENT_NAMED(xpos_val);
 		UNPROTECT(1);
 
@@ -210,9 +232,9 @@ SEXP do_rreval_list(SEXP env, SEXP enclos, SEXP Xi, SEXP fcall, SEXP pcall, SEXP
 			doEval = FALSE;
 			/* evaluate pred function call */
 			SEXP predVal = PROTECT(R_forceAndCall(pcall, 1, env));
-			if (isLogical(predVal) && xlength(predVal) == 1)
+			if (Rf_isLogical(predVal) && Rf_xlength(predVal) == 1)
 			{
-				Rboolean predValBool = LOGICAL_ELT(predVal, 0);
+				int predValBool = LOGICAL_ELT(predVal, 0);
 				if (!(predValBool == NA_LOGICAL) && predValBool)
 				{
 					doEval = TRUE;
@@ -229,7 +251,7 @@ SEXP do_rreval_list(SEXP env, SEXP enclos, SEXP Xi, SEXP fcall, SEXP pcall, SEXP
 				funVal = PROTECT(R_forceAndCall(fcall, 1, env));
 
 				if (MAYBE_REFERENCED(funVal))
-					funVal = lazy_duplicate(funVal);
+					funVal = Rf_lazy_duplicate(funVal);
 
 				UNPROTECT(1);
 
@@ -237,35 +259,35 @@ SEXP do_rreval_list(SEXP env, SEXP enclos, SEXP Xi, SEXP fcall, SEXP pcall, SEXP
 			}
 			else
 			{
-				return lazy_duplicate(Xi);
+				return Rf_lazy_duplicate(Xi);
 			}
 		}
 		else
 		{
 			if (howInt == 0) /* replace */
 			{
-				return lazy_duplicate(Xi);
+				return Rf_lazy_duplicate(Xi);
 			}
 			else /* fill default */
 			{
-				return lazy_duplicate(deflt);
+				return Rf_lazy_duplicate(deflt);
 			}
 		}
 	}
 }
 
-void do_rreval_flat(SEXP env, SEXP enclos, SEXP Xflat, SEXP Xnames, SEXP Xi, SEXP fcall, SEXP pcall,
+static void do_rreval_flat(SEXP env, SEXP enclos, SEXP Xflat, SEXP Xnames, SEXP Xi, SEXP fcall, SEXP pcall,
 					SEXP classes, SEXP deflt, SEXP xname, SEXP xsym, SEXP xpos, SEXP xnameChar,
-					int *xinfo, int *xloc, int depth, int *node, int parent, Rboolean useFun,
+					int *xinfo, int *xloc, R_xlen_t depth, int *node, int parent, Rboolean useFun,
 					Rboolean usePred, Rboolean dfList, int howInt)
 {
 	/* if Xi is list (and data.frame is treated as list) recurse, otherwise call function */
 	Rboolean doRecurse = FALSE;
 
-	if (isVectorList(Xi))
+	if (Rf_isVectorList(Xi))
 	{
 		doRecurse = TRUE;
-		if (!dfList && do_matchClass(Xi, ScalarString(mkChar("data.frame"))))
+		if (!dfList && do_matchClass(Xi, Rf_ScalarString(Rf_mkChar("data.frame"))))
 			doRecurse = FALSE;
 	}
 
@@ -274,8 +296,8 @@ void do_rreval_flat(SEXP env, SEXP enclos, SEXP Xflat, SEXP Xnames, SEXP Xi, SEX
 		/* descend one level */
 		depth += 1;
 		parent = node[0];
-		R_xlen_t m = xlength(Xi);
-		SEXP names = getAttrib(Xi, R_NamesSymbol);
+		R_xlen_t m = Rf_xlength(Xi);
+		SEXP names = Rf_getAttrib(Xi, R_NamesSymbol);
 
 		for (R_xlen_t j = 0; j < m; j++)
 		{
@@ -287,12 +309,12 @@ void do_rreval_flat(SEXP env, SEXP enclos, SEXP Xflat, SEXP Xnames, SEXP Xi, SEX
 			do_updateNode(xinfo, node[0], FALSE, parent, depth, j);
 
 			/* update name attribute */
-			if (!isNull(names))
+			if (!Rf_isNull(names))
 				SET_STRING_ELT(Xnames, node[0], STRING_ELT(names, j));
 
 			/* evaluate list element */
 			do_rreval_flat(env, enclos, Xflat, Xnames, VECTOR_ELT(Xi, j), fcall, pcall,
-						   classes, deflt, xname, xsym, xpos, isNull(names) ? NA_STRING : STRING_ELT(names, j),
+						   classes, deflt, xname, xsym, xpos, Rf_isNull(names) ? NA_STRING : STRING_ELT(names, j),
 						   xinfo, xloc, depth, node, parent, useFun, usePred, dfList, howInt);
 		}
 	}
@@ -301,22 +323,22 @@ void do_rreval_flat(SEXP env, SEXP enclos, SEXP Xflat, SEXP Xnames, SEXP Xi, SEX
 		SEXP xname_val, xpos_val;
 
 		/* define X argument */
-		defineVar(xsym, Xi, env);
+		Rf_defineVar(xsym, Xi, env);
 		INCREMENT_NAMED(Xi);
 
 		/* define .xname argument */
-		xname_val = PROTECT(ScalarString(xnameChar));
-		defineVar(xname, xname_val, enclos);
+		xname_val = PROTECT(Rf_ScalarString(xnameChar));
+		Rf_defineVar(xname, xname_val, enclos);
 		INCREMENT_NAMED(xname_val);
 		UNPROTECT(1);
 
 		/* define .xpos argument */
-		xpos_val = PROTECT(allocVector(INTSXP, depth + 1));
+		xpos_val = PROTECT(Rf_allocVector(INTSXP, depth + 1));
 
 		for (R_xlen_t k = 0; k < (depth + 1); k++)
 			SET_INTEGER_ELT(xpos_val, k, xloc[k]);
 
-		defineVar(xpos, xpos_val, enclos);
+		Rf_defineVar(xpos, xpos_val, enclos);
 		INCREMENT_NAMED(xpos_val);
 		UNPROTECT(1);
 
@@ -335,9 +357,9 @@ void do_rreval_flat(SEXP env, SEXP enclos, SEXP Xflat, SEXP Xnames, SEXP Xi, SEX
 			doEval = FALSE;
 			/* evaluate pred function call */
 			SEXP predVal = PROTECT(R_forceAndCall(pcall, 1, env));
-			if (isLogical(predVal) && xlength(predVal) == 1)
+			if (Rf_isLogical(predVal) && Rf_xlength(predVal) == 1)
 			{
-				Rboolean predValBool = LOGICAL_ELT(predVal, 0);
+				int predValBool = LOGICAL_ELT(predVal, 0);
 				if (!(predValBool == NA_LOGICAL) && predValBool)
 				{
 					doEval = TRUE;
@@ -374,20 +396,20 @@ void do_rreval_flat(SEXP env, SEXP enclos, SEXP Xflat, SEXP Xnames, SEXP Xi, SEX
 				SEXP funVal = PROTECT(R_forceAndCall(fcall, 1, env));
 
 				if (MAYBE_REFERENCED(funVal))
-					funVal = lazy_duplicate(funVal);
+					funVal = Rf_lazy_duplicate(funVal);
 
 				SET_VECTOR_ELT(Xflat, node[0], funVal);
 				UNPROTECT(1);
 			}
 			else
 			{
-				SET_VECTOR_ELT(Xflat, node[0], lazy_duplicate(Xi));
+				SET_VECTOR_ELT(Xflat, node[0], Rf_lazy_duplicate(Xi));
 			}
 		}
 	}
 }
 
-SEXP do_rrfill(SEXP Xflat, SEXP Xnames, SEXP Xi, int *xinfo, int maxNodes, int depth, int node, Rboolean useNames)
+static SEXP do_rrfill(SEXP Xflat, SEXP Xnames, SEXP Xi, int *xinfo, int maxNodes, int depth, int node, Rboolean useNames)
 {
 	R_xlen_t buf[maxNodes - node];
 	int m = 0;
@@ -408,7 +430,7 @@ SEXP do_rrfill(SEXP Xflat, SEXP Xnames, SEXP Xi, int *xinfo, int maxNodes, int d
 	if (m > 0)
 	{
 		/* populate sublist*/
-		SEXP ans = PROTECT(allocVector(VECSXP, m));
+		SEXP ans = PROTECT(Rf_allocVector(VECSXP, m));
 		for (int j = 0; j < m; j++)
 		{
 			SET_VECTOR_ELT(ans, j, do_rrfill(Xflat, Xnames, VECTOR_ELT(Xi, xinfo[buf[j] * 5 + 4]), xinfo, maxNodes, depth + 1, buf[j], useNames));
@@ -417,17 +439,17 @@ SEXP do_rrfill(SEXP Xflat, SEXP Xnames, SEXP Xi, int *xinfo, int maxNodes, int d
 		/* add name attribute */
 		if (useNames)
 		{
-			SEXP ansNames = PROTECT(allocVector(STRSXP, m));
+			SEXP ansNames = PROTECT(Rf_allocVector(STRSXP, m));
 
 			for (int j = 0; j < m; j++)
 			{
 				SET_STRING_ELT(ansNames, j, STRING_ELT(Xnames, buf[j]));
 			}
-			setAttrib(ans, R_NamesSymbol, ansNames);
+			Rf_setAttrib(ans, R_NamesSymbol, ansNames);
 			UNPROTECT(1);
 		}
 		/* copy other list attributes */
-		copyMostAttrib(Xi, ans);
+		Rf_copyMostAttrib(Xi, ans);
 
 		UNPROTECT(1);
 		return ans;
@@ -444,27 +466,35 @@ SEXP do_rrapply(SEXP env, SEXP enclos, SEXP X, SEXP FUN, SEXP PRED, SEXP classes
 
 	/* initialize arguments */
 	int nprotect = 1;
-	R_xlen_t n = xlength(X);
-	names = getAttrib(X, R_NamesSymbol);
-	Rboolean useFun = isFunction(FUN);
-	Rboolean usePred = isFunction(PRED);
+	R_xlen_t n = Rf_xlength(X);
+	names = Rf_getAttrib(X, R_NamesSymbol);
+	Rboolean useFun = Rf_isFunction(FUN);
+	Rboolean usePred = Rf_isFunction(PRED);
 	Rboolean dfList = LOGICAL_ELT(dfAsList, 0);
 
 	/* install arguments and initialize call objects */
-	xsym = install("X");
-	xname = install(".xname");
-	xpos = install(".xpos");
+	xsym = Rf_install("X");
+	xname = Rf_install(".xname");
+	xpos = Rf_install(".xpos");
 
 	if (useFun)
 	{
-		R_fcall = PROTECT(lang3(FUN, xsym, R_DotsSymbol));
+		R_fcall = PROTECT(Rf_lang3(FUN, xsym, R_DotsSymbol));
 		nprotect++;
+	}
+	else 
+	{
+		R_fcall = FUN;
 	}
 
 	if (usePred)
 	{
-		R_pcall = PROTECT(lang3(PRED, xsym, R_DotsSymbol));
+		R_pcall = PROTECT(Rf_lang3(PRED, xsym, R_DotsSymbol));
 		nprotect++;
+	}
+	else 
+	{
+		R_pcall = PRED;
 	}
 
 	/* indices how:
@@ -485,11 +515,11 @@ SEXP do_rrapply(SEXP env, SEXP enclos, SEXP X, SEXP FUN, SEXP PRED, SEXP classes
 		/* allocate output list */
 		if (howInt == 0)
 		{
-			ans = PROTECT(shallow_duplicate(X));
+			ans = PROTECT(Rf_shallow_duplicate(X));
 		}
 		else
 		{
-			ans = PROTECT(allocVector(TYPEOF(X), n));
+			ans = PROTECT(Rf_allocVector(TYPEOF(X), n));
 			do_copyAttrs(X, ans, names, TRUE);
 		}
 
@@ -500,12 +530,12 @@ SEXP do_rrapply(SEXP env, SEXP enclos, SEXP X, SEXP FUN, SEXP PRED, SEXP classes
 			xloc[0] += 1;
 			/* evaluate list element */
 			SET_VECTOR_ELT(ans, i, do_rreval_list(env, enclos, VECTOR_ELT(X, i), R_fcall, R_pcall, classes, deflt, xname, xsym, xpos, 
-						   isNull(names) ? NA_STRING : STRING_ELT(names, i), howInt, &xloc, 0, maxDepth, useFun, usePred, dfList));
+						   Rf_isNull(names) ? NA_STRING : STRING_ELT(names, i), howInt, &xloc, 0, maxDepth, useFun, usePred, dfList));
 		}
 
         /* restore initial .xpos and .xvar */
-		defineVar(xname, findVar(xname, env), enclos);
-		defineVar(xpos, findVar(xpos, env), enclos);
+		Rf_defineVar(xname, Rf_findVar(xname, env), enclos);
+		Rf_defineVar(xpos, Rf_findVar(xpos, env), enclos);
 
 		UNPROTECT(nprotect);
 		return ans;
@@ -519,7 +549,9 @@ SEXP do_rrapply(SEXP env, SEXP enclos, SEXP X, SEXP FUN, SEXP PRED, SEXP classes
 		R_xlen_t maxDepth = 0;
 
 		/* traverse list once for max nodes and max depth */
-		int depth = do_rrcount(X, n, &maxNodes, &maxDepth, 0) + 1;
+		R_xlen_t depth = do_rrcount(X, n, &maxNodes, &maxDepth, 0) + 1;
+		/* reset current depth to zero */
+		depth = 0;
 
 		/* allocate arrays to store location info */
 		int *xloc = (int *)S_alloc(maxDepth + 1, sizeof(int));
@@ -527,10 +559,10 @@ SEXP do_rrapply(SEXP env, SEXP enclos, SEXP X, SEXP FUN, SEXP PRED, SEXP classes
 		int *node = (int *)S_alloc(1, sizeof(int));
 
 		/* allocate flat list */
-		Xflat = PROTECT(allocVector(VECSXP, maxNodes));
+		Xflat = PROTECT(Rf_allocVector(VECSXP, maxNodes));
 		/* allocate names vector (STRSXP initializes to "") */
 		/* if names present on zero-th layer */
-		Xnames = PROTECT(allocVector(STRSXP, maxNodes));
+		Xnames = PROTECT(Rf_allocVector(STRSXP, maxNodes));
 		nprotect += 2;
 
 		for (R_xlen_t i = 0; i < n; i++)
@@ -541,12 +573,12 @@ SEXP do_rrapply(SEXP env, SEXP enclos, SEXP X, SEXP FUN, SEXP PRED, SEXP classes
 			node[0] += (i > 0);
 			do_updateNode(xinfo, node[0], FALSE, node[0], 0, i);
 			/* store name attribute */
-			if (!isNull(names))
+			if (!Rf_isNull(names))
 				SET_STRING_ELT(Xnames, node[0], STRING_ELT(names, i));
 			/* evaluate list element */
 			do_rreval_flat(env, enclos, Xflat, Xnames, VECTOR_ELT(X, i), R_fcall, R_pcall,
-						   classes, deflt, xname, xsym, xpos, isNull(names) ? NA_STRING : STRING_ELT(names, i),
-						   xinfo, xloc, 0, node, node[0], useFun, usePred, dfList, howInt);
+						   classes, deflt, xname, xsym, xpos, Rf_isNull(names) ? NA_STRING : STRING_ELT(names, i),
+						   xinfo, xloc, depth, node, node[0], useFun, usePred, dfList, howInt);
 		}
 
 		/* detect nodes to filter */
@@ -563,17 +595,17 @@ SEXP do_rrapply(SEXP env, SEXP enclos, SEXP X, SEXP FUN, SEXP PRED, SEXP classes
 		}
 
 		/* allocate pruned list */
-		ans = PROTECT(allocVector(VECSXP, m));
+		ans = PROTECT(Rf_allocVector(VECSXP, m));
 
 		if (howInt == 3)
 		{
 			/* populate nested list */
 			for (R_xlen_t j = 0; j < m; j++)
 			{
-				SET_VECTOR_ELT(ans, j, do_rrfill(Xflat, Xnames, VECTOR_ELT(X, xinfo[buf[j] * 5 + 4]), xinfo, maxNodes, 0, buf[j], !isNull(names)));
+				SET_VECTOR_ELT(ans, j, do_rrfill(Xflat, Xnames, VECTOR_ELT(X, xinfo[buf[j] * 5 + 4]), xinfo, maxNodes, 0, buf[j], !Rf_isNull(names)));
 			}
 			/* copy other list attributes */
-			copyMostAttrib(X, ans);
+			Rf_copyMostAttrib(X, ans);
 		}
 		else
 		{
@@ -585,21 +617,21 @@ SEXP do_rrapply(SEXP env, SEXP enclos, SEXP X, SEXP FUN, SEXP PRED, SEXP classes
 		}
 
 		/* add names attribute */
-		if (!isNull(names))
+		if (!Rf_isNull(names))
 		{
-			ansNames = PROTECT(allocVector(STRSXP, m));
+			ansNames = PROTECT(Rf_allocVector(STRSXP, m));
 			nprotect++;
 
 			for (R_xlen_t j = 0; j < m; j++)
 			{
 				SET_STRING_ELT(ansNames, j, STRING_ELT(Xnames, buf[j]));
 			}
-			setAttrib(ans, R_NamesSymbol, ansNames);
+			Rf_setAttrib(ans, R_NamesSymbol, ansNames);
 		}
 
 		/* restore initial .xpos and .xvar */
-		defineVar(xname, findVar(xname, env), enclos);
-		defineVar(xpos, findVar(xpos, env), enclos);
+		Rf_defineVar(xname, Rf_findVar(xname, env), enclos);
+		Rf_defineVar(xpos, Rf_findVar(xpos, env), enclos);
 
 		UNPROTECT(nprotect);
 		return ans;
