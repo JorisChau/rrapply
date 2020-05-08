@@ -1,6 +1,6 @@
 Package: rrapply
 Type: Package
-Title: Revisiting base rapply
+Title: Revisiting Base Rapply
 Version: 1.0
 Date: 2020-05-06
 Authors@R: person("Joris", "Chau", email = "joris.chau@openanalytics.eu", role = c("aut", "cre"))

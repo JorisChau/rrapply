@@ -36,6 +36,7 @@ list,
 ``` r
 ## Nested list of renewable energy as a percentage of total energy consumption per country in 2016
 data("renewable_energy_by_country")
+
 ## Subset values for countries and areas in Oceania
 renewable_oceania <- renewable_energy_by_country[["World"]]["Oceania"]
 str(renewable_oceania, list.len = 3, give.attr = FALSE)
@@ -57,6 +58,7 @@ str(renewable_oceania, list.len = 3, give.attr = FALSE)
 #>   .. ..$ Marshall Islands                    : num 11.8
 #>   .. .. [list output truncated]
 #>   .. [list output truncated]
+
 ## Drop all logical NA's while preserving list structure 
 na_drop_oceania <- rrapply(
   renewable_oceania,
@@ -142,6 +144,7 @@ str(na_drop_oceania3, list.len = 3, give.attr = FALSE)
 #>   .. ..$ Marshall Islands                : num 11.8
 #>   .. .. [list output truncated]
 #>   .. [list output truncated]
+
 ## Filter all countries with values above 85%
 renewable_energy_above_85 <- rrapply(
   renewable_energy_by_country,
@@ -173,10 +176,10 @@ str(renewable_energy_above_85, give.attr = FALSE)
 In base `rapply`, the `f` function only has access to the content of the
 list element under evaluation, and there is no convenient way to access
 its name or location in the nested list from inside the `f` function.
-`rrapply` allows the use the special symbols `.xname` and `.xpos` inside
-the `f` and `condition` function. `.xname` evaluates to the name of list
-element, and `.xpos` evaluates to the position of the element in the
-nested list structured as an integer vector.
+`rrapply` allows the use of the special symbols `.xname` and `.xpos`
+inside the `f` and `condition` function. `.xname` evaluates to the name
+of the list element, and `.xpos` evaluates to the position of the
+element in the nested list structured as an integer vector.
 
 ``` r
 ## Apply a function using the name of the node
@@ -199,6 +202,7 @@ str(renewable_oceania4, list.len = 10)
 #>  $ Kiribati                        : chr "Renewable energy in Kiribati: 45.43%"
 #>  $ Marshall Islands                : chr "Renewable energy in Marshall Islands: 11.75%"
 #>   [list output truncated]
+
 ## Extract values based on country names
 renewable_benelux <- rrapply(
   renewable_energy_by_country,
@@ -213,6 +217,7 @@ str(renewable_benelux, give.attr = FALSE)
 #>   .. .. ..$ Belgium    : num 9.14
 #>   .. .. ..$ Luxembourg : num 13.5
 #>   .. .. ..$ Netherlands: num 5.78
+
 ## Filter European countries with value above 50%
 renewable_europe_above_50 <- rrapply(
   renewable_energy_by_country,
@@ -229,6 +234,7 @@ str(renewable_europe_above_50, give.attr = FALSE)
 #>   .. .. ..$ Sweden : num 51.4
 #>   .. ..$ Western Europe :List of 1
 #>   .. .. ..$ Liechtenstein: num 62.9
+
 ## Return position of Sweden in list
 (xpos_sweden <- rrapply(
   renewable_energy_by_country,
@@ -257,7 +263,7 @@ However, it can also be useful to exploit the property that a data.frame
 is a list-like object and use base `rapply` to apply a function `f` to
 data.frame columns of certain classes via the `classes` argument. Using
 the `condition` argument in `rrapply`, we can apply a function `f` to a
-subset of data.frame columns using a more general predicate function,
+subset of data.frame columns using a general predicate function,
 
 ``` r
 ## Scale only Sepal columns in iris dataset
@@ -274,6 +280,7 @@ head(iris_standard_sepal)
 #> 4   -1.5014904  0.09788935          1.5         0.2  setosa
 #> 5   -1.0184372  1.24503015          1.4         0.2  setosa
 #> 6   -0.5353840  1.93331463          1.7         0.4  setosa
+
 ## Scale and keep only numeric columns
 iris_standard_transmute <- rrapply(
   iris,
@@ -289,6 +296,7 @@ head(iris_standard_transmute)
 #> 4   -1.5014904  0.09788935    -1.279104   -1.311052
 #> 5   -1.0184372  1.24503015    -1.335752   -1.311052
 #> 6   -0.5353840  1.93331463    -1.165809   -1.048667
+
 ## Summarize only numeric columns with how = "flatten"
 iris_standard_summarize <- rrapply(
   iris,
