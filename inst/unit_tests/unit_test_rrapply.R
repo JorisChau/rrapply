@@ -66,6 +66,10 @@ dotest(2.3, rrapply(xin, f = `-`, condition = function(x) .xpos %in% c(1L, lengt
 dotest(2.4, rrapply(xin, f = `-`, condition = function(x) .xpos %in% c(1L, length(xin)), how = "prune"), xout2.4)
 dotest(2.5, rrapply(xin, f = `-`, condition = function(x) .xpos %in% c(1L, length(xin)), how = "flatten"), xout2.5)
 
+## check for trailing .xpos and .xname variables
+dotest(2.6, exists(".xpos"), FALSE)
+dotest(2.7, exists(".xname"), FALSE)
+
 ## classes argument
 xout3.1 <- list(a = structure(-1L, .Dim = c(1L, 1L)), b = list(b1 = 2L, b2 = 3L), c = 4L)
 xout3.2 <- list(a = structure(1L, .Dim = c(1L, 1L)), b = list(b1 = -2L, b2 = -3L), c = -4L)
