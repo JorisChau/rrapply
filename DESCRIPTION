@@ -1,7 +1,7 @@
 Package: rrapply
 Type: Package
 Title: Revisiting Base Rapply
-Version: 1.0
+Version: 1.0.0
 Date: 2020-05-06
 Authors@R: person("Joris", "Chau", email = "joris.chau@openanalytics.eu", role = c("aut", "cre"))
 Description: A reimplementation of base-R's rapply function.
