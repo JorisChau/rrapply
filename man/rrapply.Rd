@@ -11,7 +11,8 @@ rrapply(
   classes = "ANY",
   deflt = NULL,
   how = c("replace", "list", "unlist", "prune", "flatten"),
-  dfAsList = TRUE,
+  feverywhere = FALSE,
+  dfaslist = TRUE,
   ...
 )
 }
@@ -30,7 +31,9 @@ rrapply(
 
 \item{how}{character string partially matching the five possibilities given: see \sQuote{Details}.}
 
-\item{dfAsList}{logical value to treat data.frames as \dQuote{list-like} object.}
+\item{feverywhere}{logical value to apply \code{f} to all (\dQuote{list-like} or non \dQuote{list-like}) elements of \code{object}.}
+
+\item{dfaslist}{logical value to treat data.frames as \dQuote{list-like} object.}
 
 \item{...}{additional arguments passed to the call to \code{f} and \code{condition}}
 }
@@ -86,11 +89,22 @@ list element \code{x[[c(1, 2)]]}. The names \code{.xname} and \code{.xpos} do no
 details on overriding the \code{.xname} and \code{.xpos} variables.
 }
 
+\section{List node aggregation}{
+
+By default, \code{rrapply} applies the \code{f} function only to leaf elements by recursing into any list-like element that is encountered. 
+If \code{feverywhere = TRUE}, this behavior is overridden and the \code{f} function will be applied to any element of \code{object} (e.g. a sublist) 
+that satisfies the \code{condition} function. If the \code{condition} function is not satisfied for a list-like 
+element, \code{rrapply} will recurse further into the sublist, apply the \code{f} function to the nodes that 
+satisfy the \code{condition}, and so on. The primary use of \code{feverywhere = TRUE} is to aggregate list nodes or summarize sublists of \code{object}. 
+Additional examples can be found in the package vignette.
+}
+
 \section{Data.frames as lists}{
 
-By default, \code{rrapply} recurses into all list-like objects equivalent to \code{\link{rapply}}. Since data.frames are list-like objects, the
-\code{f} function always descends into the individual columns of a data.frame. If \code{dfAsList = FALSE}, data.frames are no longer viewed as lists 
-and the \code{f} and \code{condition} functions are applied directly to the data.frame itself and not its columns.
+If \code{feverywhere = FALSE}, \code{rrapply} recurses into all list-like objects equivalent to \code{\link{rapply}}. 
+Since data.frames are list-like objects, the \code{f} function will descend into the individual columns of a data.frame. 
+If \code{dfaslist = FALSE}, data.frames are no longer viewed as lists and the \code{f} and \code{condition} functions are 
+applied directly to the data.frame itself and not its columns.
 }
 
 \section{List attributes}{
@@ -195,6 +209,28 @@ str(renewable_europe_above_50, give.attr = FALSE)
   how = "flatten"
 ))
 renewable_energy_by_country[[xpos_sweden$Sweden]]
+
+# List node aggregation
+
+## Calculate mean value of Europe
+rrapply(
+  renewable_energy_by_country,  
+  condition = function(x) .xname == "Europe",
+  f = function(x) mean(unlist(x), na.rm = TRUE),
+  how = "flatten",
+  feverywhere = TRUE
+)
+
+## Calculate mean value for each continent
+renewable_continent_summary <- rrapply(
+  renewable_energy_by_country,  
+  condition = function(x) length(.xpos) == 2,
+  f = function(x) mean(unlist(x), na.rm = TRUE),
+  feverywhere = TRUE
+)
+
+## Antarctica's value is missing
+str(renewable_continent_summary, give.attr = FALSE)
 
 # List attributes
 

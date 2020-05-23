@@ -34,10 +34,19 @@
 #' \code{condition}, and can be thought of as pre-defined variables in the current function environment. See the package vignette for additional
 #' details on overriding the \code{.xname} and \code{.xpos} variables.  
 #' 
+#' @section List node aggregation:
+#' By default, \code{rrapply} applies the \code{f} function only to leaf elements by recursing into any list-like element that is encountered. 
+#' If \code{feverywhere = TRUE}, this behavior is overridden and the \code{f} function will be applied to any element of \code{object} (e.g. a sublist) 
+#' that satisfies the \code{condition} function. If the \code{condition} function is not satisfied for a list-like 
+#' element, \code{rrapply} will recurse further into the sublist, apply the \code{f} function to the nodes that 
+#' satisfy the \code{condition}, and so on. The primary use of \code{feverywhere = TRUE} is to aggregate list nodes or summarize sublists of \code{object}. 
+#' Additional examples can be found in the package vignette.
+#' 
 #' @section Data.frames as lists:
-#' By default, \code{rrapply} recurses into all list-like objects equivalent to \code{\link{rapply}}. Since data.frames are list-like objects, the
-#' \code{f} function always descends into the individual columns of a data.frame. If \code{dfAsList = FALSE}, data.frames are no longer viewed as lists 
-#' and the \code{f} and \code{condition} functions are applied directly to the data.frame itself and not its columns.
+#' If \code{feverywhere = FALSE}, \code{rrapply} recurses into all list-like objects equivalent to \code{\link{rapply}}. 
+#' Since data.frames are list-like objects, the \code{f} function will descend into the individual columns of a data.frame. 
+#' If \code{dfaslist = FALSE}, data.frames are no longer viewed as lists and the \code{f} and \code{condition} functions are 
+#' applied directly to the data.frame itself and not its columns.
 #' 
 #' @section List attributes:
 #' In \code{\link{rapply}} intermediate list attributes (not located at the leafs) are kept when \code{how = "replace"}, but are dropped when 
@@ -148,6 +157,28 @@
 #' ))
 #' renewable_energy_by_country[[xpos_sweden$Sweden]]
 #' 
+#' # List node aggregation
+#' 
+#' ## Calculate mean value of Europe
+#' rrapply(
+#'   renewable_energy_by_country,  
+#'   condition = function(x) .xname == "Europe",
+#'   f = function(x) mean(unlist(x), na.rm = TRUE),
+#'   how = "flatten",
+#'   feverywhere = TRUE
+#' )
+#'
+#' ## Calculate mean value for each continent
+#' renewable_continent_summary <- rrapply(
+#'   renewable_energy_by_country,  
+#'   condition = function(x) length(.xpos) == 2,
+#'   f = function(x) mean(unlist(x), na.rm = TRUE),
+#'   feverywhere = TRUE
+#' )
+#'
+#' ## Antarctica's value is missing
+#' str(renewable_continent_summary, give.attr = FALSE)
+#' 
 #' # List attributes
 #' 
 #' ## how = "list" preserves all list attributes
@@ -195,7 +226,8 @@
 #' @param condition a condition \code{\link{function}} of one \dQuote{principal} argument, passing further arguments via \code{\dots}.
 #' @param how character string partially matching the five possibilities given: see \sQuote{Details}.
 #' @param deflt the default result (only used if \code{how = "list"} or \code{how = "unlist"}).
-#' @param dfAsList logical value to treat data.frames as \dQuote{list-like} object.
+#' @param dfaslist logical value to treat data.frames as \dQuote{list-like} object.
+#' @param feverywhere logical value to apply \code{f} to all (\dQuote{list-like} or non \dQuote{list-like}) elements of \code{object}.
 #' @param ... additional arguments passed to the call to \code{f} and \code{condition}
 #' 
 #' @aliases rrapply
@@ -205,14 +237,16 @@
 #' @useDynLib rrapply, .registration = TRUE
 #' @export 
 rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL, 
-                    how = c("replace", "list", "unlist", "prune", "flatten"), dfAsList = TRUE, ...) 
+    how = c("replace", "list", "unlist", "prune", "flatten"),
+    feverywhere = FALSE, dfaslist = TRUE, ...)
 {
   
   ## check arguments
   if(!is.list(object) || length(object) < 1) stop("'object' argument should be list-like and of length greater than zero")
   how <- match.arg(how, c("replace", "list", "unlist", "prune", "flatten"))
   howInt <- match(how, c("replace", "list", "unlist", "prune", "flatten")) - 1L
-  dfAsList <- isTRUE(dfAsList)
+  dfaslist <- isTRUE(dfaslist)
+  feverywhere <- isTRUE(feverywhere)
   if(missing(f)) f <- NULL
   if(missing(condition)) condition <- NULL
   if(!is.null(f) && !is.function(f)) {
@@ -223,22 +257,33 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
     warning("'condition' argument is not a function, no condition is used")
     condition <- NULL
   }
-  if((is.null(f) && is.null(condition) && howInt != 4L) || (is.null(f) && howInt == 0L)) return(object)
-  
-  ## save existing values .xname and/or .xpos
-  if(exists(".xname", envir = parent.frame())) xname <- get(".xname", envir = parent.frame())
-  if(exists(".xpos", envir = parent.frame())) xpos <- get(".xpos", envir = parent.frame())
   
   ## call C function
-  res <- .Call(do_rrapply, environment(), parent.frame(), object, f, condition, classes, howInt, deflt, dfAsList) 
+  if(is.null(f) && (is.null(condition) || howInt == 0L) && !feverywhere) {
+    
+    ## nothing to be done
+    res <- object 
+    
+  } else {
+    
+    ## save existing values .xname and/or .xpos
+    if(exists(".xname", envir = parent.frame())) xname <- get(".xname", envir = parent.frame())
+    if(exists(".xpos", envir = parent.frame())) xpos <- get(".xpos", envir = parent.frame())
+    
+    res <- .Call(do_rrapply, environment(), parent.frame(), object, f, condition, classes, howInt, deflt, dfaslist, feverywhere) 
+    
+    ## restore values .xname and/or .xpos
+    if(exists("xname", envir = environment())) assign(".xname", xname, envir = parent.frame())
+    else remove(".xname", envir = parent.frame())
+    if(exists("xpos", envir = environment())) assign(".xpos", xpos, envir = parent.frame())
+    else remove(".xpos", envir = parent.frame())
+    
+  }
   
-  ## restore values .xname and/or .xpos
-  if(exists("xname", envir = environment())) assign(".xname", xname, envir = parent.frame())
-  else remove(".xname", envir = parent.frame())
-  if(exists("xpos", envir = environment())) assign(".xpos", xpos, envir = parent.frame())
-  else remove(".xpos", envir = parent.frame())
-  
-  if (how == "unlist") res <- unlist(res, recursive = TRUE)
+  ## unlist result
+  if(how == "unlist") {
+    res <- unlist(res, recursive = TRUE)
+  }
   
   return(res)
   

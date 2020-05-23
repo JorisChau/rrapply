@@ -397,15 +397,61 @@ rrapply(renewable_energy_by_country,
 @
 \end{remark}
 
+\subsection{List node aggregation}
+
+By construction, both base \code{rapply} and \code{rrapply} apply the \code{f} function only to leaf elements of a nested list by recursing further into any list-like element that is encountered. In \code{rrapply}, it is possible to override this default behavior using the argument \code{feverywhere = TRUE}. In this case, \code{rrapply} does not automatically recurse deeper into list-like objects, and the \code{f} function will be applied to any element (e.g. a sublist) that satisfies the \code{condition} function. If the \code{condition} function is not satisfied for a list-like element, \code{rrapply} will recurse further into the sublist, apply the \code{f} function to the nodes that satisfy the \code{condition}, and so on.\\[3mm]
+A primary use of \code{feverywhere = TRUE} is to perform node aggregation by calculating some type of summary statistic over sublists of the nested list. Together with the \code{.xname} and \code{.xpos} symbols, we have flexibility in deciding which sublists to summarize or collapse trough the \code{condition} function.\\[3mm]
+To illustrate, we can return the mean and standard deviation of the renewable energy share in Europe as follows:
+<<>>=
+rrapply(
+  renewable_energy_by_country,  
+  condition = function(x) .xname == "Europe",
+  f = function(x) list(
+    mean = mean(unlist(x), na.rm = TRUE), 
+    sd = sd(unlist(x), na.rm = TRUE)
+  ),
+  how = "flatten",
+  feverywhere = TRUE
+)
+@
+\begin{remark}
+Note that the \code{x} argument in the \code{f} function is now the entire sublist for which the \code{condition} is satisfied. For this reason, we first need to \code{unlist} the sublist in order to supply a numeric vector to \code{mean} and \code{sd}.
+\end{remark}
+The same result could be obtained by defining a \code{condition} based on the \code{"M49-code"} attribute of the list element. This can be convenient to filter or summarize nodes in nested lists coming from XML (or HTML) files based on their attribute values.
+<<>>=
+rrapply(
+  renewable_energy_by_country,
+  condition = function(x) attr(x, "M49-code") == "150",
+  f = function(x) list(
+    mean = mean(unlist(x), na.rm = TRUE), 
+    sd = sd(unlist(x), na.rm = TRUE)
+  ),
+  how = "flatten",
+  feverywhere = TRUE
+)
+@
+We can use the \code{.xpos} argument to apply the \code{f} function only at specific locations or depths in the nested list. For instance, we could return the mean renewable energy shares for each continent by observing that the \code{.xpos} vector of each continent has length (i.e. depth) 2:
+<<>>=
+renewable_continent_summary <- rrapply(
+  renewable_energy_by_country,  
+  condition = function(x) length(.xpos) == 2,
+  f = function(x) mean(unlist(x), na.rm = TRUE),
+  feverywhere = TRUE
+)
+
+## Antarctica has a missing value
+str(renewable_continent_summary, give.attr = FALSE)
+@
+
 \subsection{Miscellanous}
 
 \subsubsection{Data.frames as lists}
 
-Base \code{rapply} recurses into all list-like objects. Since data.frames are
+As already discussed, base \code{rapply} recurses into all list-like objects. Since data.frames are
 list-like objects, the \code{f} function always descends into the
-individual columns of a data.frame. It might occur that we wish to apply \code{f} to a data.fame object as a whole, instead of its individual
-columns, which is not possible with \code{rapply}. For this purpose, \code{rrapply} includes an additional argument \code{dfAsList}. If \code{dfAsList = TRUE}, \code{rrapply} behaves in
-the same way as \code{rapply} by recursing into the individual columns of a data.frame. If \code{dfAsList = FALSE}, the \code{f} and \code{condition} functions are applied directly to the data.frame object itself and not its columns. 
+individual columns of a data.frame. Sometimes we wish to apply \code{f} to a data.fame object as a whole, instead of its individual
+columns, which is not possible with \code{rapply}. For this purpose, \code{rrapply} includes a convenience argument \code{dfaslist}. If \code{dfaslist = TRUE}, \code{rrapply} behaves in
+the same way as \code{rapply} by recursing into the individual columns of a data.frame. If \code{dfaslist = FALSE}, the \code{f} and \code{condition} functions are applied directly to the data.frame object itself and not its columns. 
 <<>>=
 ## create a list of data.frames
 oceania_df <- list(
@@ -424,7 +470,7 @@ tryCatch({
     oceania_df,
     f = function(x) subset(x, !is.na(value)), ## filter NA-rows of data.frame
     how = "replace",
-    dfAsList = TRUE
+    dfaslist = TRUE
   )
 }, error = function(error) error$message)
 ## this does work
@@ -432,9 +478,23 @@ rrapply(
   oceania_df,
   f = function(x) subset(x, !is.na(value)),
   how = "replace",
-  dfAsList = FALSE
+  dfaslist = FALSE
 )
 @
+
+\begin{remark}
+Note that the same result can also be obtained using \code{feverywhere = TRUE} and checking that the list element under evaluation is a data.frame:
+<<echo=FALSE>>=
+rrapply(
+  oceania_df,
+  condition = function(x) class(x) == "data.frame",
+  f = function(x) subset(x, !is.na(value)),
+  how = "replace",
+  feverywhere = TRUE
+)
+@
+Using the \code{dfaslist} argument is somewhat more concise and also slighty more efficient as the class of the list element is checked directly analogous to the \code{classes} argument. 
+\end{remark}
 
 \subsubsection{List attributes}
 
@@ -462,7 +522,7 @@ str(na_drop_oceania_attr, max.level = 2)
 
 \subsection{Using \texttt{rrapply} on data.frames}
 
-In the previous section, the \code{dfAsList} argument is used in order to avoid recursing into the individual columns of a data.frame object. However, it can also be useful to exploit exactly this property of base \code{rapply}. A convenient way to apply a function to columns of a data.frame of a certain class is through the use of the \code{classes} argument in base \code{rapply}.\\[3mm]
+In the previous section, the \code{dfaslist} argument is used in order to avoid recursing into the individual columns of a data.frame object. However, it can also be useful to exploit exactly this property of base \code{rapply}. A convenient way to apply a function to columns of a data.frame of a certain class is through the use of the \code{classes} argument in base \code{rapply}.\\[3mm]
 For instance, suppose we wish to standardize all \code{numeric} columns in the \code{iris}
 dataset by their sample mean and standard deviation:
 <<>>=
@@ -506,8 +566,8 @@ iris_standard_summarize
 
 \subsubsection{Computational effort}
 
-As \code{rrapply} is written in \textsf{R}'s internal \textsf{C} API, it is computationally much more efficient than its equivalent implementation based on recursion through a nested list in interpreted \textsf{R}. The computational efficiency of \code{rrapply} is illustrated in the figures below, which show several benchmark timings of \code{rrapply} against that of base \code{rapply} and common \texttt{data.table} and \texttt{dplyr}-alternatives in the context of data.frame manipulation. In particular, we time the application a dummy function \code{f} (unit multiplication) respectively to each column and to each \emph{numeric} column of a data.frame \code{x} of size $(M \times N)$, where the entries of the data.frame \code{x} are randomly sampled from a uniform distribution on the unit interval.\\[3mm]
-The displayed timings are the median computation times (ms) of 100 evaluations of the benchmarked expressions in R 3.6.2 (dplyr v0.8.4, data.table v1.12.8) on a single-core processor (Intel i7-8550U, 1.80 GHz, 16 GiB system memory). In the left-hand plots, the number of data.frame rows is fixed at $M = 1000$ and the number of columns increases from $N = 100$ to $N = 10\ 000$, and in the right-hand plots the number of data.frame columns is fixed at $N = 100$ and the number of rows increases from $M = 1000$ to $M = 10^6$.
+As \code{rrapply} is written in \textsf{R}'s internal \textsf{C} API, it is computationally significantly more efficient than its equivalent implementation based on recursion through a nested list in interpreted \textsf{R}. In the figures below, several benchmark timings of \code{rrapply} against that of base \code{rapply} are displayed in the context of data.frame manipulation. In particular, we time the application of a dummy function \code{f} (unit multiplication) respectively to each column and to each \emph{numeric} column of a data.frame \code{x} of size $(M \times N)$, where the entries of the data.frame \code{x} are randomly sampled from a uniform distribution on the unit interval.\\[3mm]
+The displayed timings are the median computation times (ms) of 100 evaluations of the benchmarked expressions in R 3.6.2 on a single-core processor (Intel i7-8550U, 1.80 GHz, 16 GiB system memory). In the left-hand plots, the number of data.frame rows is fixed at $M = 1000$ and the number of columns increases from $N = 100$ to $N = 10\ 000$, and in the right-hand plots the number of data.frame columns is fixed at $N = 100$ and the number of rows increases from $M = 1000$ to $M = 10^6$.
 \\[3mm]
 The benchmarked expressions to mutate all columns of the data.frame \code{x} evaluated in the first figure are:
 <<eval=FALSE>>=
@@ -517,14 +577,7 @@ rapply(x, f = `*`, e2 = 1, how = "replace")
 rrapply(x, f = `*`, e2 = 1, how = "replace")
 ## rrapply(how = "prune")
 rrapply(x, f = `*`, e2 = 1, how = "prune")
-## data.table::set
-for(j in 1:length(x)) data.table::set(x, j = j, value = `*`(x[[j]], 1))
-## dplyr::mutate_all
-dplyr::mutate_all(x, .funs = `*`, e2 = 1)
 @
-\begin{remark}
-The for-loop combined with \code{data.table::set} was slightly faster than other alternatives using e.g. the \code{:=} operator. In addition, the data.frame \code{x} was first converted to a \code{data.table} object, the time to convert the object is not included in the computation times in the figures.
-\end{remark}
 The benchmarked expressions to mutate all \emph{numeric} columns of the data.frame \code{x} evaluated in the second figure are:
 <<eval=FALSE>>=
 ## rapply(classes = "numeric", how = "replace")
@@ -535,13 +588,12 @@ rrapply(x, f = `*`, e2 = 1, classes = "numeric", how = "replace")
 rrapply(x, f = `*`, e2 = 1, classes = "numeric", how = "prune")
 ## rrapply(condition = "numeric", how = "replace")
 rrapply(dat, condition = is.numeric, f = function(x) `*`(x, 1), how = "replace")
-## dplyr::mutate_if(.predicate = is.numeric)
-dplyr::mutate_if(x, .predicate = is.numeric, .funs = `*`, e2 = 1)
 @
+
 \begin{remark}
-Note that no \texttt{data.table}-alternative is included in the second figure as there is no direct approach to mutate a selection of data.frame columns based on a condition without relying on, for instance, an additional call to \code{sapply} or similar to evaluate the condition on each data.frame column.
+The same processing tasks executed with \texttt{data.table} (v1.8.2) and \texttt{dplyr} (v0.8.4) resulted in roughly equivalent computation times. These results have not been included in the figures as it is difficult to make an objective comparison between R-packages. For instance, \texttt{data.table} at this moment does not include a native procedure to perform conditional column mutations, whereas \texttt{dplyr} does with \code{mutate\_if}.
 \end{remark}
-We observe from the figures that the \code{rrapply} and \code{rapply} function calls all result in roughly similar processing times and are in general somewhat more efficient than their \texttt{data.table} and \texttt{dplyr}-alternatives. The likely reason for this is that the \code{rrapply} and \code{rapply} implementations are more basic and smaller in scope than their \texttt{data.table} and \texttt{dplyr}-alternatives, resulting in a smaller overhead than the function implementations in \texttt{data.table} and \texttt{dplyr}.
+
 \newpage
 \begin{figure}
 \centering

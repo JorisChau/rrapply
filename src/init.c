@@ -3,11 +3,12 @@
 #include <stdlib.h> // for NULL
 #include <R_ext/Rdynload.h>
 
+/* .Call calls */
 void R_init_rrapply(DllInfo *dll);
-extern SEXP do_rrapply(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP do_rrapply(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
-    {"do_rrapply", (DL_FUNC)&do_rrapply, 9},
+    {"do_rrapply", (DL_FUNC)&do_rrapply, 10},
     {NULL, NULL, 0}};
 
 void R_init_rrapply(DllInfo *dll)

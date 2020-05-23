@@ -250,11 +250,53 @@ renewable_energy_by_country[[xpos_sweden$Sweden]]
 #> [1] "752"
 ```
 
+### List node aggregation
+
+By default, both base `rapply` and `rrapply` recurse into any list-like
+element. Use `feverywhere = TRUE` to override this behavior and apply
+`f` to any list element (e.g. a sublist) that satisfies the `condition`
+function. This is useful to collapse sublists or calculate summary
+statistics of sublists of a nested list. Together with the `.xname` and
+`.xpos` symbols, we have a flexible way in deciding which sublists to
+summarize through the `condition` function.
+
+``` r
+## Calculate mean value of Europe
+rrapply(
+  renewable_energy_by_country,  
+  condition = function(x) .xname == "Europe",
+  f = function(x) mean(unlist(x), na.rm = TRUE),
+  how = "flatten",
+  feverywhere = TRUE
+)
+#> $Europe
+#> [1] 22.36565
+
+## Calculate mean value for each continent
+renewable_continent_summary <- rrapply(
+  renewable_energy_by_country,  
+  condition = function(x) length(.xpos) == 2,
+  f = function(x) mean(unlist(x), na.rm = TRUE),
+  feverywhere = TRUE
+)
+
+## Antarctica's value is missing
+str(renewable_continent_summary, give.attr = FALSE)
+#> List of 1
+#>  $ World:List of 6
+#>   ..$ Africa    : num 54.3
+#>   ..$ Americas  : num 18.2
+#>   ..$ Antarctica: num NaN
+#>   ..$ Asia      : num 17.9
+#>   ..$ Europe    : num 22.4
+#>   ..$ Oceania   : num 17.8
+```
+
 ### Using `rrapply` on data.frames
 
 Base `rapply` recurses into all list-like objects. Since data.frames are
 list-like objects, `rapply` always descends into the individual columns
-of a data.frame. `rrapply` includes an additional `dfAsList` argument,
+of a data.frame. `rrapply` includes an additional `dfaslist` argument,
 which if `FALSE` does not treat a data.frame as a list and applies the
 `f` function to the data.frame as a whole instead of its individual
 columns.
