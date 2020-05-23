@@ -294,12 +294,12 @@ str(renewable_continent_summary, give.attr = FALSE)
 
 ### Using `rrapply` on data.frames
 
-Base `rapply` recurses into all list-like objects. Since data.frames are
-list-like objects, `rapply` always descends into the individual columns
-of a data.frame. `rrapply` includes an additional `dfaslist` argument,
-which if `FALSE` does not treat a data.frame as a list and applies the
-`f` function to the data.frame as a whole instead of its individual
-columns.
+Since base `rapply` recurses into all list-like objects, and data.frames
+are list-like objects, `rapply` always descends into the individual
+columns of a data.frame. For convenience, `rrapply` includes an
+additional `dfaslist` argument, which if `FALSE` does not treat a
+data.frame as a list and applies the `f` function to the data.frame as a
+whole instead of its individual columns.
 
 However, it can also be useful to exploit the property that a data.frame
 is a list-like object and use base `rapply` to apply a function `f` to
