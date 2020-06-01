@@ -171,21 +171,22 @@ str(renewable_energy_above_85, give.attr = FALSE)
 #>   .. .. .. ..$ Guinea-Bissau: num 86.5
 ```
 
-### Special symbols `.xname` and `.xpos`
+### Special arguments `.xname` and `.xpos`
 
 In base `rapply`, the `f` function only has access to the content of the
 list element under evaluation, and there is no convenient way to access
 its name or location in the nested list from inside the `f` function.
-`rrapply` allows the use of the special symbols `.xname` and `.xpos`
-inside the `f` and `condition` function. `.xname` evaluates to the name
-of the list element, and `.xpos` evaluates to the position of the
-element in the nested list structured as an integer vector.
+`rrapply` allows the use of the special arguments `.xname` and `.xpos`
+inside the `f` and `condition` functions (in addition to the principal
+function argument). `.xname` evaluates to the name of the list element,
+and `.xpos` evaluates to the position of the element in the nested list
+structured as an integer vector.
 
 ``` r
 ## Apply a function using the name of the node
 renewable_oceania4 <- rrapply(
   renewable_oceania,
-  f = function(x) sprintf("Renewable energy in %s: %.2f%%", .xname, x),
+  f = function(x, .xname) sprintf("Renewable energy in %s: %.2f%%", .xname, x),
   condition = Negate(is.na),
   how = "flatten"
 )
@@ -206,7 +207,7 @@ str(renewable_oceania4, list.len = 10)
 ## Extract values based on country names
 renewable_benelux <- rrapply(
   renewable_energy_by_country,
-  condition = function(x) .xname %in% c("Belgium", "Netherlands", "Luxembourg"),
+  condition = function(x, .xname) .xname %in% c("Belgium", "Netherlands", "Luxembourg"),
   how = "prune"
 )
 str(renewable_benelux, give.attr = FALSE)
@@ -221,7 +222,7 @@ str(renewable_benelux, give.attr = FALSE)
 ## Filter European countries with value above 50%
 renewable_europe_above_50 <- rrapply(
   renewable_energy_by_country,
-  condition = function(x) identical(head(.xpos, 2), c(1L, 5L)) & x > 50,
+  condition = function(x, .xpos) identical(head(.xpos, 2), c(1L, 5L)) & x > 50,
   how = "prune"
 )
 str(renewable_europe_above_50, give.attr = FALSE)
@@ -238,8 +239,8 @@ str(renewable_europe_above_50, give.attr = FALSE)
 ## Return position of Sweden in list
 (xpos_sweden <- rrapply(
   renewable_energy_by_country,
-  condition = function(x) identical(.xname, "Sweden"),
-  f = function(x) .xpos,
+  condition = function(x, .xname) identical(.xname, "Sweden"),
+  f = function(x, .xpos) .xpos,
   how = "flatten"
 ))
 #> $Sweden
@@ -257,14 +258,14 @@ element. Use `feverywhere = TRUE` to override this behavior and apply
 `f` to any list element (e.g. a sublist) that satisfies the `condition`
 function. This is useful to collapse sublists or calculate summary
 statistics of sublists of a nested list. Together with the `.xname` and
-`.xpos` symbols, we have a flexible way in deciding which sublists to
+`.xpos` arguments, we have a flexible way in deciding which sublists to
 summarize through the `condition` function.
 
 ``` r
 ## Calculate mean value of Europe
 rrapply(
   renewable_energy_by_country,  
-  condition = function(x) .xname == "Europe",
+  condition = function(x, .xname) .xname == "Europe",
   f = function(x) mean(unlist(x), na.rm = TRUE),
   how = "flatten",
   feverywhere = TRUE
@@ -275,7 +276,7 @@ rrapply(
 ## Calculate mean value for each continent
 renewable_continent_summary <- rrapply(
   renewable_energy_by_country,  
-  condition = function(x) length(.xpos) == 2,
+  condition = function(x, .xpos) length(.xpos) == 2,
   f = function(x) mean(unlist(x), na.rm = TRUE),
   feverywhere = TRUE
 )
@@ -311,7 +312,7 @@ subset of data.frame columns using a general predicate function,
 ## Scale only Sepal columns in iris dataset
 iris_standard_sepal <- rrapply(
   iris,
-  condition = function(x) grepl("Sepal", .xname),
+  condition = function(x, .xname) grepl("Sepal", .xname),
   f = scale
 )
 head(iris_standard_sepal)

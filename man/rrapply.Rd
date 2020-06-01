@@ -19,10 +19,11 @@ rrapply(
 \arguments{
 \item{object}{a \code{\link[base]{list}} or \code{\link[base]{expression}}, i.e., \dQuote{list-like}.}
 
-\item{condition}{a condition \code{\link{function}} of one \dQuote{principal} argument, passing further arguments via \code{\dots}.}
+\item{condition}{a condition \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname} and/or 
+\code{.xpos} (see \sQuote{Details}), passing further arguments via \code{\dots}.}
 
-\item{f}{a \code{\link[base]{function}} of one \dQuote{principal} argument,
-    passing further arguments via \code{\dots}.}
+\item{f}{a \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname} and/or \code{.xpos} 
+(see \sQuote{Details}), passing further arguments via \code{\dots}.}
 
 \item{classes}{character vector of \code{\link[base]{class}} names, or
     \code{"ANY"} to match any class.}
@@ -75,18 +76,19 @@ not evaluate to \code{TRUE}.
 \section{Correct use of \code{...}}{
 
 The principal argument of the \code{f} and \code{condition} functions evaluates to the content of the list element. Any further arguments to 
-\code{f} and \code{condition} supplied via the dots \code{...} argument need to be defined as function arguments in \emph{both} the \code{f}
-and \code{condition} function (if existing), even if they are not used in the function itself. See also the \sQuote{Examples} section.
+\code{f} and \code{condition} (besides the special arguments \code{.xname} and \code{.xpos} discussed below) supplied via the dots \code{...} 
+argument need to be defined as function arguments in \emph{both} the \code{f} and \code{condition} function (if existing), even if they are not
+ used in the function itself. See also the \sQuote{Examples} section.
 }
 
-\section{Special symbols \code{.xname} and \code{.xpos}}{
+\section{Special arguments \code{.xname} and \code{.xpos}}{
 
-Two special symbols \code{.xname} and \code{.xpos} are available inside the \code{f} and \code{condition} functions. The \code{.xname} symbol 
-evaluates to the name of the list element. The \code{.xpos} symbol evaluates to the position of the element in the nested list structured as an 
-integer vector. For instance, if \code{x = list(list("y", "z"))}, then an \code{.xpos} location of \code{c(1, 2)} corresponds to the 
-list element \code{x[[c(1, 2)]]}. The names \code{.xname} and \code{.xpos} do not need to be included as function arguments in \code{f} and 
-\code{condition}, and can be thought of as pre-defined variables in the current function environment. See the package vignette for additional
-details on overriding the \code{.xname} and \code{.xpos} variables.
+The \code{f} and \code{condition} functions accept two special arguments \code{.xname} and \code{.xpos} in addition to the first principal argument. 
+The \code{.xname} argument evaluates to the name of the list element. The \code{.xpos} argument evaluates to the position of the element in the nested 
+list structured as an integer vector. To illustrate, if \code{x = list(list("y", "z"))}, then an \code{.xpos} location of \code{c(1, 2)} corresponds 
+to the list element \code{x[[c(1, 2)]]}. The names \code{.xname} and \code{.xpos} need to be explicitly included as function arguments in \code{f} and 
+\code{condition} (in addition to the principal argument). See the package vignette for example uses of the \code{.xname} and 
+\code{.xpos} variables.
 }
 
 \section{List node aggregation}{
@@ -174,12 +176,12 @@ renewable_energy_above_85 <- rrapply(
 )
 str(renewable_energy_above_85, give.attr = FALSE)
 
-# Special symbols .xname and .xpos
+# Special arguments .xname and .xpos
 
 ## Apply a function using the name of the node
 renewable_oceania_text <- rrapply(
   renewable_oceania,
-  f = function(x) sprintf("Renewable energy in \%s: \%.2f\%\%", .xname, x),
+  f = function(x, .xname) sprintf("Renewable energy in \%s: \%.2f\%\%", .xname, x),
   condition = Negate(is.na),
   how = "flatten"
 )
@@ -188,7 +190,7 @@ str(renewable_oceania_text, list.len = 10)
 ## Extract values based on country names
 renewable_benelux <- rrapply(
   renewable_energy_by_country,
-  condition = function(x) .xname \%in\% c("Belgium", "Netherlands", "Luxembourg"),
+  condition = function(x, .xname) .xname \%in\% c("Belgium", "Netherlands", "Luxembourg"),
   how = "prune"
 )
 str(renewable_benelux, give.attr = FALSE)
@@ -196,7 +198,7 @@ str(renewable_benelux, give.attr = FALSE)
 ## Filter European countries with value above 50\%
 renewable_europe_above_50 <- rrapply(
   renewable_energy_by_country,
-  condition = function(x) identical(.xpos[c(1, 2)], c(1L, 5L)) & x > 50,
+  condition = function(x, .xpos) identical(.xpos[c(1, 2)], c(1L, 5L)) & x > 50,
   how = "prune"
 )
 str(renewable_europe_above_50, give.attr = FALSE)
@@ -204,8 +206,8 @@ str(renewable_europe_above_50, give.attr = FALSE)
 ## Return position of Sweden in list
 (xpos_sweden <- rrapply(
   renewable_energy_by_country,
-  condition = function(x) identical(.xname, "Sweden"),
-  f = function(x) .xpos,
+  condition = function(x, .xname) identical(.xname, "Sweden"),
+  f = function(x, .xpos) .xpos,
   how = "flatten"
 ))
 renewable_energy_by_country[[xpos_sweden$Sweden]]
@@ -215,7 +217,7 @@ renewable_energy_by_country[[xpos_sweden$Sweden]]
 ## Calculate mean value of Europe
 rrapply(
   renewable_energy_by_country,  
-  condition = function(x) .xname == "Europe",
+  condition = function(x, .xname) .xname == "Europe",
   f = function(x) mean(unlist(x), na.rm = TRUE),
   how = "flatten",
   feverywhere = TRUE
@@ -224,7 +226,7 @@ rrapply(
 ## Calculate mean value for each continent
 renewable_continent_summary <- rrapply(
   renewable_energy_by_country,  
-  condition = function(x) length(.xpos) == 2,
+  condition = function(x, .xpos) length(.xpos) == 2,
   f = function(x) mean(unlist(x), na.rm = TRUE),
   feverywhere = TRUE
 )
@@ -255,7 +257,7 @@ str(na_drop_oceania_attr2, max.level = 2)
 ## Scale only Sepal columns in iris dataset
 rrapply(
   iris,
-  condition = function(x) grepl("Sepal", .xname),
+  condition = function(x, .xname) grepl("Sepal", .xname),
   f = scale
 )
 

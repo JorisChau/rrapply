@@ -59,10 +59,9 @@
 \def\spacingset#1{\renewcommand{\baselinestretch}%
 {#1}\small\normalsize} \spacingset{1}
 
-<<echo=false>>=
-options(width = 60)
-options(continue = "  ")
 
+<<echo=false>>=
+op <- options(width = 60, continue = "  ")
 @
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -80,7 +79,7 @@ options(continue = "  ")
 
 \begin{abstract} 
 \noindent 
-The \texttt{rrapply}-package contains a single function \code{rrapply}, providing an extended implementation of \textsf{R}-base's \code{rapply} function. Base \code{rapply} applies a function \code{f} to all elements of a list recursively. The \code{rrapply} function extends base \code{rapply} by including a condition or predicate function for the application of \code{f} and the option to prune list elements from the result. In addition, special symbols \code{.xname} and \code{.xpos} can be used inside the \code{f} and \code{condition} functions to access the name and location in the nested list of the list element under evaluation. The \code{rrapply} function is implemented using \textsf{R}'s native \textsf{C} API and for this reason requires no external \textsf{R}-package dependencies. 
+The \texttt{rrapply}-package contains a single function \code{rrapply}, providing an extended implementation of \textsf{R}-base's \code{rapply} function. Base \code{rapply} applies a function \code{f} to all elements of a list recursively. The \code{rrapply} function extends base \code{rapply} by including a condition or predicate function for the application of \code{f} and the option to prune or aggregate list elements from the result. In addition, special arguments \code{.xname} and \code{.xpos} can be used inside the \code{f} and \code{condition} functions to access the name and location in the nested list of the list element under evaluation. The \code{rrapply} function is implemented using \textsf{R}'s native \textsf{C} API and for this reason requires no external \textsf{R}-package dependencies. 
 \end{abstract}
 
 \spacingset{1.45} 
@@ -180,7 +179,7 @@ str(na_drop_oceania_flat, list.len = 10, give.attr = FALSE)
 
 \subsection{Condition function}
 
-Base \code{rapply} allows to apply \code{f} to leaf elements of certain types or classes via the \code{classes} argument, which might not always provide sufficient control to partition leaf elements. For this purpose, \code{rrapply} includes an additional \code{condition} argument, which accepts any function to use as a condition or predicate to select leaf elements to which \code{f} is applied. Conceptually, the \code{f} function is applied to all leaf
+Base \code{rapply} allows to apply \code{f} to leaf elements of certain types or classes via the \code{classes} argument, which might not always provide sufficient control to partition leaf elements. For this purpose, \code{rrapply} includes an additional \code{condition} argument, which accepts any principal argument function to use as a condition or predicate to select leaf elements to which \code{f} is applied. Conceptually, the \code{f} function is applied to all leaf
 elements for which the \code{condition} function exactly evaluates to \code{TRUE} similar to the \code{isTRUE} function. If the \code{condition} function is missing, \code{f} is applied to all leaf elements. In combination with \code{how = "prune"}, the \code{condition} function provides a flexible way to select and filter elements from the nested list.\\[3mm]
 Using the \code{condition} argument, we can update the above function call to better reflect our purpose:
 <<>>=
@@ -248,7 +247,7 @@ str(na_zero_oceania_replace2, list.len = 3, give.attr = FALSE)
 \subsubsection{Using the \texttt{...} argument}
 
 In base \code{rapply}, the first argument to \code{f} always evaluates to the content of
-the leaf element to which \code{f} is applied. Any further arguments that are independent of the node content are supplied via the dots \code{...} argument. Since \code{rrapply} accepts a function in two of its arguments \code{f} and \code{condition}, any further arguments defined via the \code{dots} also need to be defined as function arguments in \emph{both} the \code{f} and \code{condition} function (if existing), even if they are not used in the function itself.\\[3mm]
+the leaf element to which \code{f} is applied. Any further arguments (besides the special arguments \code{.xname} and \code{.xpos} discussed below) that are independent of the node content are supplied via the dots \code{...} argument. Since \code{rrapply} accepts a function in two of its arguments \code{f} and \code{condition}, any further arguments defined via the \code{dots} also need to be defined as function arguments in \emph{both} the \code{f} and \code{condition} function (if existing), even if they are not used in the function itself.\\[3mm]
 To illustrate, consider the following example where we replace all \code{NA} elements by a value defined in a separate argument \code{newvalue}:
 <<>>=
 ## this is not ok!
@@ -271,7 +270,7 @@ na_zero_oceania_replace3 <- rrapply(
 )
 str(na_zero_oceania_replace3, list.len = 3, give.attr = FALSE)
 @
-\subsection{Special symbols \texttt{.xname} and \texttt{.xpos}}
+\subsection{Special arguments \texttt{.xname} and \texttt{.xpos}}
 
 For illustration purposes, let us return all non-missing values in
 \code{renewable\_oceania} as a non-nested flattened list:
@@ -297,41 +296,40 @@ str(renewable_oceania_flat_text, list.len = 10)
 Note that the \texttt{purrr}-package also contains the convenience function \code{imap} for exactly this purpose.
 \end{remark}
 In base \code{rapply}, the \code{f} function only has access to the content of a leaf
-element and there is no convenient way to access the list element its name or location from
+element through its principal argument and there is no convenient way to access the list element its name or location from
 inside the \code{f} function. This makes \code{rapply} impractical if we want to apply
 a function \code{f} that relies on e.g. the name of the leaf element as in the above example.\\[3mm]
-To address this issue, \code{rrapply} allows the use of two special symbols
-\code{.xname} and \code{.xpos} inside the \code{f} and \code{condition} functions. The \code{.xname} symbol evaluates to the name of the leaf element. The \code{.xpos} symbol evaluates to the position of the leaf element in the nested list structured as an integer vector. For instance, if \code{x = list(list("y", "z"))}, then an \code{.xpos} location of
-\code{c(1, 2)} corresponds to the leaf element \code{x[[1]][[2]]} or equivalently
-\code{x[[c(1, 2)]]}. The names \code{.xname} and \code{.xpos} do not need to be included as function arguments in \code{f} and \code{condition}, and can be thought of as pre-defined variables in the current function environment.\\[3mm]
-Using the \code{.xname} symbol, we can reproduce the \code{mapply} example above also from a nested list as input:
+To address this issue, \code{rrapply} allows the use of two special arguments 
+\code{.xname} and \code{.xpos} in addition to the principal argument in the \code{f} and \code{condition} functions. The \code{.xname} argument evaluates to the name of the leaf element. The \code{.xpos} argument evaluates to the position of the leaf element in the nested list structured as an integer vector. For instance, if \code{x = list(list("y", "z"))}, then an \code{.xpos} location of \code{c(1, 2)} corresponds to the leaf element \code{x[[1]][[2]]} or equivalently
+\code{x[[c(1, 2)]]}. The arguments \code{.xname} and \code{.xpos} need to be defined explicitly as function arguments in \code{f} and \code{condition} whenever they are used. Note that the principal function arguments of \code{f} and \code{condition} always evaluate to the content of the list element, for this reason the arguments \code{.xname} or \code{.xpos} should always be defined in addition to a principal function argument.\\[3mm]
+Using the \code{.xname} argument, we can reproduce the \code{mapply} example above also from a nested list as input:
 <<>>=
 renewable_oceania_flat_text <- rrapply(
   renewable_oceania,
-  f = function(x) sprintf("Renewable energy in %s: %.2f%%", .xname, x),
+  f = function(x, .xname) sprintf("Renewable energy in %s: %.2f%%", .xname, x),
   condition = Negate(is.na),
   how = "flatten"
 )
 str(renewable_oceania_flat_text, list.len = 10)
 @
-Since the \code{.xname} and \code{.xpos} variables can also be used in the \code{condition} 
+Since the \code{.xname} and \code{.xpos} arguments can also be used in the \code{condition} 
 function, it is now possible to filter elements or apply a function only to a part of the list based on the node names or their positions.\\[3mm]
 As an example, let us extract the renewable energy shares of Belgium, the Netherlands and
 Luxembourg while preserving the nested structure of the filtered elements:
 <<>>=
 renewable_benelux <- rrapply(
   renewable_energy_by_country, 
-  condition = function(x) .xname %in% c("Belgium", "Netherlands", "Luxembourg"), 
+  condition = function(x, .xname) .xname %in% c("Belgium", "Netherlands", "Luxembourg"), 
   how = "prune"
 )
 str(renewable_benelux, give.attr = FALSE)
 @
 Knowing that Europe is located under the node \code{renewable\_energy\_by\_country[[c(1, 5)]]}, we can filter all European countries
-with a renewable energy share above 50 percent by using the \code{.xpos} symbol,
+with a renewable energy share above 50 percent by using the \code{.xpos} argument,
 <<>>=
 renewable_europe_above_50 <- rrapply(
   renewable_energy_by_country,
-  condition = function(x) identical(head(.xpos, 2), c(1L, 5L)) & x > 50,
+  condition = function(x, .xpos) identical(head(.xpos, 2), c(1L, 5L)) & x > 50,
   how = "prune"
 )
 str(renewable_europe_above_50, give.attr = FALSE)
@@ -341,71 +339,42 @@ list,
 <<>>=
 (xpos_sweden <- rrapply(
   renewable_energy_by_country,
-  condition = function(x) identical(.xname, "Sweden"),
-  f = function(x) .xpos,
+  condition = function(x, .xname) identical(.xname, "Sweden"),
+  f = function(x, .xpos) .xpos,
   how = "flatten"
 ))
 
 ## sanity check
 renewable_energy_by_country[[xpos_sweden$Sweden]]
 @
-We could even use the \code{.xpos} symbol to determine the maximum depth of the list
+We could even use the \code{.xpos} argument to determine the maximum depth of the list
 or the length of the longest sublist,
 <<>>=
 ## maximum depth
 depth_all <- rrapply(
   renewable_energy_by_country, 
-  f = function(x) length(.xpos), 
+  f = function(x, .xpos) length(.xpos), 
   how = "unlist"
 )
 max(depth_all) 
 ## longest sublist length
 sublist_count <- rrapply(
   renewable_energy_by_country, 
-  f = function(x) max(.xpos), 
+  f = function(x, .xpos) max(.xpos), 
   how = "unlist"
 )
 max(sublist_count)
 @
-Although not recommended, it is possible to override the values of
-\code{.xname} and \code{.xpos} by defining these variables as function arguments in \code{f}
-and \code{condition} and providing values via the \code{...} argument:
-<<>>=
-## override .xname 
-rrapply(renewable_energy_by_country, 
-        condition = function(x, .xname) all(.xpos == 1), ## returns first element only
-        f = function(x, .xname) paste(".xname is", .xname), 
-        .xname = "not the node name!",
-        how = "flatten"
-)
-@
-\begin{remark} 
-Defining new values for \code{.xname} or \code{.xpos} in the parent environment
-in which \code{rrapply} is called does not override the values for \code{.xname} or
-\code{.xpos} in the \code{f} or \code{condition} functions:
-<<>>=
-## this does not override .xname
-.xname <- "not the node name!"
-
-rrapply(renewable_energy_by_country, 
-        condition = function(x) all(.xpos == 1), ## returns first element only
-        f = function(x) paste(".xname is", .xname), 
-        how = "flatten"
-)
-## variable remains unaltered
-.xname
-@
-\end{remark}
 
 \subsection{List node aggregation}
 
 By construction, both base \code{rapply} and \code{rrapply} apply the \code{f} function only to leaf elements of a nested list by recursing further into any list-like element that is encountered. In \code{rrapply}, it is possible to override this default behavior using the argument \code{feverywhere = TRUE}. In this case, \code{rrapply} does not automatically recurse deeper into list-like objects, and the \code{f} function will be applied to any element (e.g. a sublist) that satisfies the \code{condition} function. If the \code{condition} function is not satisfied for a list-like element, \code{rrapply} will recurse further into the sublist, apply the \code{f} function to the nodes that satisfy the \code{condition}, and so on.\\[3mm]
-A primary use of \code{feverywhere = TRUE} is to perform node aggregation by calculating some type of summary statistic over sublists of the nested list. Together with the \code{.xname} and \code{.xpos} symbols, we have flexibility in deciding which sublists to summarize or collapse trough the \code{condition} function.\\[3mm]
+A primary use of \code{feverywhere = TRUE} is to perform node aggregation by calculating some type of summary statistic over sublists of the nested list. Together with the \code{.xname} and \code{.xpos} arguments, we have flexibility in deciding which sublists to summarize or collapse trough the \code{condition} function.\\[3mm]
 To illustrate, we can return the mean and standard deviation of the renewable energy share in Europe as follows:
 <<>>=
 rrapply(
   renewable_energy_by_country,  
-  condition = function(x) .xname == "Europe",
+  condition = function(x, .xname) .xname == "Europe",
   f = function(x) list(
     mean = mean(unlist(x), na.rm = TRUE), 
     sd = sd(unlist(x), na.rm = TRUE)
@@ -415,7 +384,7 @@ rrapply(
 )
 @
 \begin{remark}
-Note that the \code{x} argument in the \code{f} function is now the entire sublist for which the \code{condition} is satisfied. For this reason, we first need to \code{unlist} the sublist in order to supply a numeric vector to \code{mean} and \code{sd}.
+Note that the principal \code{x} argument in the \code{f} function is now the entire sublist for which the \code{condition} is satisfied. For this reason, we first need to \code{unlist} the sublist in order to supply a numeric vector to \code{mean} and \code{sd}.
 \end{remark}
 The same result could be obtained by defining a \code{condition} based on the \code{"M49-code"} attribute of the list element. This can be convenient to filter or summarize nodes in nested lists coming from XML (or HTML) files based on their attribute values.
 <<>>=
@@ -434,7 +403,7 @@ We can use the \code{.xpos} argument to apply the \code{f} function only at spec
 <<>>=
 renewable_continent_summary <- rrapply(
   renewable_energy_by_country,  
-  condition = function(x) length(.xpos) == 2,
+  condition = function(x, .xpos) length(.xpos) == 2,
   f = function(x) mean(unlist(x), na.rm = TRUE),
   feverywhere = TRUE
 )
@@ -529,11 +498,11 @@ dataset by their sample mean and standard deviation:
 iris_standard <- rapply(iris, f = scale, classes = "numeric", how = "replace")
 head(iris_standard)
 @
-Using the \code{condition} argument in \code{rrapply}, we obtain more flexible control in selecting the columns to which \code{f} is applied. For instance, it is now straightforward to apply the \code{f} function only to the \code{Sepal} columns using the \code{.xname} symbol:
+Using the \code{condition} argument in \code{rrapply}, we obtain more flexible control in selecting the columns to which \code{f} is applied. For instance, it is now straightforward to apply the \code{f} function only to the \code{Sepal} columns using the \code{.xname} argument:
 <<>>=
 iris_standard_sepal <- rrapply(
   iris,                    
-  condition = function(x) grepl("Sepal", .xname), 
+  condition = function(x, .xname) grepl("Sepal", .xname), 
   f = scale
 )
 head(iris_standard_sepal)
@@ -566,7 +535,7 @@ iris_standard_summarize
 
 \subsubsection{Computational effort}
 
-As \code{rrapply} is written in \textsf{R}'s internal \textsf{C} API, it is computationally significantly more efficient than its equivalent implementation based on recursion through a nested list in interpreted \textsf{R}. In the figures below, several benchmark timings of \code{rrapply} against that of base \code{rapply} are displayed in the context of data.frame manipulation. In particular, we time the application of a dummy function \code{f} (unit multiplication) respectively to each column and to each \emph{numeric} column of a data.frame \code{x} of size $(M \times N)$, where the entries of the data.frame \code{x} are randomly sampled from a uniform distribution on the unit interval.\\[3mm]
+As \code{rrapply} is written in \textsf{R}'s internal \textsf{C} API, it is computationally significantly more efficient than its equivalent implementation based on recursion through a nested list in interpreted \textsf{R}. In the figures below, several benchmark timings of \code{rrapply} against that of base \code{rapply} are displayed in the context of data.frame manipulation. More precisely, we time the application of a dummy function \code{f} (unit multiplication) respectively to each column and to each \emph{numeric} column of a data.frame \code{x} of size $(M \times N)$, where the entries of the data.frame \code{x} are randomly sampled from a uniform distribution on the unit interval.\\[3mm]
 The displayed timings are the median computation times (ms) of 100 evaluations of the benchmarked expressions in R 3.6.2 on a single-core processor (Intel i7-8550U, 1.80 GHz, 16 GB system memory). In the left-hand plots, the number of data.frame rows is fixed at $M = 1000$ and the number of columns increases from $N = 100$ to $N = 10\ 000$, and in the right-hand plots the number of data.frame columns is fixed at $N = 100$ and the number of rows increases from $M = 1000$ to $M = 10^6$.
 \\[3mm]
 The benchmarked expressions to mutate all columns of the data.frame \code{x} evaluated in the first figure are:
@@ -604,3 +573,7 @@ The same processing tasks executed with \texttt{data.table} (v1.8.2) and \texttt
 \includegraphics[width=15cm]{Fig2.pdf}
 \end{figure}
 \end{document} 
+
+<<echo=false>>=
+options(op)
+@

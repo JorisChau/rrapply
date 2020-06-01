@@ -10,25 +10,25 @@ static void do_copyAttrs(SEXP obj, SEXP ans, SEXP names, Rboolean copyAttrs);
 static int do_matchClass(SEXP obj, SEXP classes);
 static R_xlen_t do_rrcount(SEXP X, R_xlen_t n, R_xlen_t *maxNodes, R_xlen_t *maxDepth, R_xlen_t depth);
 static void do_updateNode(R_xlen_t *xinfo, R_xlen_t node, int doEval, R_xlen_t parent, R_xlen_t depth, R_xlen_t child);
-static SEXP do_rreval_list(SEXP env, SEXP enclos, SEXP Xi, SEXP fcall, SEXP pcall, SEXP classes, SEXP deflt, SEXP xname, SEXP xsym, SEXP xpos, SEXP xnameChar, int howInt, R_xlen_t **xloc, R_xlen_t depth, R_xlen_t maxDepth, Rboolean useFun, Rboolean usePred, int dfList, int feverywhere);
-static void do_rreval_flat(SEXP env, SEXP enclos, SEXP Xflat, SEXP Xnames, SEXP Xi, SEXP fcall, SEXP pcall, SEXP classes, SEXP deflt, SEXP xname, SEXP xsym, SEXP xpos, SEXP xnameChar, R_xlen_t *xinfo, R_xlen_t *xloc, R_xlen_t depth, R_xlen_t *node, R_xlen_t parent, Rboolean useFun, Rboolean usePred, int dfList, int howInt, int feverywhere);
+static SEXP do_rreval_list(SEXP env, SEXP Xi, SEXP fcall, int fArgs, int fxname, int fxpos, SEXP pcall, int predArgs, int pxname, int pxpos, SEXP classes, SEXP deflt, SEXP xsym, SEXP xnameChar, int howInt, R_xlen_t **xloc, R_xlen_t depth, R_xlen_t maxDepth, int dfList, int feverywhere);
+static void do_rreval_flat(SEXP env, SEXP Xflat, SEXP Xnames, SEXP Xi, SEXP fcall, int fArgs, int fxname, int fxpos, SEXP pcall, int predArgs, int pxname, int pxpos, SEXP classes, SEXP deflt, SEXP xsym, SEXP xnameChar, R_xlen_t *xinfo, R_xlen_t *xloc, R_xlen_t depth, R_xlen_t *node, R_xlen_t parent, int dfList, int howInt, int feverywhere);
 static SEXP do_rrfill(SEXP Xflat, SEXP Xnames, SEXP Xi, R_xlen_t *xinfo, R_xlen_t maxNodes, R_xlen_t depth, R_xlen_t node, Rboolean useNames);
-SEXP do_rrapply(SEXP env, SEXP enclos, SEXP X, SEXP FUN, SEXP PRED, SEXP classes, SEXP how, SEXP deflt, SEXP R_dfaslist, SEXP R_feverywhere);
+SEXP do_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPred, SEXP classes, SEXP how, SEXP deflt, SEXP R_dfaslist, SEXP R_feverywhere);
 
 /* ---------------------- */
 
 /* Main function */
 
-SEXP do_rrapply(SEXP env, SEXP enclos, SEXP X, SEXP FUN, SEXP PRED, SEXP classes, SEXP how, SEXP deflt, SEXP R_dfaslist, SEXP R_feverywhere)
+SEXP do_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPred, SEXP classes, SEXP how, SEXP deflt, SEXP R_dfaslist, SEXP R_feverywhere)
 {
 	SEXP ans, names, xsym, xname, xpos, R_fcall, R_pcall;
 
 	/* initialize arguments */
 	int nprotect = 1;
+	int fArgs = 0;
+	int predArgs = 0;
 	R_xlen_t n = Rf_xlength(X);
 	names = PROTECT(Rf_getAttrib(X, R_NamesSymbol));
-	Rboolean useFun = Rf_isFunction(FUN);
-	Rboolean usePred = Rf_isFunction(PRED);
 	int dfList = LOGICAL_ELT(R_dfaslist, 0);
 	int feverywhere = LOGICAL_ELT(R_feverywhere, 0);
 
@@ -36,10 +36,38 @@ SEXP do_rrapply(SEXP env, SEXP enclos, SEXP X, SEXP FUN, SEXP PRED, SEXP classes
 	xsym = Rf_install("X");
 	xname = Rf_install(".xname");
 	xpos = Rf_install(".xpos");
+	int fxname = INTEGER_ELT(argsFun, 0) > 0;  /* .xname present in f */
+	int fxpos = INTEGER_ELT(argsFun, 1) > 0;   /* .xpos present in f */
+	int pxname = INTEGER_ELT(argsPred, 0) > 0; /* .xname present in condition */
+	int pxpos = INTEGER_ELT(argsPred, 1) > 0;  /* .xpos present in condition */
 
-	if (useFun)
+	if (Rf_isFunction(FUN))
 	{
-		R_fcall = PROTECT(Rf_lang3(FUN, xsym, R_DotsSymbol));
+		/* call definitions depend on presence of .xname and.xpos arguments */
+		if (fxname && fxpos)
+		{
+			fArgs += 3;
+			R_fcall = PROTECT(Rf_lang5(FUN, xsym, R_NilValue, R_NilValue, R_DotsSymbol));
+			SET_TAG(CDDR(R_fcall), xname);
+			SET_TAG(CDDDR(R_fcall), xpos);
+		}
+		else if (fxname)
+		{
+			fArgs += 2;
+			R_fcall = PROTECT(Rf_lang4(FUN, xsym, R_NilValue, R_DotsSymbol));
+			SET_TAG(CDDR(R_fcall), xname);
+		}
+		else if (fxpos)
+		{
+			fArgs += 2;
+			R_fcall = PROTECT(Rf_lang4(FUN, xsym, R_NilValue, R_DotsSymbol));
+			SET_TAG(CDDR(R_fcall), xpos);
+		}
+		else
+		{
+			fArgs += 1;
+			R_fcall = PROTECT(Rf_lang3(FUN, xsym, R_DotsSymbol));
+		}
 		nprotect++;
 	}
 	else
@@ -47,9 +75,32 @@ SEXP do_rrapply(SEXP env, SEXP enclos, SEXP X, SEXP FUN, SEXP PRED, SEXP classes
 		R_fcall = FUN;
 	}
 
-	if (usePred)
+	if (Rf_isFunction(PRED))
 	{
-		R_pcall = PROTECT(Rf_lang3(PRED, xsym, R_DotsSymbol));
+		if (pxname && pxpos)
+		{
+			predArgs += 3;
+			R_pcall = PROTECT(Rf_lang5(PRED, xsym, R_NilValue, R_NilValue, R_DotsSymbol));
+			SET_TAG(CDDR(R_pcall), xname);
+			SET_TAG(CDDDR(R_pcall), xpos);
+		}
+		else if (pxname)
+		{
+			predArgs += 2;
+			R_pcall = PROTECT(Rf_lang4(PRED, xsym, R_NilValue, R_DotsSymbol));
+			SET_TAG(CDDR(R_pcall), xname);
+		}
+		else if (pxpos)
+		{
+			predArgs += 2;
+			R_pcall = PROTECT(Rf_lang4(PRED, xsym, R_NilValue, R_DotsSymbol));
+			SET_TAG(CDDR(R_pcall), xpos);
+		}
+		else
+		{
+			predArgs += 1;
+			R_pcall = PROTECT(Rf_lang3(PRED, xsym, R_DotsSymbol));
+		}
 		nprotect++;
 	}
 	else
@@ -90,7 +141,9 @@ SEXP do_rrapply(SEXP env, SEXP enclos, SEXP X, SEXP FUN, SEXP PRED, SEXP classes
 			/* increment location counter */
 			xloc[0] += 1;
 			/* evaluate list element */
-			SET_VECTOR_ELT(ans, i, do_rreval_list(env, enclos, VECTOR_ELT(X, i), R_fcall, R_pcall, classes, deflt, xname, xsym, xpos, Rf_isNull(names) ? NA_STRING : STRING_ELT(names, i), howInt, &xloc, 0, maxDepth, useFun, usePred, dfList, feverywhere));
+			SET_VECTOR_ELT(ans, i, do_rreval_list(env, VECTOR_ELT(X, i), R_fcall, fArgs, fxname, fxpos, R_pcall, predArgs, 
+											      pxname, pxpos, classes, deflt, xsym, Rf_isNull(names) ? NA_STRING : STRING_ELT(names, i), 
+												  howInt, &xloc, 0, maxDepth, dfList, feverywhere));
 		}
 
 		UNPROTECT(nprotect);
@@ -132,9 +185,9 @@ SEXP do_rrapply(SEXP env, SEXP enclos, SEXP X, SEXP FUN, SEXP PRED, SEXP classes
 			if (!Rf_isNull(names))
 				SET_STRING_ELT(Xnames, node[0], STRING_ELT(names, i));
 			/* evaluate list element */
-			do_rreval_flat(env, enclos, Xflat, Xnames, VECTOR_ELT(X, i), R_fcall, R_pcall,
-						   classes, deflt, xname, xsym, xpos, Rf_isNull(names) ? NA_STRING : STRING_ELT(names, i),
-						   xinfo, xloc, depth, node, node[0], useFun, usePred, dfList, howInt, feverywhere);
+			do_rreval_flat(env, Xflat, Xnames, VECTOR_ELT(X, i), R_fcall, fArgs, fxname, fxpos, R_pcall, 
+						   predArgs, pxname, pxpos, classes, deflt, xsym, Rf_isNull(names) ? NA_STRING : STRING_ELT(names, i),
+						   xinfo, xloc, depth, node, node[0], dfList, howInt, feverywhere);
 		}
 
 		/* detect nodes to filter */
@@ -308,10 +361,10 @@ static void do_updateNode(R_xlen_t *xinfo, R_xlen_t node, int doEval, R_xlen_t p
 	xinfo[node * 5 + 4] = child;
 }
 
-static SEXP do_rreval_list(SEXP env, SEXP enclos, SEXP Xi, SEXP fcall, SEXP pcall, SEXP classes,
-						   SEXP deflt, SEXP xname, SEXP xsym, SEXP xpos, SEXP xnameChar,
-						   int howInt, R_xlen_t **xloc, R_xlen_t depth, R_xlen_t maxDepth, Rboolean useFun,
-						   Rboolean usePred, int dfList, int feverywhere)
+static SEXP do_rreval_list(SEXP env, SEXP Xi, SEXP fcall, int fArgs, int fxname, int fxpos,
+						   SEXP pcall, int predArgs, int pxname, int pxpos, SEXP classes,
+						   SEXP deflt, SEXP xsym, SEXP xnameChar,  int howInt, R_xlen_t **xloc, 
+						   R_xlen_t depth, R_xlen_t maxDepth, int dfList, int feverywhere)
 {
 	SEXP funVal;
 
@@ -338,21 +391,40 @@ static SEXP do_rreval_list(SEXP env, SEXP enclos, SEXP Xi, SEXP fcall, SEXP pcal
 		Rf_defineVar(xsym, Xi, env);
 		INCREMENT_NAMED(Xi);
 
-		/* define .xname argument */
-		xname_val = PROTECT(Rf_ScalarString(xnameChar));
-		Rf_defineVar(xname, xname_val, enclos);
-		INCREMENT_NAMED(xname_val);
-		UNPROTECT(1);
+		if (fxname > 0 || pxname > 0)
+		{
+			/* update current .xname value */
+			xname_val = PROTECT(Rf_ScalarString(xnameChar));
+			if (fArgs > 1 && fxname > 0)
+				SETCADDR(fcall, xname_val);
+			if (predArgs > 1 && pxname > 0)
+				SETCADDR(pcall, xname_val);
+			UNPROTECT(1);
+		}
 
-		/* define .xpos argument */
-		xpos_val = PROTECT(Rf_allocVector(INTSXP, depth + 1));
+		if (fxpos > 0 || pxpos > 0)
+		{
+			/* update current .xpos value */
+			xpos_val = PROTECT(Rf_allocVector(INTSXP, depth + 1));
+			for (R_xlen_t k = 0; k < (depth + 1); k++)
+				SET_INTEGER_ELT(xpos_val, k, (int)((*xloc)[k]));
 
-		for (R_xlen_t k = 0; k < (depth + 1); k++)
-			SET_INTEGER_ELT(xpos_val, k, (int)((*xloc)[k]));
-
-		Rf_defineVar(xpos, xpos_val, enclos);
-		INCREMENT_NAMED(xpos_val);
-		UNPROTECT(1);
+			if (fArgs > 1 && fxpos > 0)
+			{
+				if (fxname > 0)
+					SETCADDDR(fcall, xpos_val);
+				else
+					SETCADDR(fcall, xpos_val);
+			}
+			if (predArgs > 1 && pxpos > 0)
+			{
+				if (pxname > 0)
+					SETCADDDR(pcall, xpos_val);
+				else
+					SETCADDR(pcall, xpos_val);
+			}
+			UNPROTECT(1);
+		}
 
 		/* evaluate predicate */
 		int doEval = TRUE;
@@ -363,12 +435,13 @@ static SEXP do_rreval_list(SEXP env, SEXP enclos, SEXP Xi, SEXP fcall, SEXP pcal
 		else
 			matched = do_matchClass(Xi, classes);
 
-		if (usePred)
+		if (predArgs > 0)
 		{
 			/* set default to FALSE */
 			doEval = FALSE;
+
 			/* evaluate pred function call */
-			SEXP predVal = PROTECT(R_forceAndCall(pcall, 1, env));
+			SEXP predVal = PROTECT(R_forceAndCall(pcall, predArgs, env));
 			if (Rf_isLogical(predVal) && Rf_xlength(predVal) == 1)
 			{
 				int predValBool = LOGICAL_ELT(predVal, 0);
@@ -383,9 +456,9 @@ static SEXP do_rreval_list(SEXP env, SEXP enclos, SEXP Xi, SEXP fcall, SEXP pcal
 		/* evaluate function call */
 		if (doEval && matched)
 		{
-			if (useFun)
+			if (fArgs > 0)
 			{
-				funVal = PROTECT(R_forceAndCall(fcall, 1, env));
+				funVal = PROTECT(R_forceAndCall(fcall, fArgs, env));
 				if (MAYBE_REFERENCED(funVal))
 					funVal = Rf_lazy_duplicate(funVal);
 				UNPROTECT(1);
@@ -446,7 +519,10 @@ static SEXP do_rreval_list(SEXP env, SEXP enclos, SEXP Xi, SEXP fcall, SEXP pcal
 			(*xloc)[depth] = j + 1;
 
 			/* evaluate list element */
-			SET_VECTOR_ELT(funVal, j, do_rreval_list(env, enclos, VECTOR_ELT(Xi, j), fcall, pcall, classes, deflt, xname, xsym, xpos, Rf_isNull(names) ? NA_STRING : STRING_ELT(names, j), howInt, xloc, depth, maxDepth, useFun, usePred, dfList, feverywhere));
+			SET_VECTOR_ELT(funVal, j, do_rreval_list(env, VECTOR_ELT(Xi, j), fcall, fArgs, fxname, fxpos, pcall, 
+													 predArgs, pxname, pxpos, classes, deflt, xsym, 
+													 Rf_isNull(names) ? NA_STRING : STRING_ELT(names, j), howInt, 
+													 xloc, depth, maxDepth, dfList, feverywhere));
 		}
 
 		UNPROTECT(2);
@@ -459,10 +535,10 @@ static SEXP do_rreval_list(SEXP env, SEXP enclos, SEXP Xi, SEXP fcall, SEXP pcal
 	}
 }
 
-static void do_rreval_flat(SEXP env, SEXP enclos, SEXP Xflat, SEXP Xnames, SEXP Xi, SEXP fcall, SEXP pcall,
-						   SEXP classes, SEXP deflt, SEXP xname, SEXP xsym, SEXP xpos, SEXP xnameChar,
-						   R_xlen_t *xinfo, R_xlen_t *xloc, R_xlen_t depth, R_xlen_t *node, R_xlen_t parent, Rboolean useFun,
-						   Rboolean usePred, int dfList, int howInt, int feverywhere)
+static void do_rreval_flat(SEXP env, SEXP Xflat, SEXP Xnames, SEXP Xi, SEXP fcall, int fArgs, int fxname, int fxpos,
+						   SEXP pcall, int predArgs, int pxname, int pxpos, SEXP classes, SEXP deflt, SEXP xsym, 
+						   SEXP xnameChar,  R_xlen_t *xinfo, R_xlen_t *xloc, R_xlen_t depth, R_xlen_t *node, 
+						   R_xlen_t parent, int dfList, int howInt, int feverywhere)
 {
 	/* if Xi is list (and data.frame is treated as list) recurse, otherwise evaluate function calls */
 	Rboolean doRecurse = FALSE;
@@ -487,21 +563,40 @@ static void do_rreval_flat(SEXP env, SEXP enclos, SEXP Xflat, SEXP Xnames, SEXP 
 		Rf_defineVar(xsym, Xi, env);
 		INCREMENT_NAMED(Xi);
 
-		/* define .xname argument */
-		xname_val = PROTECT(Rf_ScalarString(xnameChar));
-		Rf_defineVar(xname, xname_val, enclos);
-		INCREMENT_NAMED(xname_val);
-		UNPROTECT(1);
+		if (fxname > 0 || pxname > 0)
+		{
+			/* update current .xname value */
+			xname_val = PROTECT(Rf_ScalarString(xnameChar));
+			if (fArgs > 1 && fxname > 0)
+				SETCADDR(fcall, xname_val);
+			if (predArgs > 1 && pxname > 0)
+				SETCADDR(pcall, xname_val);
+			UNPROTECT(1);
+		}
 
-		/* define .xpos argument */
-		xpos_val = PROTECT(Rf_allocVector(INTSXP, depth + 1));
+		if (fxpos > 0 || pxpos > 0)
+		{
+			/* update current .xpos value */
+			xpos_val = PROTECT(Rf_allocVector(INTSXP, depth + 1));
+			for (R_xlen_t k = 0; k < (depth + 1); k++)
+				SET_INTEGER_ELT(xpos_val, k, (int)(xloc[k]));
 
-		for (R_xlen_t k = 0; k < (depth + 1); k++)
-			SET_INTEGER_ELT(xpos_val, k, (int)(xloc[k]));
-
-		Rf_defineVar(xpos, xpos_val, enclos);
-		INCREMENT_NAMED(xpos_val);
-		UNPROTECT(1);
+			if (fArgs > 1 && fxpos > 0)
+			{
+				if (fxname > 0)
+					SETCADDDR(fcall, xpos_val);
+				else
+					SETCADDR(fcall, xpos_val);
+			}
+			if (predArgs > 1 && pxpos > 0)
+			{
+				if (pxname > 0)
+					SETCADDDR(pcall, xpos_val);
+				else
+					SETCADDR(pcall, xpos_val);
+			}
+			UNPROTECT(1);
+		}
 
 		/* evaluate predicate */
 		int doEval = TRUE;
@@ -512,12 +607,13 @@ static void do_rreval_flat(SEXP env, SEXP enclos, SEXP Xflat, SEXP Xnames, SEXP 
 		else
 			matched = do_matchClass(Xi, classes);
 
-		if (usePred)
+		if (predArgs > 0)
 		{
 			/* set default to FALSE */
 			doEval = FALSE;
+
 			/* evaluate pred function call */
-			SEXP predVal = PROTECT(R_forceAndCall(pcall, 1, env));
+			SEXP predVal = PROTECT(R_forceAndCall(pcall, predArgs, env));
 			if (Rf_isLogical(predVal) && Rf_xlength(predVal) == 1)
 			{
 				int predValBool = LOGICAL_ELT(predVal, 0);
@@ -533,7 +629,6 @@ static void do_rreval_flat(SEXP env, SEXP enclos, SEXP Xflat, SEXP Xnames, SEXP 
 		R_xlen_t i1 = node[0];
 		xinfo[i1 * 5 + 1] = doEval && matched;
 
-		/* evaluate function call */
 		if (doEval && matched)
 		{
 			/* update parent node info only for pruned list */
@@ -552,9 +647,10 @@ static void do_rreval_flat(SEXP env, SEXP enclos, SEXP Xflat, SEXP Xnames, SEXP 
 			/* update name attribute */
 			SET_STRING_ELT(Xnames, node[0], xnameChar);
 
-			if (useFun)
+			if (fArgs > 0)
 			{
-				SEXP funVal = PROTECT(R_forceAndCall(fcall, 1, env));
+				/* evaluate function call */
+				SEXP funVal = PROTECT(R_forceAndCall(fcall, fArgs, env));
 				if (MAYBE_REFERENCED(funVal))
 					funVal = Rf_lazy_duplicate(funVal);
 				SET_VECTOR_ELT(Xflat, node[0], funVal);
@@ -594,9 +690,9 @@ static void do_rreval_flat(SEXP env, SEXP enclos, SEXP Xflat, SEXP Xnames, SEXP 
 				SET_STRING_ELT(Xnames, node[0], STRING_ELT(names, j));
 
 			/* evaluate list element */
-			do_rreval_flat(env, enclos, Xflat, Xnames, VECTOR_ELT(Xi, j), fcall, pcall,
-						   classes, deflt, xname, xsym, xpos, Rf_isNull(names) ? NA_STRING : STRING_ELT(names, j),
-						   xinfo, xloc, depth, node, parent, useFun, usePred, dfList, howInt, feverywhere);
+			do_rreval_flat(env, Xflat, Xnames, VECTOR_ELT(Xi, j), fcall, fArgs, fxname, fxpos, pcall, predArgs,
+			               pxname, pxpos, classes, deflt, xsym, Rf_isNull(names) ? NA_STRING : STRING_ELT(names, j),
+						   xinfo, xloc, depth, node, parent, dfList, howInt, feverywhere);
 		}
 		UNPROTECT(1);
 	}

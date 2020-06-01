@@ -23,16 +23,17 @@
 #'
 #' @section Correct use of \code{...}:
 #' The principal argument of the \code{f} and \code{condition} functions evaluates to the content of the list element. Any further arguments to 
-#' \code{f} and \code{condition} supplied via the dots \code{...} argument need to be defined as function arguments in \emph{both} the \code{f}
-#' and \code{condition} function (if existing), even if they are not used in the function itself. See also the \sQuote{Examples} section.
+#' \code{f} and \code{condition} (besides the special arguments \code{.xname} and \code{.xpos} discussed below) supplied via the dots \code{...} 
+#' argument need to be defined as function arguments in \emph{both} the \code{f} and \code{condition} function (if existing), even if they are not
+#'  used in the function itself. See also the \sQuote{Examples} section.
 #' 
-#' @section Special symbols \code{.xname} and \code{.xpos}:
-#' Two special symbols \code{.xname} and \code{.xpos} are available inside the \code{f} and \code{condition} functions. The \code{.xname} symbol 
-#' evaluates to the name of the list element. The \code{.xpos} symbol evaluates to the position of the element in the nested list structured as an 
-#' integer vector. For instance, if \code{x = list(list("y", "z"))}, then an \code{.xpos} location of \code{c(1, 2)} corresponds to the 
-#' list element \code{x[[c(1, 2)]]}. The names \code{.xname} and \code{.xpos} do not need to be included as function arguments in \code{f} and 
-#' \code{condition}, and can be thought of as pre-defined variables in the current function environment. See the package vignette for additional
-#' details on overriding the \code{.xname} and \code{.xpos} variables.  
+#' @section Special arguments \code{.xname} and \code{.xpos}:
+#' The \code{f} and \code{condition} functions accept two special arguments \code{.xname} and \code{.xpos} in addition to the first principal argument. 
+#' The \code{.xname} argument evaluates to the name of the list element. The \code{.xpos} argument evaluates to the position of the element in the nested 
+#' list structured as an integer vector. To illustrate, if \code{x = list(list("y", "z"))}, then an \code{.xpos} location of \code{c(1, 2)} corresponds 
+#' to the list element \code{x[[c(1, 2)]]}. The names \code{.xname} and \code{.xpos} need to be explicitly included as function arguments in \code{f} and 
+#' \code{condition} (in addition to the principal argument). See the package vignette for example uses of the \code{.xname} and 
+#' \code{.xpos} variables.  
 #' 
 #' @section List node aggregation:
 #' By default, \code{rrapply} applies the \code{f} function only to leaf elements by recursing into any list-like element that is encountered. 
@@ -121,12 +122,12 @@
 #' )
 #' str(renewable_energy_above_85, give.attr = FALSE)
 #' 
-#' # Special symbols .xname and .xpos
+#' # Special arguments .xname and .xpos
 #' 
 #' ## Apply a function using the name of the node
 #' renewable_oceania_text <- rrapply(
 #'   renewable_oceania,
-#'   f = function(x) sprintf("Renewable energy in %s: %.2f%%", .xname, x),
+#'   f = function(x, .xname) sprintf("Renewable energy in %s: %.2f%%", .xname, x),
 #'   condition = Negate(is.na),
 #'   how = "flatten"
 #' )
@@ -135,7 +136,7 @@
 #' ## Extract values based on country names
 #' renewable_benelux <- rrapply(
 #'   renewable_energy_by_country,
-#'   condition = function(x) .xname %in% c("Belgium", "Netherlands", "Luxembourg"),
+#'   condition = function(x, .xname) .xname %in% c("Belgium", "Netherlands", "Luxembourg"),
 #'   how = "prune"
 #' )
 #' str(renewable_benelux, give.attr = FALSE)
@@ -143,7 +144,7 @@
 #' ## Filter European countries with value above 50%
 #' renewable_europe_above_50 <- rrapply(
 #'   renewable_energy_by_country,
-#'   condition = function(x) identical(.xpos[c(1, 2)], c(1L, 5L)) & x > 50,
+#'   condition = function(x, .xpos) identical(.xpos[c(1, 2)], c(1L, 5L)) & x > 50,
 #'   how = "prune"
 #' )
 #' str(renewable_europe_above_50, give.attr = FALSE)
@@ -151,8 +152,8 @@
 #' ## Return position of Sweden in list
 #' (xpos_sweden <- rrapply(
 #'   renewable_energy_by_country,
-#'   condition = function(x) identical(.xname, "Sweden"),
-#'   f = function(x) .xpos,
+#'   condition = function(x, .xname) identical(.xname, "Sweden"),
+#'   f = function(x, .xpos) .xpos,
 #'   how = "flatten"
 #' ))
 #' renewable_energy_by_country[[xpos_sweden$Sweden]]
@@ -162,7 +163,7 @@
 #' ## Calculate mean value of Europe
 #' rrapply(
 #'   renewable_energy_by_country,  
-#'   condition = function(x) .xname == "Europe",
+#'   condition = function(x, .xname) .xname == "Europe",
 #'   f = function(x) mean(unlist(x), na.rm = TRUE),
 #'   how = "flatten",
 #'   feverywhere = TRUE
@@ -171,7 +172,7 @@
 #' ## Calculate mean value for each continent
 #' renewable_continent_summary <- rrapply(
 #'   renewable_energy_by_country,  
-#'   condition = function(x) length(.xpos) == 2,
+#'   condition = function(x, .xpos) length(.xpos) == 2,
 #'   f = function(x) mean(unlist(x), na.rm = TRUE),
 #'   feverywhere = TRUE
 #' )
@@ -202,7 +203,7 @@
 #' ## Scale only Sepal columns in iris dataset
 #' rrapply(
 #'   iris,
-#'   condition = function(x) grepl("Sepal", .xname),
+#'   condition = function(x, .xname) grepl("Sepal", .xname),
 #'   f = scale
 #' )
 #' 
@@ -223,7 +224,10 @@
 #' )
 #' 
 #' @inheritParams base::rapply
-#' @param condition a condition \code{\link{function}} of one \dQuote{principal} argument, passing further arguments via \code{\dots}.
+#' @param f a \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname} and/or \code{.xpos} 
+#' (see \sQuote{Details}), passing further arguments via \code{\dots}.
+#' @param condition a condition \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname} and/or 
+#' \code{.xpos} (see \sQuote{Details}), passing further arguments via \code{\dots}.
 #' @param how character string partially matching the five possibilities given: see \sQuote{Details}.
 #' @param deflt the default result (only used if \code{how = "list"} or \code{how = "unlist"}).
 #' @param dfaslist logical value to treat data.frames as \dQuote{list-like} object.
@@ -241,49 +245,36 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
     feverywhere = FALSE, dfaslist = TRUE, ...)
 {
   
-  ## check arguments
+  ## non-function arguments
   if(!is.list(object) || length(object) < 1) stop("'object' argument should be list-like and of length greater than zero")
   how <- match.arg(how, c("replace", "list", "unlist", "prune", "flatten"))
   howInt <- match(how, c("replace", "list", "unlist", "prune", "flatten")) - 1L
   dfaslist <- isTRUE(dfaslist)
   feverywhere <- isTRUE(feverywhere)
-  if(missing(f)) f <- NULL
-  if(missing(condition)) condition <- NULL
-  if(!is.null(f) && !is.function(f)) {
-    warning("'f' argument is not a function, defaults to identity") 
-    f <- NULL
-  }
-  if(!is.null(condition) && !is.function(condition)) {
-    warning("'condition' argument is not a function, no condition is used")
-    condition <- NULL
-  }
   
-  ## call C function
-  if(is.null(f) && (is.null(condition) || howInt == 0L) && !feverywhere) {
-    
+  ## function arguments  
+  if(missing(f)) f <- NULL else f <- match.fun(f)
+  if(missing(condition)) condition <- NULL else condition <- match.fun(condition)
+  
+  if(is.null(f) && (is.null(condition) || howInt == 0L) && !feverywhere) 
+  {  
     ## nothing to be done
-    res <- object 
+    res <- object  
+  } else 
+  { 
+    ## check for .xname and .xpos args
+    fArgs <- conditionArgs <- c(0L, 0L)
+    if(identical(typeof(f), "closure"))
+      fArgs <- match(c(".xname", ".xpos"), names(formals(f)), nomatch = 0L) 
+    if(identical(typeof(condition), "closure"))
+      conditionArgs <- match(c(".xname", ".xpos"), names(formals(condition)), nomatch = 0L)
     
-  } else {
-    
-    ## save existing values .xname and/or .xpos
-    if(exists(".xname", envir = parent.frame())) xname <- get(".xname", envir = parent.frame())
-    if(exists(".xpos", envir = parent.frame())) xpos <- get(".xpos", envir = parent.frame())
-    
-    res <- .Call(do_rrapply, environment(), parent.frame(), object, f, condition, classes, howInt, deflt, dfaslist, feverywhere) 
-    
-    ## restore values .xname and/or .xpos
-    if(exists("xname", envir = environment())) assign(".xname", xname, envir = parent.frame())
-    else remove(".xname", envir = parent.frame())
-    if(exists("xpos", envir = environment())) assign(".xpos", xpos, envir = parent.frame())
-    else remove(".xpos", envir = parent.frame())
-    
+    ## call main C function
+    res <- .Call(do_rrapply, environment(), object, f, fArgs, condition, conditionArgs, classes, howInt, deflt, dfaslist, feverywhere)  
   }
   
   ## unlist result
-  if(how == "unlist") {
-    res <- unlist(res, recursive = TRUE)
-  }
+  if(how == "unlist") res <- unlist(res, recursive = TRUE)
   
   return(res)
   

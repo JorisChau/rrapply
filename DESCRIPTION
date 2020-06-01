@@ -2,9 +2,9 @@ Package: rrapply
 Type: Package
 Title: Revisiting Base Rapply
 Version: 1.0.0
-Date: 2020-05-06
+Date: 2020-06-01
 Authors@R: person("Joris", "Chau", email = "joris.chau@openanalytics.eu", role = c("aut", "cre"))
-Description: A reimplementation of base-R's rapply function.
+Description: The 'rrapply'-package contains a single function rrapply(), providing an extended implementation of base-R's rapply(). Extensions include the recursive application of a function to elements of a nested list based on a general condition function and the possibility to prune or aggregate nested list elements from the result. In addition, special arguments can be supplied to access the name and location in the nested list of the element under evaluation. The rrapply() function is implemented in R's C API and requires no other package dependencies.
 Depends: 
     R (>= 3.6)
 Encoding: UTF-8
