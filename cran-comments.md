@@ -1,4 +1,4 @@
-## CRAN package version 1.0.0
+## CRAN package version 1.0.0 (resubmission)
 
 ### Comments
 
