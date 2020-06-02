@@ -79,7 +79,7 @@ op <- options(width = 60, continue = "  ")
 
 \begin{abstract} 
 \noindent 
-The \texttt{rrapply}-package contains a single function \code{rrapply}, providing an extended implementation of \textsf{R}-base's \code{rapply} function. Base \code{rapply} applies a function \code{f} to all elements of a list recursively. The \code{rrapply} function extends base \code{rapply} by including a condition or predicate function for the application of \code{f} and the option to prune or aggregate list elements from the result. In addition, special arguments \code{.xname} and \code{.xpos} can be used inside the \code{f} and \code{condition} functions to access the name and location in the nested list of the list element under evaluation. The \code{rrapply} function is implemented using \textsf{R}'s native \textsf{C} API and for this reason requires no external \textsf{R}-package dependencies. 
+The \texttt{rrapply}-package contains a single function \code{rrapply}, providing an extended implementation of \textsf{R}-base's \code{rapply} function. Base \code{rapply} applies a function \code{f} to all elements of a list recursively. The \code{rrapply} function extends base \code{rapply} by including a condition or predicate function for the application of \code{f} and the option to prune or aggregate list elements from the result. In addition, special arguments \code{.xname} and \code{.xpos} can be used inside the \code{f} and \code{condition} functions to access the name and location in the nested list of the list element under evaluation. The \code{rrapply} function is implemented using \textsf{R}'s \textsf{C} interface and for this reason requires no external \textsf{R}-package dependencies. 
 \end{abstract}
 
 \spacingset{1.45} 
@@ -296,7 +296,7 @@ str(renewable_oceania_flat_text, list.len = 10)
 Note that the \texttt{purrr}-package also contains the convenience function \code{imap} for exactly this purpose.
 \end{remark}
 In base \code{rapply}, the \code{f} function only has access to the content of a leaf
-element through its principal argument and there is no convenient way to access the list element its name or location from
+element through its principal argument, but there is no convenient way to access the list element its name or location from
 inside the \code{f} function. This makes \code{rapply} impractical if we want to apply
 a function \code{f} that relies on e.g. the name of the leaf element as in the above example.\\[3mm]
 To address this issue, \code{rrapply} allows the use of two special arguments 
@@ -453,7 +453,7 @@ rrapply(
 
 \begin{remark}
 Note that the same result can also be obtained using \code{feverywhere = TRUE} and checking that the list element under evaluation is a data.frame:
-<<echo=FALSE>>=
+<<eval=FALSE>>=
 rrapply(
   oceania_df,
   condition = function(x) class(x) == "data.frame",
@@ -535,7 +535,7 @@ iris_standard_summarize
 
 \subsubsection{Computational effort}
 
-As \code{rrapply} is written in \textsf{R}'s internal \textsf{C} API, it is computationally significantly more efficient than its equivalent implementation based on recursion through a nested list in interpreted \textsf{R}. In the figures below, several benchmark timings of \code{rrapply} against that of base \code{rapply} are displayed in the context of data.frame manipulation. More precisely, we time the application of a dummy function \code{f} (unit multiplication) respectively to each column and to each \emph{numeric} column of a data.frame \code{x} of size $(M \times N)$, where the entries of the data.frame \code{x} are randomly sampled from a uniform distribution on the unit interval.\\[3mm]
+As \code{rrapply} is written in \textsf{R}'s internal \textsf{C} interface, it can be computationally significantly more efficient than its equivalent implementation based on recursion through a large nested list in interpreted \textsf{R}. In the figures below, several benchmark timings of \code{rrapply} against that of base \code{rapply} are displayed in the context of data.frame manipulation. More precisely, we time the application of a dummy function \code{f} (unit multiplication) respectively to each column and to each \emph{numeric} column of a data.frame \code{x} of size $(M \times N)$, where the entries of the data.frame \code{x} are randomly sampled from a uniform distribution on the unit interval.\\[3mm]
 The displayed timings are the median computation times (ms) of 100 evaluations of the benchmarked expressions in R 3.6.2 on a single-core processor (Intel i7-8550U, 1.80 GHz, 16 GB system memory). In the left-hand plots, the number of data.frame rows is fixed at $M = 1000$ and the number of columns increases from $N = 100$ to $N = 10\ 000$, and in the right-hand plots the number of data.frame columns is fixed at $N = 100$ and the number of rows increases from $M = 1000$ to $M = 10^6$.
 \\[3mm]
 The benchmarked expressions to mutate all columns of the data.frame \code{x} evaluated in the first figure are:

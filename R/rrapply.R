@@ -30,7 +30,7 @@
 #' @section Special arguments \code{.xname} and \code{.xpos}:
 #' The \code{f} and \code{condition} functions accept two special arguments \code{.xname} and \code{.xpos} in addition to the first principal argument. 
 #' The \code{.xname} argument evaluates to the name of the list element. The \code{.xpos} argument evaluates to the position of the element in the nested 
-#' list structured as an integer vector. To illustrate, if \code{x = list(list("y", "z"))}, then an \code{.xpos} location of \code{c(1, 2)} corresponds 
+#' list structured as an integer vector. That is, if \code{x = list(list("y", "z"))}, then an \code{.xpos} location of \code{c(1, 2)} corresponds 
 #' to the list element \code{x[[c(1, 2)]]}. The names \code{.xname} and \code{.xpos} need to be explicitly included as function arguments in \code{f} and 
 #' \code{condition} (in addition to the principal argument). See the package vignette for example uses of the \code{.xname} and 
 #' \code{.xpos} variables.  

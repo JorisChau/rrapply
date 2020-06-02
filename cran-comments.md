@@ -1,5 +1,11 @@
 ## CRAN package version 1.0.0
 
+### Comments
+
+* The description text in the DESCRIPTION file has been extended en includes undirected single quotes for package and software names and parenthesis behind function names.
+* Included missing options() reset in the vignette.
+* The package code has been modified to not assign() to any environment other than the current evaluation environment. 
+
 ### Test environments
 
 * ubuntu gcc R-release, R-devel (rhub)
