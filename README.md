@@ -5,6 +5,8 @@
 
 <!-- badges: start -->
 
+[![CRAN
+version](http://www.r-pkg.org/badges/version/rrapply)](https://cran.r-project.org/package=rrapply)
 [![Build
 Status](https://travis-ci.org/JorisChau/rrapply.svg?branch=master)](https://travis-ci.org/JorisChau/rrapply)
 <!-- badges: end -->
@@ -18,6 +20,9 @@ external R-package dependencies.
 ## Installation
 
 ``` r
+# Install latest release from CRAN:
+install.packages("rrapply")
+
 # Install the development version from GitHub:
 # install.packages("devtools")
 devtools::install_github("JorisChau/rrapply")
@@ -30,10 +35,10 @@ devtools::install_github("JorisChau/rrapply")
 With base `rapply`, there is no convenient way to prune or filter list
 elements from the input list. The `rrapply` function adds an option `how
 = "prune"` to prune all list elements not subject to application of `f`
-from a nested
-list,
+from a nested list,
 
 ``` r
+library(rrapply)
 ## Nested list of renewable energy as a percentage of total energy consumption per country in 2016
 data("renewable_energy_by_country")
 
