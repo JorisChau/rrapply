@@ -90,7 +90,10 @@
 <div id="installation" class="section level2">
 <h2 class="hasAnchor">
 <a href="#installation" class="anchor"></a>Installation</h2>
-<div class="sourceCode" id="cb1"><pre class="r"><span class="co"># Install the development version from GitHub:</span>
+<div class="sourceCode" id="cb1"><pre class="r"><span class="co"># Install latest release from CRAN:</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span>(<span class="st">"rrapply"</span>)
+
+<span class="co"># Install the development version from GitHub:</span>
 <span class="co"># install.packages("devtools")</span>
 <span class="kw pkg">devtools</span><span class="kw ns">::</span><span class="fu"><a href="https://rdrr.io/pkg/devtools/man/remote-reexports.html">install_github</a></span>(<span class="st">"JorisChau/rrapply"</span>)</pre></div>
 </div>
@@ -101,7 +104,8 @@
 <h3 class="hasAnchor">
 <a href="#list-pruning" class="anchor"></a>List pruning</h3>
 <p>With base <code>rapply</code>, there is no convenient way to prune or filter list elements from the input list. The <code>rrapply</code> function adds an option <code>how = "prune"</code> to prune all list elements not subject to application of <code>f</code> from a nested list,</p>
-<div class="sourceCode" id="cb2"><pre class="r"><span class="co">## Nested list of renewable energy as a percentage of total energy consumption per country in 2016</span>
+<div class="sourceCode" id="cb2"><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">rrapply</span>)
+<span class="co">## Nested list of renewable energy as a percentage of total energy consumption per country in 2016</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span>(<span class="st">"renewable_energy_by_country"</span>)
 
 <span class="co">## Subset values for countries and areas in Oceania</span>
@@ -425,6 +429,7 @@
   <div class="dev-status">
 <h2>Dev status</h2>
 <ul class="list-unstyled">
+<li><a href="https://cran.r-project.org/package=rrapply"><img src="http://www.r-pkg.org/badges/version/rrapply" alt="CRAN version"></a></li>
 <li><a href="https://travis-ci.org/JorisChau/rrapply"><img src="https://travis-ci.org/JorisChau/rrapply.svg?branch=master" alt="Build Status"></a></li>
 </ul>
 </div>
