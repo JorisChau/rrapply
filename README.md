@@ -371,4 +371,4 @@ iris_standard_summarize
 ```
 
 For more details and examples on how to use the `rrapply` function see
-the accompanying vignette in the vignettes folder.
+the accompanying package vignette in the vignettes folder.
