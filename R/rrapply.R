@@ -256,7 +256,7 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
   if(missing(f)) f <- NULL else f <- match.fun(f)
   if(missing(condition)) condition <- NULL else condition <- match.fun(condition)
   
-  if(is.null(f) && (is.null(condition) || howInt == 0L) && !feverywhere) 
+  if(is.null(f) && (is.null(condition) || howInt == 0L) && !feverywhere && howInt != 4L) 
   {  
     ## nothing to be done
     res <- object  

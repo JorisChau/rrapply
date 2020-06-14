@@ -426,11 +426,7 @@ the same way as \code{rapply} by recursing into the individual columns of a data
 oceania_df <- list(
   Oceania = lapply(
     renewable_oceania[["Oceania"]], 
-    FUN = function(x) data.frame(
-      Name = names(x), 
-      value = unlist(x), 
-      stringsAsFactors = FALSE
-    )
+    FUN = function(x) data.frame(value = unlist(x))
   )
 )
 ## this does not work!
