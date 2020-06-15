@@ -7,7 +7,7 @@
 
 /* structures */
 
-struct intArgs
+typedef struct Args
 {
 	/* indices how:
 		0: replace (return nested list)
@@ -26,17 +26,24 @@ struct intArgs
 	int pxpos;		 // .xpos present in condition
 	int dfaslist;	 // dfaslist argument
 	int feverywhere; // feverywhere argument
-};
+} Args;
+
+typedef struct Depth
+{
+	int current;  		 // current depth
+	int max;			 // maximum allowed depth
+	R_xlen_t maxnodes;   // counter maximum nodes
+} Depth;
 
 /* prototypes */
 
 static void do_copyAttrs(SEXP obj, SEXP ans, SEXP names, Rboolean copyAttrs);
 static int do_matchClass(SEXP obj, SEXP classes);
-static R_xlen_t do_rrcount(SEXP X, R_xlen_t n, R_xlen_t *maxNodes, R_xlen_t *maxDepth, R_xlen_t depth);
-static void do_updateNode(R_xlen_t (*xinfo)[4], R_xlen_t node, int doEval, R_xlen_t parent, R_xlen_t depth, R_xlen_t child);
-static SEXP do_rreval_list(SEXP env, SEXP Xi, SEXP fcall, SEXP pcall, struct intArgs args, SEXP classes, SEXP deflt, SEXP xsym, SEXP xnameChar, R_xlen_t **xloc, R_xlen_t depth, R_xlen_t maxDepth);
-static void do_rreval_flat(SEXP env, SEXP Xflat, SEXP Xnames, SEXP Xi, SEXP fcall, SEXP pcall, struct intArgs args, SEXP classes, SEXP deflt, SEXP xsym, SEXP xnameChar, R_xlen_t (*xinfo)[4], R_xlen_t *xloc, R_xlen_t depth, R_xlen_t *node, R_xlen_t parent);
-static SEXP do_rrfill(SEXP Xflat, SEXP Xnames, SEXP Xi, R_xlen_t (*xinfo)[4], R_xlen_t *buf, R_xlen_t maxNodes, R_xlen_t depth, R_xlen_t node, R_xlen_t ibuf, Rboolean useNames);
+static int do_rrcount(SEXP X, Depth *depth, R_xlen_t n, int idepth);
+static void do_updateNode(R_xlen_t (*xinfo)[4], R_xlen_t node, int doEval, R_xlen_t parent, int depth_current, R_xlen_t child);
+static SEXP do_rreval_list(SEXP env, SEXP Xi, SEXP fcall, SEXP pcall, SEXP classes, SEXP deflt, SEXP xsym, SEXP xnameChar, Args args, Depth depth, R_xlen_t **xloc);
+static void do_rreval_flat(SEXP env, SEXP Xflat, SEXP Xnames, SEXP Xi, SEXP fcall, SEXP pcall, SEXP classes, SEXP deflt, SEXP xsym, SEXP xnameChar, Args args, Depth depth, R_xlen_t (*xinfo)[4], R_xlen_t *xloc, R_xlen_t *node, R_xlen_t parent);
+static SEXP do_rrfill(SEXP Xflat, SEXP Xnames, SEXP Xi, Depth depth, R_xlen_t (*xinfo)[4], R_xlen_t *buf, R_xlen_t node, R_xlen_t ibuf, Rboolean useNames);
 SEXP do_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPred, SEXP classes, SEXP how, SEXP deflt, SEXP R_dfaslist, SEXP R_feverywhere);
 
 /* ---------------------- */
@@ -48,7 +55,7 @@ SEXP do_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPr
 	SEXP ans, names, xsym, xname, xpos, R_fcall, R_pcall;
 
 	/* integer arguments */
-	struct intArgs R_args;
+	Args R_args;
 	R_args.how_C = INTEGER_ELT(R_how, 0);
 	R_args.fArgs = 0;
 	R_args.fxname = INTEGER_ELT(argsFun, 0) > 0;
@@ -139,8 +146,8 @@ SEXP do_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPr
 	if (R_args.how_C < 3) /* replace nodes or fill nodes by default values and return nested list */
 	{
 		/* allocate array to store location info */
-		R_xlen_t maxDepth = 16;
-		R_xlen_t *xloc = (R_xlen_t *)S_alloc(maxDepth, sizeof(R_xlen_t));
+		Depth R_depth = {.current = 0, .max = 16};   // maxnodes only used for pruning
+		R_xlen_t *xloc = (R_xlen_t *)S_alloc(R_depth.max, sizeof(R_xlen_t));
 
 		/* allocate output list */
 		if (R_args.how_C == 0)
@@ -160,7 +167,7 @@ SEXP do_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPr
 			/* increment location counter */
 			xloc[0] += 1;
 			/* evaluate list element */
-			SET_VECTOR_ELT(ans, i, do_rreval_list(env, VECTOR_ELT(X, i), R_fcall, R_pcall, R_args, classes, deflt, xsym, Rf_isNull(names) ? NA_STRING : STRING_ELT(names, i), &xloc, 0, maxDepth));
+			SET_VECTOR_ELT(ans, i, do_rreval_list(env, VECTOR_ELT(X, i), R_fcall, R_pcall, classes, deflt, xsym, Rf_isNull(names) ? NA_STRING : STRING_ELT(names, i), R_args, R_depth, &xloc));
 		}
 
 		UNPROTECT(nprotect);
@@ -171,25 +178,23 @@ SEXP do_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPr
 		SEXP Xnames, Xflat, ansNames;
 
 		/* allocate array for additional location info */
-		R_xlen_t maxNodes = 0;
-		R_xlen_t maxDepth = 0;
-
+		Depth R_depth = {.current = 0, .max = 0, .maxnodes = 0};
+		
 		/* traverse list once for max nodes and max depth */
-		R_xlen_t depth = do_rrcount(X, n, &maxNodes, &maxDepth, 0) + 1;
-		/* reset current depth to zero */
-		depth = 0;
+		R_depth.current = do_rrcount(X, &R_depth, n, 0);
+		R_depth.current = 0;
 
 		/* allocate arrays to store location info */
-		R_xlen_t *xloc = (R_xlen_t *)S_alloc(maxDepth + 1, sizeof(R_xlen_t));
+		R_xlen_t *xloc = (R_xlen_t *)S_alloc(R_depth.max + 1, sizeof(R_xlen_t));
 		R_xlen_t *inode = (R_xlen_t *)S_alloc(1, sizeof(R_xlen_t));
 		R_xlen_t(*xinfo)[4];
-		xinfo = (R_xlen_t(*)[4])S_alloc(maxNodes, sizeof(*xinfo));
+		xinfo = (R_xlen_t(*)[4])S_alloc(R_depth.maxnodes, sizeof(*xinfo));
 
 		/* allocate flat list */
-		Xflat = PROTECT(Rf_allocVector(VECSXP, maxNodes));
+		Xflat = PROTECT(Rf_allocVector(VECSXP, R_depth.maxnodes));
 		/* allocate names vector (STRSXP initializes to "") */
 		/* if names present on zero-th layer */
-		Xnames = PROTECT(Rf_allocVector(STRSXP, maxNodes));
+		Xnames = PROTECT(Rf_allocVector(STRSXP, R_depth.maxnodes));
 		nprotect += 2;
 
 		for (R_xlen_t i = 0; i < n; i++)
@@ -203,13 +208,13 @@ SEXP do_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPr
 			if (!Rf_isNull(names))
 				SET_STRING_ELT(Xnames, inode[0], STRING_ELT(names, i));
 			/* evaluate list element */
-			do_rreval_flat(env, Xflat, Xnames, VECTOR_ELT(X, i), R_fcall, R_pcall, R_args, classes, deflt, xsym, Rf_isNull(names) ? NA_STRING : STRING_ELT(names, i), xinfo, xloc, depth, inode, inode[0]);
+			do_rreval_flat(env, Xflat, Xnames, VECTOR_ELT(X, i), R_fcall, R_pcall, classes, deflt, xsym, Rf_isNull(names) ? NA_STRING : STRING_ELT(names, i), R_args, R_depth, xinfo, xloc, inode, inode[0]);
 		}
 
 		/* detect nodes to filter */
-		R_xlen_t *buf = (R_xlen_t *)R_alloc((size_t)maxNodes, sizeof(R_xlen_t));
+		R_xlen_t *buf = (R_xlen_t *)R_alloc((size_t)R_depth.maxnodes, sizeof(R_xlen_t));
 		R_xlen_t m = 0;
-		for (R_xlen_t i = 0; i < maxNodes; i++)
+		for (R_xlen_t i = 0; i < R_depth.maxnodes; i++)
 		{
 			/* doEval != 0 and depth == 0 only if howInt == 3 */
 			if (xinfo[i][0] && (R_args.how_C == 3 ? xinfo[i][2] < 1 : TRUE))
@@ -228,7 +233,7 @@ SEXP do_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPr
 			/* populate nested list */
 			for (R_xlen_t j = 0; j < m; j++)
 			{
-				SET_VECTOR_ELT(ans, j, do_rrfill(Xflat, Xnames, VECTOR_ELT(X, xinfo[buf[j]][3]), xinfo, buf, maxNodes, 0, buf[j], m, !Rf_isNull(names)));
+				SET_VECTOR_ELT(ans, j, do_rrfill(Xflat, Xnames, VECTOR_ELT(X, xinfo[buf[j]][3]), R_depth, xinfo, buf, buf[j], m, !Rf_isNull(names)));
 			}
 			/* copy other list attributes */
 			Rf_copyMostAttrib(X, ans);
@@ -344,33 +349,33 @@ static int do_matchClass(SEXP obj, SEXP classes)
 	return matched;
 }
 
-static R_xlen_t do_rrcount(SEXP X, R_xlen_t n, R_xlen_t *maxNodes, R_xlen_t *maxDepth, R_xlen_t depth)
+static int do_rrcount(SEXP X, Depth *depth, R_xlen_t n, int idepth)
 {
 	SEXP Xi;
 	for (R_xlen_t i = 0; i < n; i++)
 	{
-		*maxNodes += 1;
+		depth->maxnodes += 1;
 		Xi = VECTOR_ELT(X, i);
 		/* descend one level */
 		if (Rf_isVectorList(Xi))
 		{
-			depth += 1;
-			/* increment maxDepth if current depth is higher than maxDepth */
-			*maxDepth += depth > *maxDepth;
-			depth = do_rrcount(Xi, Rf_xlength(Xi), maxNodes, maxDepth, depth);
+			idepth += 1;
+			/* increment max depth if current depth is higher than max depth */
+			depth->max += (idepth > depth->max);
+			idepth = do_rrcount(Xi, depth, Rf_xlength(Xi), idepth);
 		}
 	}
-	return depth - 1;
+	return idepth - 1;
 }
 
-static void do_updateNode(R_xlen_t (*xinfo)[4], R_xlen_t node, int doEval, R_xlen_t parent, R_xlen_t depth, R_xlen_t child)
+static void do_updateNode(R_xlen_t (*xinfo)[4], R_xlen_t node, int doEval, R_xlen_t parent, int depth_current, R_xlen_t child)
 {
 	/* evaluate node */
 	xinfo[node][0] = doEval;
 	/* parent node */
 	xinfo[node][1] = parent;
 	/* depth layer */
-	xinfo[node][2] = depth;
+	xinfo[node][2] = depth_current;
 	/* child counter */
 	xinfo[node][3] = child;
 }
@@ -380,14 +385,13 @@ static SEXP do_rreval_list(
 	SEXP Xi,			 // current list layer content
 	SEXP fcall,			 // f function call
 	SEXP pcall,			 // condition function call
-	struct intArgs args, // integer arguments
 	SEXP classes,		 // classes argument
 	SEXP deflt,			 // deflt argument
 	SEXP xsym,			 // principal argument symbol
 	SEXP xnameChar,		 // current value .xname argument
-	R_xlen_t **xloc,	 // current value .pos argument
-	R_xlen_t depth,		 // current depth
-	R_xlen_t maxDepth	 // maximum depth
+	Args args, 	 // integer arguments
+	Depth depth,	 // current and maximum depth information
+	R_xlen_t **xloc	 	 // current value .pos argument
 )
 {
 	SEXP funVal;
@@ -429,8 +433,8 @@ static SEXP do_rreval_list(
 		if (args.fxpos > 0 || args.pxpos > 0)
 		{
 			/* update current .xpos value */
-			xpos_val = PROTECT(Rf_allocVector(INTSXP, depth + 1));
-			for (R_xlen_t k = 0; k < (depth + 1); k++)
+			xpos_val = PROTECT(Rf_allocVector(INTSXP, depth.current + 1));
+			for (R_xlen_t k = 0; k < (depth.current + 1); k++)
 				SET_INTEGER_ELT(xpos_val, k, (int)((*xloc)[k]));
 
 			if (args.fArgs > 1 && args.fxpos > 0)
@@ -515,7 +519,7 @@ static SEXP do_rreval_list(
 	if (doRecurse)
 	{
 		/* descend one level */
-		depth += 1;
+		depth.current += 1;
 		R_xlen_t m = Rf_xlength(Xi);
 		SEXP names = PROTECT(Rf_getAttrib(Xi, R_NamesSymbol));
 
@@ -531,19 +535,19 @@ static SEXP do_rreval_list(
 		}
 
 		/* reallocate array if max is reached */
-		if (depth == maxDepth)
+		if (depth.current == depth.max)
 		{
-			maxDepth *= 2;
-			*xloc = (R_xlen_t *)S_realloc((char *)*xloc, maxDepth, depth, sizeof(R_xlen_t));
+			depth.max *= 2;
+			*xloc = (R_xlen_t *)S_realloc((char *)*xloc, depth.max, depth.current, sizeof(R_xlen_t));
 		}
 
 		for (R_xlen_t j = 0; j < m; j++)
 		{
 			/* increment location */
-			(*xloc)[depth] = j + 1;
+			(*xloc)[depth.current] = j + 1;
 
 			/* evaluate list element */
-			SET_VECTOR_ELT(funVal, j, do_rreval_list(env, VECTOR_ELT(Xi, j), fcall, pcall, args, classes, deflt, xsym, Rf_isNull(names) ? NA_STRING : STRING_ELT(names, j), xloc, depth, maxDepth));
+			SET_VECTOR_ELT(funVal, j, do_rreval_list(env, VECTOR_ELT(Xi, j), fcall, pcall, classes, deflt, xsym, Rf_isNull(names) ? NA_STRING : STRING_ELT(names, j), args, depth, xloc));
 		}
 
 		UNPROTECT(2);
@@ -563,14 +567,14 @@ static void do_rreval_flat(
 	SEXP Xi,			  // current list layer
 	SEXP fcall,			  // f function call
 	SEXP pcall,			  // condition function call
-	struct intArgs args,  // integer arguments
 	SEXP classes,		  // classes argument
 	SEXP deflt,			  // deflt argument
 	SEXP xsym,			  // principal argument symbol
 	SEXP xnameChar,		  // current .xname value
+	Args args,  	  	  // integer arguments
+	Depth depth,   		  // current and max depth information 
 	R_xlen_t (*xinfo)[4], // array with node position information
 	R_xlen_t *xloc,		  // current .xpos value
-	R_xlen_t depth,		  // current depth
 	R_xlen_t *node,		  // current node
 	R_xlen_t parent		  // parent of current node
 )
@@ -612,8 +616,8 @@ static void do_rreval_flat(
 		if (args.fxpos > 0 || args.pxpos > 0)
 		{
 			/* update current .xpos value */
-			xpos_val = PROTECT(Rf_allocVector(INTSXP, depth + 1));
-			for (R_xlen_t k = 0; k < (depth + 1); k++)
+			xpos_val = PROTECT(Rf_allocVector(INTSXP, depth.current + 1));
+			for (R_xlen_t k = 0; k < (depth.current + 1); k++)
 				SET_INTEGER_ELT(xpos_val, k, (int)(xloc[k]));
 
 			if (args.fArgs > 1 && args.fxpos > 0)
@@ -706,7 +710,7 @@ static void do_rreval_flat(
 	if (doRecurse)
 	{
 		/* descend one level */
-		depth += 1;
+		depth.current += 1;
 		parent = node[0];
 		R_xlen_t m = Rf_xlength(Xi);
 		SEXP names = PROTECT(Rf_getAttrib(Xi, R_NamesSymbol));
@@ -714,33 +718,33 @@ static void do_rreval_flat(
 		for (R_xlen_t j = 0; j < m; j++)
 		{
 			/* increment location */
-			xloc[depth] = j + 1;
+			xloc[depth.current] = j + 1;
 
 			/* update current node info */
 			node[0] += 1;
-			do_updateNode(xinfo, node[0], FALSE, parent, depth, j);
+			do_updateNode(xinfo, node[0], FALSE, parent, depth.current, j);
 
 			/* update name attribute */
 			if (!Rf_isNull(names))
 				SET_STRING_ELT(Xnames, node[0], STRING_ELT(names, j));
 
 			/* evaluate list element */
-			do_rreval_flat(env, Xflat, Xnames, VECTOR_ELT(Xi, j), fcall, pcall, args, classes, deflt, xsym, Rf_isNull(names) ? NA_STRING : STRING_ELT(names, j), xinfo, xloc, depth, node, parent);
+			do_rreval_flat(env, Xflat, Xnames, VECTOR_ELT(Xi, j), fcall, pcall, classes, deflt, xsym, Rf_isNull(names) ? NA_STRING : STRING_ELT(names, j), args, depth, xinfo, xloc, node, parent);
 		}
 		UNPROTECT(1);
 	}
 }
 
-static SEXP do_rrfill(SEXP Xflat, SEXP Xnames, SEXP Xi, R_xlen_t (*xinfo)[4], R_xlen_t *buf, R_xlen_t maxNodes, R_xlen_t depth, R_xlen_t node, R_xlen_t ibuf, Rboolean useNames)
+static SEXP do_rrfill(SEXP Xflat, SEXP Xnames, SEXP Xi, Depth depth, R_xlen_t (*xinfo)[4], R_xlen_t *buf, R_xlen_t node, R_xlen_t ibuf, Rboolean useNames)
 {
 	R_xlen_t m = 0;
-	for (R_xlen_t inode = node + 1; inode < maxNodes; inode++)
+	for (R_xlen_t inode = node + 1; inode < depth.maxnodes; inode++)
 	{
 		/* exit loop if smaller equal current depth */
-		if (xinfo[inode][2] <= depth)
+		if (xinfo[inode][2] <= depth.current)
 			break;
 
-		if (xinfo[inode][2] == (depth + 1) && xinfo[inode][0])
+		if (xinfo[inode][2] == (depth.current + 1) && xinfo[inode][0])
 		{
 			buf[ibuf + m] = inode;
 			m++;
@@ -752,9 +756,10 @@ static SEXP do_rrfill(SEXP Xflat, SEXP Xnames, SEXP Xi, R_xlen_t (*xinfo)[4], R_
 	{
 		/* populate sublist*/
 		SEXP ans = PROTECT(Rf_allocVector(VECSXP, m));
+		depth.current += 1;
 		for (R_xlen_t j = 0; j < m; j++)
 		{
-			SET_VECTOR_ELT(ans, j, do_rrfill(Xflat, Xnames, VECTOR_ELT(Xi, xinfo[buf[ibuf + j]][3]), xinfo, buf, maxNodes, depth + 1, buf[ibuf + j], ibuf + m, useNames));
+			SET_VECTOR_ELT(ans, j, do_rrfill(Xflat, Xnames, VECTOR_ELT(Xi, xinfo[buf[ibuf + j]][3]), depth, xinfo, buf, buf[ibuf + j], ibuf + m, useNames));
 		}
 
 		/* add name attribute */
