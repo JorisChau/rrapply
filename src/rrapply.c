@@ -352,9 +352,9 @@ static int do_matchClass(SEXP obj, SEXP classes)
 static int do_rrcount(SEXP X, Depth *depth, R_xlen_t n, int idepth)
 {
 	SEXP Xi;
+	depth->maxnodes += n;
 	for (R_xlen_t i = 0; i < n; i++)
 	{
-		depth->maxnodes += 1;
 		Xi = VECTOR_ELT(X, i);
 		/* descend one level */
 		if (Rf_isVectorList(Xi))
