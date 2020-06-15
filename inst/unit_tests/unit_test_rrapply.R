@@ -254,20 +254,28 @@ xin2 <- f(len = 2, d = 1, dmax = 4, expr = list(1L, NULL))
 
 xout12.1 <- f(len = 1, d = 1, dmax = 17, expr = list(1L, NA))
 xout12.2 <- xout12.1
-xout12.3 <- f(len = 1, d = 1, dmax = 17, expr = list(2L))
-xout12.4 <- list(2L)
-xout12.5 <- f(len = 2, d = 1, dmax = 4, expr = list(1L, NA))
+xout12.3 <- xout12.2
+xout12.4 <- f(len = 1, d = 1, dmax = 17, expr = list(2L))
+xout12.5 <- list(2L)
 xout12.6 <- xout12.5
-xout12.7 <- f(len = 2, d = 1, dmax = 4, expr = list(2L))
-xout12.8 <- as.list(rep(2L, 8L))
+xout12.7 <- f(len = 2, d = 1, dmax = 4, expr = list(1L, NA))
+xout12.8 <- xout12.7
+xout12.9 <- xout12.8
+xout12.10 <- f(len = 2, d = 1, dmax = 4, expr = list(2L))
+xout12.11 <- as.list(rep(2L, 8L))
+xout12.12 <- xout12.11
 
 dotest(12.1, rrapply(xin1, condition = is.null, f = function(x) NA, how = "replace"), xout12.1)
 dotest(12.2, rrapply(xin1, condition = Negate(is.null), f = function(x) 1L, deflt = NA, how = "list"), xout12.2)
-dotest(12.3, rrapply(xin1, condition = Negate(is.null), f = function(x) 2L, how = "prune"), xout12.3)
-dotest(12.4, rrapply(xin1, condition = Negate(is.null), f = function(x) 2L, how = "flatten"), xout12.4)
-dotest(12.5, rrapply(xin2, condition = is.null, f = function(x) NA, how = "replace"), xout12.5)
-dotest(12.6, rrapply(xin2, condition = Negate(is.null), f = function(x) 1L, deflt = NA, how = "list"), xout12.6)
-dotest(12.7, rrapply(xin2, condition = Negate(is.null), f = function(x) 2L, how = "prune"), xout12.7)
-dotest(12.8, rrapply(xin2, condition = Negate(is.null), f = function(x) 2L, how = "flatten"), xout12.8)
+dotest(12.3, rrapply(xin1, condition = function(x, .xpos) identical(.xpos, rep(1L, 17L)), deflt = NA, how = "list"), xout12.3)
+dotest(12.4, rrapply(xin1, condition = Negate(is.null), f = function(x) 2L, how = "prune"), xout12.4)
+dotest(12.5, rrapply(xin1, condition = Negate(is.null), f = function(x) 2L, how = "flatten"), xout12.5)
+dotest(12.6, rrapply(xin1, condition = function(x, .xpos) identical(.xpos, rep(1L, 17L)), f = function(x) 2L, how = "flatten"), xout12.6)
+dotest(12.7, rrapply(xin2, condition = is.null, f = function(x) NA, how = "replace"), xout12.7)
+dotest(12.8, rrapply(xin2, condition = Negate(is.null), f = function(x) 1L, deflt = NA, how = "list"), xout12.8)
+dotest(12.9, rrapply(xin2, condition = function(x, .xpos) identical(.xpos[4], 1L), deflt = NA, how = "list"), xout12.9)
+dotest(12.10, rrapply(xin2, condition = Negate(is.null), f = function(x) 2L, how = "prune"), xout12.10)
+dotest(12.11, rrapply(xin2, condition = Negate(is.null), f = function(x) 2L, how = "flatten"), xout12.11)
+dotest(12.12, rrapply(xin2, condition = function(x, .xpos) identical(.xpos[4], 1L), f = function(x) 2L, how = "flatten"), xout12.12)
 
 cat("Completed rrapply unit tests\n")
