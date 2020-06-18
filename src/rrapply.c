@@ -69,13 +69,14 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 	R_args.feverywhere = LOGICAL_ELT(R_feverywhere, 0);
 
 	/* traverse list once for max nodes and max depth
-	   to avoid having to reallocate arrays downstream */
+	   to avoid having to reallocate arrays downstream 
+	   or allocate unused memory */
 	R_xlen_t n = Rf_xlength(X);
 	Depth R_depth = {.current = 0, .max = 1, .maxnodes = 0};
 	C_traverse(X, &R_depth, n);
 	R_depth.current = 0;
 
-	/* allocate array to store location info */
+	/* allocate arrays to store location info */
 	R_xlen_t *xloc = (R_xlen_t *)S_alloc(R_depth.max, sizeof(R_xlen_t));
 	R_xlen_t(*xinfo)[3];
 	R_xlen_t *inode = (R_xlen_t *)S_alloc(1, sizeof(R_xlen_t));
