@@ -2,10 +2,31 @@ require(rrapply)
 
 cat("Running rrapply unit tests...\n")
 
-## rrapply unit tests
+## ---------------- ##
+## Helper functions ##
+## ---------------- ##
+
+## check test
 dotest <- function(itest, observed, expected) {
   if(!identical(observed, expected)) stop(sprintf("Test %.1f failed", itest), call. = FALSE) 
 }
+
+## create nested list
+f <- function(len, d, dmax, expr) {
+  x <- vector(mode = "list", length = len)
+  for(i in seq_along(x)) {
+    if(d + 1 < dmax) {
+      x[[i]] <- Recall(len, d + 1, dmax, expr)
+    } else {
+      x[[i]] <- expr 
+    }
+  }
+  return(x)
+}
+
+## ---------- ##
+## Unit tests ##
+## ---------- ##
 
 ## input list
 xin <- list(a = 1L, b = list(b1 = 2L, b2 = 3L), c = 4L)
@@ -82,8 +103,8 @@ dotest(2.9, rrapply(xin, f = unlist, condition = function(x, .xname) .xname == "
 dotest(2.10, rrapply(xin, f = unlist, condition = function(x, .xname) .xname == "b", how = "flatten", feverywhere = TRUE), xout2.10)
 
 ## check for trailing .xpos and .xname variables
-dotest(2.6, exists(".xpos"), FALSE)
-dotest(2.7, exists(".xname"), FALSE)
+dotest(2.11, exists(".xpos"), FALSE)
+dotest(2.12, exists(".xname"), FALSE)
 
 ## classes argument
 xout3.1 <- list(a = structure(-1L, .Dim = c(1L, 1L)), b = list(b1 = 2L, b2 = 3L), c = 4L)
@@ -141,19 +162,23 @@ dotest(6.3, rrapply(xin, f = function(x, .xname) .xname, condition = function(x,
 dotest(6.4, rrapply(xin, f = function(x, .xname) .xname, condition = function(x, .xpos) length(.xpos) == 3, feverywhere = TRUE), xout6.4)
 
 ## named flat list
-xin <- list(a = 1L, b = 2L, c = 3L)
-
+xin1 <- list(a = 1L, b = 2L, c = 3L)
+xin2 <- list(a = 1L, b = NULL)
+  
 xout7.1 <- list(a = -1L, b = 2L, c = -3L)
 xout7.2 <- list(a = -1L, b = NULL, c = -3L)
 xout7.3 <- list(a = -1L, c = -3L)
 xout7.4 <- xout7.3
 xout7.5 <- xout7.1
+xout7.6 <- list(a = FALSE, b = TRUE)
 
-dotest(7.1, rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "replace"), xout7.1)
-dotest(7.2, rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "list"), xout7.2)
-dotest(7.3, rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "prune"), xout7.3)
-dotest(7.4, rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "flatten"), xout7.4)
-dotest(7.5, rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), feverywhere = TRUE), xout7.5)
+dotest(7.1, rrapply(xin1, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "replace"), xout7.1)
+dotest(7.2, rrapply(xin1, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "list"), xout7.2)
+dotest(7.3, rrapply(xin1, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "prune"), xout7.3)
+dotest(7.4, rrapply(xin1, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "flatten"), xout7.4)
+dotest(7.5, rrapply(xin1, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), feverywhere = TRUE), xout7.5)
+dotest(7.6, rrapply(xin2, f = is.null, how = "replace"), xout7.6)
+dotest(7.7, rrapply(xin2, f = is.null, how = "prune"), xout7.6)
 
 ## unnamed nested list
 xin <- list(1L, 2L, list(3L, 4L))
@@ -194,9 +219,9 @@ xin <- list(1L, 2L, list(c1 = 3L, c2 = 4L))
 
 xout10.1 <- list(1L, 2L, list(c1 = -3L, c2 = -4L))
 xout10.2 <- list(NULL, NULL, list(c1 = -3L, c2 = -4L))
-xout10.3 <- list(list(-3L, -4L))  ## no names present on L1 so no names returned
-xout10.4 <- list(-3L, -4L)  ## no names present on L1 so no names returned
-xout10.5 <- list(list(-3L))
+xout10.3 <- list(list(c1 = -3L, c2 = -4L))  
+xout10.4 <- list(-3L, -4L) ## no names present in L1 so no names preserved
+xout10.5 <- list(list(c1 = -3L))
 xout10.6 <- list(1L, 2L, list(c1 = "c1", c2 = "c2"))
 
 dotest(10.1, rrapply(xin, f = `-`, condition = function(x, .xname) !is.na(.xname), how = "replace"), xout10.1)
@@ -225,5 +250,36 @@ dotest(11.9, rrapply(xin2, f = `-`, classes = "user-class", how = "prune"), xout
 dotest(11.10, rrapply(xin2, f = `-`, classes = "user-class", how = "flatten"), xout11.2)
 dotest(11.11, rrapply(xin2, condition = function(x) FALSE, how = "prune", feverywhere = TRUE), xout11.2)
 dotest(11.12, rrapply(xin2, condition = function(x) FALSE, how = "flatten", feverywhere = TRUE), xout11.2)
+
+## deeply nested lists
+
+xin1 <- f(len = 1, d = 1, dmax = 17, expr = list(1L, NULL))
+xin2 <- f(len = 2, d = 1, dmax = 4, expr = list(1L, NULL, 1L))
+
+xout12.1 <- f(len = 1, d = 1, dmax = 17, expr = list(1L, NA))
+xout12.2 <- xout12.1
+xout12.3 <- xout12.2
+xout12.4 <- f(len = 1, d = 1, dmax = 17, expr = list(2L))
+xout12.5 <- list(2L)
+xout12.6 <- xout12.5
+xout12.7 <- f(len = 2, d = 1, dmax = 4, expr = list(1L, NA, 1L))
+xout12.8 <- xout12.7
+xout12.9 <- xout12.8
+xout12.10 <- f(len = 2, d = 1, dmax = 4, expr = list(2L, 2L))
+xout12.11 <- as.list(rep(2L, 16L))
+xout12.12 <- as.list(rep(2L, 8L))
+
+dotest(12.1, rrapply(xin1, condition = is.null, f = function(x) NA, how = "replace"), xout12.1)
+dotest(12.2, rrapply(xin1, condition = Negate(is.null), f = function(x) 1L, deflt = NA, how = "list"), xout12.2)
+dotest(12.3, rrapply(xin1, condition = function(x, .xpos) identical(.xpos, rep(1L, 17L)), deflt = NA, how = "list"), xout12.3)
+dotest(12.4, rrapply(xin1, condition = Negate(is.null), f = function(x) 2L, how = "prune"), xout12.4)
+dotest(12.5, rrapply(xin1, condition = Negate(is.null), f = function(x) 2L, how = "flatten"), xout12.5)
+dotest(12.6, rrapply(xin1, condition = function(x, .xpos) identical(.xpos, rep(1L, 17L)), f = function(x) 2L, how = "flatten"), xout12.6)
+dotest(12.7, rrapply(xin2, condition = is.null, f = function(x) NA, how = "replace"), xout12.7)
+dotest(12.8, rrapply(xin2, condition = Negate(is.null), f = function(x) 1L, deflt = NA, how = "list"), xout12.8)
+dotest(12.9, rrapply(xin2, condition = function(x, .xpos) .xpos[4] %in% c(1L, 3L), deflt = NA, how = "list"), xout12.9)
+dotest(12.10, rrapply(xin2, condition = Negate(is.null), f = function(x) 2L, how = "prune"), xout12.10)
+dotest(12.11, rrapply(xin2, condition = Negate(is.null), f = function(x) 2L, how = "flatten"), xout12.11)
+dotest(12.12, rrapply(xin2, condition = function(x, .xpos) identical(.xpos[4], 1L), f = function(x) 2L, how = "flatten"), xout12.12)
 
 cat("Completed rrapply unit tests\n")

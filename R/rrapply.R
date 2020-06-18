@@ -256,7 +256,7 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
   if(missing(f)) f <- NULL else f <- match.fun(f)
   if(missing(condition)) condition <- NULL else condition <- match.fun(condition)
   
-  if(is.null(f) && (is.null(condition) || howInt == 0L) && !feverywhere) 
+  if(is.null(f) && (is.null(condition) || howInt == 0L) && !feverywhere && howInt != 4L) 
   {  
     ## nothing to be done
     res <- object  
@@ -270,7 +270,7 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
       conditionArgs <- match(c(".xname", ".xpos"), names(formals(condition)), nomatch = 0L)
     
     ## call main C function
-    res <- .Call(do_rrapply, environment(), object, f, fArgs, condition, conditionArgs, classes, howInt, deflt, dfaslist, feverywhere)  
+    res <- .Call(C_rrapply, environment(), object, f, fArgs, condition, conditionArgs, classes, howInt, deflt, dfaslist, feverywhere)  
   }
   
   ## unlist result
