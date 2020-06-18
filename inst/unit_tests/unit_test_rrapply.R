@@ -103,8 +103,8 @@ dotest(2.9, rrapply(xin, f = unlist, condition = function(x, .xname) .xname == "
 dotest(2.10, rrapply(xin, f = unlist, condition = function(x, .xname) .xname == "b", how = "flatten", feverywhere = TRUE), xout2.10)
 
 ## check for trailing .xpos and .xname variables
-dotest(2.6, exists(".xpos"), FALSE)
-dotest(2.7, exists(".xname"), FALSE)
+dotest(2.11, exists(".xpos"), FALSE)
+dotest(2.12, exists(".xname"), FALSE)
 
 ## classes argument
 xout3.1 <- list(a = structure(-1L, .Dim = c(1L, 1L)), b = list(b1 = 2L, b2 = 3L), c = 4L)
@@ -219,9 +219,9 @@ xin <- list(1L, 2L, list(c1 = 3L, c2 = 4L))
 
 xout10.1 <- list(1L, 2L, list(c1 = -3L, c2 = -4L))
 xout10.2 <- list(NULL, NULL, list(c1 = -3L, c2 = -4L))
-xout10.3 <- list(list(-3L, -4L))  ## no names present on L1 so no names returned
-xout10.4 <- list(-3L, -4L)  ## no names present on L1 so no names returned
-xout10.5 <- list(list(-3L))
+xout10.3 <- list(list(c1 = -3L, c2 = -4L))  
+xout10.4 <- list(-3L, -4L) ## no names present in L1 so no names preserved
+xout10.5 <- list(list(c1 = -3L))
 xout10.6 <- list(1L, 2L, list(c1 = "c1", c2 = "c2"))
 
 dotest(10.1, rrapply(xin, f = `-`, condition = function(x, .xname) !is.na(.xname), how = "replace"), xout10.1)
