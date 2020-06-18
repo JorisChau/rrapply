@@ -1,4 +1,6 @@
 inst/doc
+src/Makevars
+src/_Makevars
 doc
 Meta
 .Rproj.user
