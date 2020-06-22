@@ -44,6 +44,7 @@ xout0.9 <- rapply(xin, f = function(x) c("a", "1"), how = "replace")
 xout0.10 <- list(a = c("a", "1"), b = list(b1 = c("a", "1"), b2 = c("a", "1")), c = c("a", "1"))
 
 dotest(0.1, rrapply(xin, f = `-`, classes = "ANY"), xout0.1)
+
 dotest(0.2, rrapply(xin, f = `+`, e2 = 1L), xout0.2)
 
 .xpos <- .xname <- 1L
@@ -96,11 +97,11 @@ dotest(2.2, rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L
 dotest(2.3, rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "unlist"), xout2.3)
 dotest(2.4, rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "prune"), xout2.4)
 dotest(2.5, rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "flatten"), xout2.5)
-dotest(2.6, rrapply(xin, f = unlist, condition = function(x, .xname) .xname == "b", how = "replace", feverywhere = TRUE), xout2.6)
-dotest(2.7, rrapply(xin, f = unlist, condition = function(x, .xname) .xname == "b", how = "list", feverywhere = TRUE), xout2.7)
-dotest(2.8, rrapply(xin, f = unlist, condition = function(x, .xname) .xname == "b", how = "unlist", feverywhere = TRUE), xout2.8)
-dotest(2.9, rrapply(xin, f = unlist, condition = function(x, .xname) .xname == "b", how = "prune", feverywhere = TRUE), xout2.9)
-dotest(2.10, rrapply(xin, f = unlist, condition = function(x, .xname) .xname == "b", how = "flatten", feverywhere = TRUE), xout2.10)
+dotest(2.6, rrapply(xin, f = unlist, condition = function(x, .xname) .xname == "b", how = "replace", feverywhere = "once"), xout2.6)
+dotest(2.7, rrapply(xin, f = unlist, condition = function(x, .xname) .xname == "b", how = "list", feverywhere = "once"), xout2.7)
+dotest(2.8, rrapply(xin, f = unlist, condition = function(x, .xname) .xname == "b", how = "unlist", feverywhere = "once"), xout2.8)
+dotest(2.9, rrapply(xin, f = unlist, condition = function(x, .xname) .xname == "b", how = "prune", feverywhere = "once"), xout2.9)
+dotest(2.10, rrapply(xin, f = unlist, condition = function(x, .xname) .xname == "b", how = "flatten", feverywhere = "once"), xout2.10)
 
 ## check for trailing .xpos and .xname variables
 dotest(2.11, exists(".xpos"), FALSE)
@@ -156,10 +157,10 @@ xout6.2 <- list(a = 1L, b = "b", c = 4L)
 xout6.3 <- list(a = 1L, b = list(b1 = "b1", b2 = "b2"), c = 4L)
 xout6.4 <- list(a = 1L, b = list(b1 = list(b11 = "b11"), b2 = 3L), c = 4L)
 
-dotest(6.1, rrapply(xin, f = function(x, .xname) .xname, feverywhere = TRUE), xout6.1)
-dotest(6.2, rrapply(xin, f = function(x, .xname) .xname, condition = function(x, .xname) .xname == "b", feverywhere = TRUE), xout6.2)
-dotest(6.3, rrapply(xin, f = function(x, .xname) .xname, condition = function(x, .xpos) length(.xpos) == 2, feverywhere = TRUE), xout6.3)
-dotest(6.4, rrapply(xin, f = function(x, .xname) .xname, condition = function(x, .xpos) length(.xpos) == 3, feverywhere = TRUE), xout6.4)
+dotest(6.1, rrapply(xin, f = function(x, .xname) .xname, feverywhere = "once"), xout6.1)
+dotest(6.2, rrapply(xin, f = function(x, .xname) .xname, condition = function(x, .xname) .xname == "b", feverywhere = "once"), xout6.2)
+dotest(6.3, rrapply(xin, f = function(x, .xname) .xname, condition = function(x, .xpos) length(.xpos) == 2, feverywhere = "once"), xout6.3)
+dotest(6.4, rrapply(xin, f = function(x, .xname) .xname, condition = function(x, .xpos) length(.xpos) == 3, feverywhere = "once"), xout6.4)
 
 ## named flat list
 xin1 <- list(a = 1L, b = 2L, c = 3L)
@@ -176,7 +177,7 @@ dotest(7.1, rrapply(xin1, f = `-`, condition = function(x, .xpos) .xpos %in% c(1
 dotest(7.2, rrapply(xin1, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "list"), xout7.2)
 dotest(7.3, rrapply(xin1, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "prune"), xout7.3)
 dotest(7.4, rrapply(xin1, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "flatten"), xout7.4)
-dotest(7.5, rrapply(xin1, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), feverywhere = TRUE), xout7.5)
+dotest(7.5, rrapply(xin1, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), feverywhere = "once"), xout7.5)
 dotest(7.6, rrapply(xin2, f = is.null, how = "replace"), xout7.6)
 dotest(7.7, rrapply(xin2, f = is.null, how = "prune"), xout7.6)
 
@@ -195,7 +196,7 @@ dotest(8.2, rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L
 dotest(8.3, rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "prune"), xout8.3)
 dotest(8.4, rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "flatten"), xout8.4)
 dotest(8.5, rrapply(xin, f = `-`, condition = function(x, .xname) is.na(.xname)), xout8.5)
-dotest(8.6, rrapply(xin, f = function(x, .xpos) -.xpos, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), feverywhere = TRUE), xout8.6)
+dotest(8.6, rrapply(xin, f = function(x, .xpos) -.xpos, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), feverywhere = "once"), xout8.6)
 
 ## partially named list 1
 xin <- list(a = 1L, 2L, list(c1 = 3L, 4L))
@@ -212,7 +213,7 @@ dotest(9.2, rrapply(xin, f = `-`, condition = function(x, .xname) nzchar(.xname)
 dotest(9.3, rrapply(xin, f = `-`, condition = function(x, .xname) nzchar(.xname), how = "prune"), xout9.3)
 dotest(9.4, rrapply(xin, f = `-`, condition = function(x, .xname) nzchar(.xname), how = "flatten"), xout9.4)
 dotest(9.5, rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos == 1L, how = "prune"), xout9.5)
-dotest(9.6, rrapply(xin, f = function(x, .xname) .xname, condition = function(x, .xname) nzchar(.xname), feverywhere = TRUE), xout9.6)
+dotest(9.6, rrapply(xin, f = function(x, .xname) .xname, condition = function(x, .xname) nzchar(.xname), feverywhere = "once"), xout9.6)
 
 ## partially named list 2
 xin <- list(1L, 2L, list(c1 = 3L, c2 = 4L))
@@ -220,7 +221,7 @@ xin <- list(1L, 2L, list(c1 = 3L, c2 = 4L))
 xout10.1 <- list(1L, 2L, list(c1 = -3L, c2 = -4L))
 xout10.2 <- list(NULL, NULL, list(c1 = -3L, c2 = -4L))
 xout10.3 <- list(list(c1 = -3L, c2 = -4L))  
-xout10.4 <- list(-3L, -4L) ## no names present in L1 so no names preserved
+xout10.4 <- list(c1 = -3L, c2 = -4L) 
 xout10.5 <- list(list(c1 = -3L))
 xout10.6 <- list(1L, 2L, list(c1 = "c1", c2 = "c2"))
 
@@ -229,7 +230,7 @@ dotest(10.2, rrapply(xin, f = `-`, condition = function(x, .xname) !is.na(.xname
 dotest(10.3, rrapply(xin, f = `-`, condition = function(x, .xname) !is.na(.xname), how = "prune"), xout10.3)
 dotest(10.4, rrapply(xin, f = `-`, condition = function(x, .xname) !is.na(.xname), how = "flatten"), xout10.4)
 dotest(10.5, rrapply(xin, f = `-`, condition = function(x, .xpos) identical(.xpos, c(3L, 1L)), how = "prune"), xout10.5)
-dotest(10.6, rrapply(xin, f = function(x, .xname) .xname, condition = function(x, .xname) !is.na(.xname), feverywhere = TRUE), xout10.6)
+dotest(10.6, rrapply(xin, f = function(x, .xname) .xname, condition = function(x, .xname) !is.na(.xname), feverywhere = "once"), xout10.6)
 
 ## empty lists
 xin1 <- list(a = 1L, b = list(list(2L)))
@@ -242,14 +243,14 @@ dotest(11.1, rrapply(xin1, condition = function(x) FALSE, how = "prune"), xout11
 dotest(11.2, rrapply(xin1, condition = function(x) FALSE, how = "flatten"), xout11.1)
 dotest(11.3, rrapply(xin1, f = `-`, classes = "user-class", how = "prune"), xout11.1)
 dotest(11.4, rrapply(xin1, f = `-`, classes = "user-class", how = "flatten"), xout11.1)
-dotest(11.5, rrapply(xin1, condition = function(x) FALSE, how = "prune", feverywhere = TRUE), xout11.1)
-dotest(11.6, rrapply(xin1, condition = function(x) FALSE, how = "flatten", feverywhere = TRUE), xout11.1)
+dotest(11.5, rrapply(xin1, condition = function(x) FALSE, how = "prune", feverywhere = "once"), xout11.1)
+dotest(11.6, rrapply(xin1, condition = function(x) FALSE, how = "flatten", feverywhere = "once"), xout11.1)
 dotest(11.7, rrapply(xin2, condition = function(x) FALSE, how = "prune"), xout11.2)
 dotest(11.8, rrapply(xin2, condition = function(x) FALSE, how = "flatten"), xout11.2)
 dotest(11.9, rrapply(xin2, f = `-`, classes = "user-class", how = "prune"), xout11.2)
 dotest(11.10, rrapply(xin2, f = `-`, classes = "user-class", how = "flatten"), xout11.2)
-dotest(11.11, rrapply(xin2, condition = function(x) FALSE, how = "prune", feverywhere = TRUE), xout11.2)
-dotest(11.12, rrapply(xin2, condition = function(x) FALSE, how = "flatten", feverywhere = TRUE), xout11.2)
+dotest(11.11, rrapply(xin2, condition = function(x) FALSE, how = "prune", feverywhere = "once"), xout11.2)
+dotest(11.12, rrapply(xin2, condition = function(x) FALSE, how = "flatten", feverywhere = "once"), xout11.2)
 
 ## deeply nested lists
 

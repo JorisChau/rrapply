@@ -37,10 +37,10 @@
 #' 
 #' @section List node aggregation:
 #' By default, \code{rrapply} applies the \code{f} function only to leaf elements by recursing into any list-like element that is encountered. 
-#' If \code{feverywhere = TRUE}, this behavior is overridden and the \code{f} function will be applied to any element of \code{object} (e.g. a sublist) 
+#' If \code{feverywhere = "once"}, this behavior is overridden and the \code{f} function will be applied to any element of \code{object} (e.g. a sublist) 
 #' that satisfies the \code{condition} function. If the \code{condition} function is not satisfied for a list-like 
 #' element, \code{rrapply} will recurse further into the sublist, apply the \code{f} function to the nodes that 
-#' satisfy the \code{condition}, and so on. The primary use of \code{feverywhere = TRUE} is to aggregate list nodes or summarize sublists of \code{object}. 
+#' satisfy the \code{condition}, and so on. The primary use of \code{feverywhere = "once"} is to aggregate list nodes or summarize sublists of \code{object}. 
 #' Additional examples can be found in the package vignette.
 #' 
 #' @section Data.frames as lists:
@@ -166,7 +166,7 @@
 #'   condition = function(x, .xname) .xname == "Europe",
 #'   f = function(x) mean(unlist(x), na.rm = TRUE),
 #'   how = "flatten",
-#'   feverywhere = TRUE
+#'   feverywhere = "once"
 #' )
 #'
 #' ## Calculate mean value for each continent
@@ -174,7 +174,7 @@
 #'   renewable_energy_by_country,  
 #'   condition = function(x, .xpos) length(.xpos) == 2,
 #'   f = function(x) mean(unlist(x), na.rm = TRUE),
-#'   feverywhere = TRUE
+#'   feverywhere = "once"
 #' )
 #'
 #' ## Antarctica's value is missing
@@ -231,7 +231,8 @@
 #' @param how character string partially matching the five possibilities given: see \sQuote{Details}.
 #' @param deflt the default result (only used if \code{how = "list"} or \code{how = "unlist"}).
 #' @param dfaslist logical value to treat data.frames as \dQuote{list-like} object.
-#' @param feverywhere logical value to apply \code{f} to all (\dQuote{list-like} or non \dQuote{list-like}) elements of \code{object}.
+#' @param feverywhere character options \code{"once"} or \code{"recurse"} to override default behavior of \code{f}: see \sQuote{Details}.
+#' By default \code{NULL}, which applies \code{f} only to non \dQuote{list-like} elements.
 #' @param ... additional arguments passed to the call to \code{f} and \code{condition}
 #' 
 #' @aliases rrapply
@@ -242,21 +243,22 @@
 #' @export 
 rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL, 
     how = c("replace", "list", "unlist", "prune", "flatten"),
-    feverywhere = FALSE, dfaslist = TRUE, ...)
+    feverywhere = NULL, dfaslist = TRUE, ...)
 {
   
   ## non-function arguments
   if(!is.list(object) || length(object) < 1) stop("'object' argument should be list-like and of length greater than zero")
   how <- match.arg(how, c("replace", "list", "unlist", "prune", "flatten"))
-  howInt <- match(how, c("replace", "list", "unlist", "prune", "flatten")) - 1L
+  howInt <- match(how, c("replace", "list", "unlist", "prune", "flatten"))
   dfaslist <- isTRUE(dfaslist)
-  feverywhere <- isTRUE(feverywhere)
+  feverywhere <- match.arg(feverywhere, c("no", "once", "recurse"))
+  feverywhereInt <- match(feverywhere, c("no", "once", "recurse"))
   
   ## function arguments  
   if(missing(f)) f <- NULL else f <- match.fun(f)
   if(missing(condition)) condition <- NULL else condition <- match.fun(condition)
   
-  if(is.null(f) && (is.null(condition) || howInt == 0L) && !feverywhere && howInt != 4L) 
+  if(is.null(f) && (is.null(condition) || howInt == 0L) && (feverywhereInt < 1L) && howInt != 4L) 
   {  
     ## nothing to be done
     res <- object  
@@ -270,7 +272,7 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
       conditionArgs <- match(c(".xname", ".xpos"), names(formals(condition)), nomatch = 0L)
     
     ## call main C function
-    res <- .Call(C_rrapply, environment(), object, f, fArgs, condition, conditionArgs, classes, howInt, deflt, dfaslist, feverywhere)  
+    res <- .Call(C_rrapply, environment(), object, f, fArgs, condition, conditionArgs, classes, howInt, deflt, dfaslist, feverywhereInt)  
   }
   
   ## unlist result
