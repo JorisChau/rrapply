@@ -32,7 +32,7 @@ rrapply(
 
 \item{how}{character string partially matching the five possibilities given: see \sQuote{Details}.}
 
-\item{feverywhere}{character options \code{"once"} or \code{"recurse"} to override default behavior of \code{f}: see \sQuote{Details}.
+\item{feverywhere}{character options \code{"break"} or \code{"recurse"} to override default behavior of \code{f}: see \sQuote{Details}.
 By default \code{NULL}, which applies \code{f} only to non \dQuote{list-like} elements.}
 
 \item{dfaslist}{logical value to treat data.frames as \dQuote{list-like} object.}
@@ -95,10 +95,10 @@ to the list element \code{x[[c(1, 2)]]}. The names \code{.xname} and \code{.xpos
 \section{List node aggregation}{
 
 By default, \code{rrapply} applies the \code{f} function only to leaf elements by recursing into any list-like element that is encountered. 
-If \code{feverywhere = "once"}, this behavior is overridden and the \code{f} function will be applied to any element of \code{object} (e.g. a sublist) 
+If \code{feverywhere = "break"}, this behavior is overridden and the \code{f} function will be applied to any element of \code{object} (e.g. a sublist) 
 that satisfies the \code{condition} function. If the \code{condition} function is not satisfied for a list-like 
 element, \code{rrapply} will recurse further into the sublist, apply the \code{f} function to the nodes that 
-satisfy the \code{condition}, and so on. The primary use of \code{feverywhere = "once"} is to aggregate list nodes or summarize sublists of \code{object}. 
+satisfy the \code{condition}, and so on. The primary use of \code{feverywhere = "break"} is to aggregate list nodes or summarize sublists of \code{object}. 
 Additional examples can be found in the package vignette.
 }
 
@@ -221,7 +221,7 @@ rrapply(
   condition = function(x, .xname) .xname == "Europe",
   f = function(x) mean(unlist(x), na.rm = TRUE),
   how = "flatten",
-  feverywhere = "once"
+  feverywhere = "break"
 )
 
 ## Calculate mean value for each continent
@@ -229,7 +229,7 @@ renewable_continent_summary <- rrapply(
   renewable_energy_by_country,  
   condition = function(x, .xpos) length(.xpos) == 2,
   f = function(x) mean(unlist(x), na.rm = TRUE),
-  feverywhere = "once"
+  feverywhere = "break"
 )
 
 ## Antarctica's value is missing

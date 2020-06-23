@@ -31,10 +31,10 @@ typedef struct Args
 typedef struct CountGlobal
 {
 	/* counters that should persist between function calls */
-	int depthmax;	  // maximum allowed depth
-	R_len_t maxnodes; // maximum allowed node count
-	R_len_t node;	  // current node counter (only for pruning)
-	Rboolean anynames;    // any names present (only for flatten)
+	int depthmax;	   // maximum allowed depth
+	R_len_t maxnodes;  // maximum allowed node count
+	R_len_t node;	   // current node counter (only for pruning)
+	Rboolean anynames; // any names present (only for flatten)
 } CountGlobal;
 
 typedef struct CountLocal
@@ -192,6 +192,13 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		/* update current node info for list pruning */
 		if (R_args.how_C > 2)
 		{
+			/* reallocate array if necessary in this case */
+			if (R_args.feverywhere == 2 && (initGlobal.node + 1) >= initGlobal.maxnodes)
+			{
+				xinfo = (R_len_t(*)[3])S_realloc((char *)xinfo,  2 * initGlobal.maxnodes, initGlobal.maxnodes, sizeof(*xinfo));
+				initGlobal.maxnodes *= 2;
+			}
+
 			initGlobal.node++;				// increment node counter
 			xinfo[initGlobal.node][1] = -1; // parent node counter
 			xinfo[initGlobal.node][2] = i;	// child node counter
@@ -246,7 +253,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 			/* populate flat list */
 			int ix = 0;
 			int ians = 0;
-			if(!initGlobal.anynames)
+			if (!initGlobal.anynames)
 			{
 				for (R_len_t i = 0; i < Rf_length(ans); i++)
 				{
@@ -508,8 +515,6 @@ static SEXP C_eval_list(
 						break;
 				}
 			}
-			if (args.how_C == 4)
-				(*xinfo)[countglobal->node][0] = TRUE;
 
 			/* evaluate f */
 			if (args.fArgs > 0)
@@ -525,13 +530,17 @@ static SEXP C_eval_list(
 				funVal = Rf_lazy_duplicate(Xi);
 			}
 
-			/* recurse further with new list (type 2) if f.everywhere == 2 */
+			/* recurse further with new list (type 2) if feverywhere == 2 */
 			if (args.feverywhere == 2 && Rf_isVectorList(funVal))
 			{
 				doRecurse = 2;
 			}
 			else /* otherwise return current value */
 			{
+				/* update current node info for flat lists */
+				if (args.how_C == 4)
+					(*xinfo)[countglobal->node][0] = TRUE;
+
 				if (nprotect > 0)
 					UNPROTECT(nprotect);
 				return funVal;
@@ -539,7 +548,7 @@ static SEXP C_eval_list(
 		}
 		else if (args.feverywhere > 0 && Rf_isVectorList(Xi))
 		{
-			/* recurse further with original list (type 1) if feverywhere == 1 */
+			/* recurse further with original list (type 1) */
 			doRecurse = 1;
 		}
 		else
@@ -561,11 +570,6 @@ static SEXP C_eval_list(
 		SEXP Xnew, names;
 		R_len_t m;
 
-		/* descend one level */
-		countlocal.depth++;
-		if (args.how_C > 2)
-			countlocal.parent = countglobal->node;
-		
 		/* create new object for recursion only if doRecurse != 2 */
 		if (doRecurse != 2)
 		{
@@ -591,22 +595,46 @@ static SEXP C_eval_list(
 		}
 		nprotect += 2;
 
-		/* check if names should be included in flat list */
-		if (args.how_C == 4 && !(countglobal->anynames) && !Rf_isNull(names))
-			countglobal->anynames = TRUE;
+		/* update node info for list pruning */
+		if (args.how_C > 2)
+		{
+			countlocal.parent = countglobal->node;
+
+			/* check if names should be included in flat list */
+			if (args.how_C == 4 && !(countglobal->anynames) && !Rf_isNull(names))
+				countglobal->anynames = TRUE;
+		}
+
+		/* descend one level */
+		countlocal.depth++;
 
 		for (R_len_t j = 0; j < m; j++)
 		{
-			/* increment location */
-			(*xloc)[countlocal.depth] = j + 1;
-
 			/* update current node info */
 			if (args.how_C > 2)
 			{
+				/* reallocate arrays if necessary in this case */
+				if (args.feverywhere == 2)
+				{
+					if (countlocal.depth >= countglobal->depthmax)
+					{
+						*xloc = (R_len_t *)S_realloc((char *)*xloc, 2 * countglobal->depthmax, countglobal->depthmax, sizeof(R_len_t));
+						countglobal->depthmax *= 2;
+					}
+					if ((countglobal->node + 1) >= countglobal->maxnodes)
+					{
+						*xinfo = (R_len_t(*)[3])S_realloc((char *)*xinfo, 2 * countglobal->maxnodes, countglobal->maxnodes, sizeof(**xinfo));
+						countglobal->maxnodes *= 2;
+					}
+				}
+
 				countglobal->node += 1;
 				(*xinfo)[countglobal->node][1] = countlocal.parent; /* parent node */
 				(*xinfo)[countglobal->node][2] = j;					/* child counter */
 			}
+
+			/* increment location */
+			(*xloc)[countlocal.depth] = j + 1;
 
 			/* evaluate list element */
 			if (doRecurse != 2)
@@ -615,18 +643,6 @@ static SEXP C_eval_list(
 			}
 			else
 			{
-				/* reallocate arrays if necessary in this case */
-				if ((countlocal.depth + 1) == countglobal->depthmax)
-				{
-					countglobal->depthmax *= 2;
-					*xloc = (R_len_t *)S_realloc((char *)*xloc, countglobal->depthmax, countlocal.depth + 1, sizeof(R_len_t));
-				}
-				if (args.how_C > 2 && (countglobal->node + 1) == countglobal->maxnodes)
-				{
-					countglobal->maxnodes *= 2;
-					*xinfo = (R_len_t(*)[3])S_realloc((char *)*xinfo, countglobal->maxnodes, countglobal->node + 1, sizeof(*xinfo));
-				}
-
 				SET_VECTOR_ELT(Xnew, j, C_eval_list(env, VECTOR_ELT(funVal, j), fcall, pcall, classes, deflt, xsym, Rf_isNull(names) ? NA_STRING : STRING_ELT(names, j), args, countglobal, countlocal, xinfo, xloc));
 			}
 		}
@@ -710,7 +726,7 @@ static void C_fill_flat(SEXP ansNew, SEXP Xi, R_len_t (*xinfo)[3], R_len_t *ix, 
 	{
 		SET_VECTOR_ELT(ansNew, *ians, Xi);
 		(*ians)++;
-	} 
+	}
 	else if (Rf_isVectorList(Xi))
 	{
 		for (R_len_t i = 0; i < Rf_length(Xi); i++)
