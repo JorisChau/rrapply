@@ -368,8 +368,8 @@ max(sublist_count)
 
 \subsection{List node aggregation}
 
-By construction, both base \code{rapply} and \code{rrapply} apply the \code{f} function only to leaf elements of a nested list by recursing further into any list-like element that is encountered. In \code{rrapply}, it is possible to override this default behavior using the argument \code{feverywhere = TRUE}. In this case, \code{rrapply} does not automatically recurse deeper into list-like objects, and the \code{f} function will be applied to any element (e.g. a sublist) that satisfies the \code{condition} function. If the \code{condition} function is not satisfied for a list-like element, \code{rrapply} will recurse further into the sublist, apply the \code{f} function to the nodes that satisfy the \code{condition}, and so on.\\[3mm]
-A primary use of \code{feverywhere = TRUE} is to perform node aggregation by calculating some type of summary statistic over sublists of the nested list. Together with the \code{.xname} and \code{.xpos} arguments, we have flexibility in deciding which sublists to summarize or collapse trough the \code{condition} function.\\[3mm]
+By construction, both base \code{rapply} and \code{rrapply} apply the \code{f} function only to leaf elements of a nested list by recursing further into any list-like element that is encountered. In \code{rrapply}, it is possible to override this default behavior using the argument \code{feverywhere = "break"}. In this case, \code{rrapply} does not automatically recurse deeper into list-like objects, and the \code{f} function will be applied to any element (e.g. a sublist) that satisfies the \code{condition} function. If the \code{condition} function is not satisfied for a list-like element, \code{rrapply} will recurse further into the sublist, apply the \code{f} function to the nodes that satisfy the \code{condition}, and so on.\\[3mm]
+A primary use of \code{feverywhere = "break"} is to perform node aggregation by calculating some type of summary statistic over sublists of the nested list. Together with the \code{.xname} and \code{.xpos} arguments, we have flexibility in deciding which sublists to summarize or collapse trough the \code{condition} function.\\[3mm]
 To illustrate, we can return the mean and standard deviation of the renewable energy share in Europe as follows:
 <<>>=
 rrapply(
@@ -380,7 +380,7 @@ rrapply(
     sd = sd(unlist(x), na.rm = TRUE)
   ),
   how = "flatten",
-  feverywhere = TRUE
+  feverywhere = "break"
 )
 @
 \begin{remark}
@@ -396,7 +396,7 @@ rrapply(
     sd = sd(unlist(x), na.rm = TRUE)
   ),
   how = "flatten",
-  feverywhere = TRUE
+  feverywhere = "break"
 )
 @
 We can use the \code{.xpos} argument to apply the \code{f} function only at specific locations or depths in the nested list. For instance, we could return the mean renewable energy shares for each continent by observing that the \code{.xpos} vector of each continent has length (i.e. depth) 2:
@@ -405,7 +405,7 @@ renewable_continent_summary <- rrapply(
   renewable_energy_by_country,  
   condition = function(x, .xpos) length(.xpos) == 2,
   f = function(x) mean(unlist(x), na.rm = TRUE),
-  feverywhere = TRUE
+  feverywhere = "break"
 )
 
 ## Antarctica has a missing value
@@ -448,14 +448,14 @@ rrapply(
 @
 
 \begin{remark}
-Note that the same result can also be obtained using \code{feverywhere = TRUE} and checking that the list element under evaluation is a data.frame:
+Note that the same result can also be obtained using \code{feverywhere = "break"} and checking that the list element under evaluation is a data.frame:
 <<eval=FALSE>>=
 rrapply(
   oceania_df,
   condition = function(x) class(x) == "data.frame",
   f = function(x) subset(x, !is.na(value)),
   how = "replace",
-  feverywhere = TRUE
+  feverywhere = "break"
 )
 @
 Using the \code{dfaslist} argument is somewhat more concise and also slightly more efficient as the class of the list element is checked directly analogous to the \code{classes} argument. 
