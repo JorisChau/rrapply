@@ -10,7 +10,7 @@ rrapply(
   f,
   classes = "ANY",
   deflt = NULL,
-  how = c("replace", "list", "unlist", "prune", "flatten"),
+  how = c("replace", "list", "unlist", "prune", "flatten", "melt"),
   feverywhere = NULL,
   dfaslist = TRUE,
   ...
@@ -43,7 +43,8 @@ By default \code{NULL}, which applies \code{f} only to non \dQuote{list-like} el
 If \code{how = "unlist"}, a vector as in \code{\link{rapply}}. If \code{how = "list"} or \code{how = "replace"}, \dQuote{list-like} of similar 
 structure as \code{object} as in \code{\link{rapply}}. If \code{how = "prune"}, a pruned \dQuote{list-like} object of similar structure as \code{object}
 with pruned list elements based on \code{classes} and \code{condition}. If \code{how = "flatten"}, an unnested pruned list with pruned list elements 
-based on \code{classes} and \code{condition}.
+based on \code{classes} and \code{condition}. If \code{how = "melt"} a melted data.frame containing the node paths of the pruned list elements based on 
+\code{classes} and \code{condition}.
 }
 \description{
 \code{rrapply} is a reimplemented and extended version of \code{\link{rapply}} to recursively apply a function \code{f} to 
