@@ -1,6 +1,6 @@
-# rrapply 1.0.0
+# rrapply 1.0.1
 
-* New release
-
-
+* Added new option 'how = "melt"' to return melted data.frame from pruned nested list
+* Added options 'feverywhere = "break"' for list node aggregation and 'feverywhere = "recurse"' for list node updating
+* Cleaned up C-code and fixed several minor issues
 
