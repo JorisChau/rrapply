@@ -6,10 +6,13 @@
 #' 
 #' @section List pruning:
 #' In addition to \code{\link{rapply}}'s modes to set \code{how} equal to \code{"replace"}, \code{"list"} or \code{"unlist"}, 
-#' two choices \code{"prune"} and \code{"flatten"} are available. \code{how = "prune"} filters all list elements not subject to 
+#' three choices \code{"prune"}, \code{"flatten"} and \code{"melt"} are available. \code{how = "prune"} filters all list elements not subject to 
 #' application of \code{f} from the list \code{object}. The original list structure is retained, similar to the non-pruned options 
 #' \code{how = "replace"} or \code{how = "list"}. \code{how = "flatten"} is an efficient way to return a flattened unnested version 
-#' of the pruned list.
+#' of the pruned list. \code{how = "melt"} returns a melted data.frame of the pruned list, each row contains the path of a single terminal node in 
+#' the pruned list at depth layers \code{L1}, \code{L2}, and so on. The list-column \code{"value"} contains the values at the terminal nodes and is 
+#' equivalent to the flattened list returned by \code{how = "flatten"}. If no list names are present, the node names in the data.frame default to
+#' the indices of the list elements \code{"..1"}, \code{"..2"}, etc. 
 #' 
 #' @section Condition function:
 #' Both \code{\link{rapply}} and \code{rrapply} allow to apply \code{f} to list elements of certain classes via the \code{classes} argument. 
