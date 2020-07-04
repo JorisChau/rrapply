@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">rrapply</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.1.0</span>
       </span>
     </div>
 
@@ -86,7 +86,7 @@
 <a href="#rrapply-revisiting-r-base-rapply" class="anchor"></a>rrapply: revisiting R-base rapply</h1></div>
 <!-- badges: start -->
 
-<p>The rrapply-package contains a single function <code>rrapply</code>, providing an extended implementation of R-base’s <code>rapply</code> function, which applies a function <code>f</code> to all elements of a nested list recursively. rrapply is implemented using R’s native C API and for this reason requires no external R-package dependencies.</p>
+<p>The rrapply-package contains a single function <code>rrapply</code>, providing an extended implementation of R-base’s <code>rapply</code> function, which applies a function <code>f</code> to all elements of a nested list recursively and provides control in structuring the returned result. <code>rrapply</code> is implemented using R’s native C API and for this reason requires no external R-package dependencies.</p>
 <div id="installation" class="section level2">
 <h2 class="hasAnchor">
 <a href="#installation" class="anchor"></a>Installation</h2>
@@ -133,7 +133,7 @@
 <span class="co">## Drop all logical NA's while preserving list structure </span>
 <span class="no">na_drop_oceania</span> <span class="kw">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span>(
   <span class="no">renewable_oceania</span>,
-  <span class="kw">f</span> <span class="kw">=</span> <span class="kw">function</span>(<span class="no">x</span>) <span class="no">x</span>,
+  <span class="kw">f</span> <span class="kw">=</span> <span class="no">identity</span>,
   <span class="kw">classes</span> <span class="kw">=</span> <span class="st">"numeric"</span>,
   <span class="kw">how</span> <span class="kw">=</span> <span class="st">"prune"</span>
 )
@@ -158,7 +158,7 @@
 <div class="sourceCode" id="cb3"><pre class="r"><span class="co">## Drop all logical NA's and return unnested list</span>
 <span class="no">na_drop_oceania2</span> <span class="kw">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span>(
   <span class="no">renewable_oceania</span>,
-  <span class="kw">f</span> <span class="kw">=</span> <span class="kw">function</span>(<span class="no">x</span>) <span class="no">x</span>,
+  <span class="kw">f</span> <span class="kw">=</span> <span class="no">identity</span>,
   <span class="kw">classes</span> <span class="kw">=</span> <span class="st">"numeric"</span>,
   <span class="kw">how</span> <span class="kw">=</span> <span class="st">"flatten"</span>
 )
@@ -175,12 +175,28 @@
 <span class="co">#&gt;  $ Kiribati                        : num 45.4</span>
 <span class="co">#&gt;  $ Marshall Islands                : num 11.8</span>
 <span class="co">#&gt;   [list output truncated]</span></pre></div>
+<p>Or, use <code>how = "melt"</code> to return a melted data.frame of the pruned list similar in format to <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html">reshape2::melt</a></code> applied to a nested list.</p>
+<div class="sourceCode" id="cb4"><pre class="r"><span class="co">## Drop all logical NA's and return melted data.frame</span>
+<span class="no">na_drop_oceania3</span> <span class="kw">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span>(
+  <span class="no">renewable_oceania</span>,
+  <span class="kw">f</span> <span class="kw">=</span> <span class="no">identity</span>,
+  <span class="kw">classes</span> <span class="kw">=</span> <span class="st">"numeric"</span>,
+  <span class="kw">how</span> <span class="kw">=</span> <span class="st">"melt"</span>
+)
+<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(<span class="no">na_drop_oceania3</span>)
+<span class="co">#&gt;        L1                        L2               L3 value</span>
+<span class="co">#&gt; 1 Oceania Australia and New Zealand        Australia  9.32</span>
+<span class="co">#&gt; 2 Oceania Australia and New Zealand      New Zealand 32.76</span>
+<span class="co">#&gt; 3 Oceania                 Melanesia             Fiji 24.36</span>
+<span class="co">#&gt; 4 Oceania                 Melanesia    New Caledonia  4.03</span>
+<span class="co">#&gt; 5 Oceania                 Melanesia Papua New Guinea 50.34</span>
+<span class="co">#&gt; 6 Oceania                 Melanesia  Solomon Islands 65.73</span></pre></div>
 </div>
 <div id="condition-function" class="section level3">
 <h3 class="hasAnchor">
 <a href="#condition-function" class="anchor"></a>Condition function</h3>
 <p>Base <code>rapply</code> allows to apply a function <code>f</code> to list elements of certain types or classes via the <code>classes</code> argument. <code>rrapply</code> generalizes this option via an additional <code>condition</code> argument, which accepts any function to use as a condition or predicate to apply <code>f</code> to a subset of list elements.</p>
-<div class="sourceCode" id="cb4"><pre class="r"><span class="co">## Drop all NA elements using condition function</span>
+<div class="sourceCode" id="cb5"><pre class="r"><span class="co">## Drop all NA elements using condition function</span>
 <span class="no">na_drop_oceania3</span> <span class="kw">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span>(
   <span class="no">renewable_oceania</span>,
   <span class="kw">condition</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/funprog.html">Negate</a></span>(<span class="no">is.na</span>),
@@ -235,7 +251,7 @@
 <a href="#special-arguments-xname-and-xpos" class="anchor"></a>Special arguments <code>.xname</code> and <code>.xpos</code>
 </h3>
 <p>In base <code>rapply</code>, the <code>f</code> function only has access to the content of the list element under evaluation, and there is no convenient way to access its name or location in the nested list from inside the <code>f</code> function. <code>rrapply</code> allows the use of the special arguments <code>.xname</code> and <code>.xpos</code> inside the <code>f</code> and <code>condition</code> functions (in addition to the principal function argument). <code>.xname</code> evaluates to the name of the list element, and <code>.xpos</code> evaluates to the position of the element in the nested list structured as an integer vector.</p>
-<div class="sourceCode" id="cb5"><pre class="r"><span class="co">## Apply a function using the name of the node</span>
+<div class="sourceCode" id="cb6"><pre class="r"><span class="co">## Apply a function using the name of the node</span>
 <span class="no">renewable_oceania4</span> <span class="kw">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span>(
   <span class="no">renewable_oceania</span>,
   <span class="kw">f</span> <span class="kw">=</span> <span class="kw">function</span>(<span class="no">x</span>, <span class="no">.xname</span>) <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html">sprintf</a></span>(<span class="st">"Renewable energy in %s: %.2f%%"</span>, <span class="no">.xname</span>, <span class="no">x</span>),
@@ -305,14 +321,14 @@
 <div id="list-node-aggregation" class="section level3">
 <h3 class="hasAnchor">
 <a href="#list-node-aggregation" class="anchor"></a>List node aggregation</h3>
-<p>By default, both base <code>rapply</code> and <code>rrapply</code> recurse into any list-like element. Use <code>feverywhere = TRUE</code> to override this behavior and apply <code>f</code> to any list element (e.g. a sublist) that satisfies the <code>condition</code> function. This is useful to collapse sublists or calculate summary statistics of sublists of a nested list. Together with the <code>.xname</code> and <code>.xpos</code> arguments, we have a flexible way in deciding which sublists to summarize through the <code>condition</code> function.</p>
-<div class="sourceCode" id="cb6"><pre class="r"><span class="co">## Calculate mean value of Europe</span>
+<p>By default, both base <code>rapply</code> and <code>rrapply</code> recurse into any list-like element. Use <code>feverywhere = "break"</code> to override this behavior and apply <code>f</code> to any list element (e.g. a sublist) that satisfies the <code>condition</code> and <code>classes</code> arguments. This is useful to collapse sublists or calculate summary statistics of sublists of a nested list. Together with the <code>.xname</code> and <code>.xpos</code> arguments, we have a flexible way in deciding which sublists to summarize through the <code>condition</code> function.</p>
+<div class="sourceCode" id="cb7"><pre class="r"><span class="co">## Calculate mean value of Europe</span>
 <span class="fu"><a href="reference/rrapply.html">rrapply</a></span>(
   <span class="no">renewable_energy_by_country</span>,
   <span class="kw">condition</span> <span class="kw">=</span> <span class="kw">function</span>(<span class="no">x</span>, <span class="no">.xname</span>) <span class="no">.xname</span> <span class="kw">==</span> <span class="st">"Europe"</span>,
   <span class="kw">f</span> <span class="kw">=</span> <span class="kw">function</span>(<span class="no">x</span>) <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/unlist.html">unlist</a></span>(<span class="no">x</span>), <span class="kw">na.rm</span> <span class="kw">=</span> <span class="fl">TRUE</span>),
   <span class="kw">how</span> <span class="kw">=</span> <span class="st">"flatten"</span>,
-  <span class="kw">feverywhere</span> <span class="kw">=</span> <span class="fl">TRUE</span>
+  <span class="kw">feverywhere</span> <span class="kw">=</span> <span class="st">"break"</span>
 )
 <span class="co">#&gt; $Europe</span>
 <span class="co">#&gt; [1] 22.36565</span>
@@ -322,7 +338,7 @@
   <span class="no">renewable_energy_by_country</span>,
   <span class="kw">condition</span> <span class="kw">=</span> <span class="kw">function</span>(<span class="no">x</span>, <span class="no">.xpos</span>) <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span>(<span class="no">.xpos</span>) <span class="kw">==</span> <span class="fl">2</span>,
   <span class="kw">f</span> <span class="kw">=</span> <span class="kw">function</span>(<span class="no">x</span>) <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/unlist.html">unlist</a></span>(<span class="no">x</span>), <span class="kw">na.rm</span> <span class="kw">=</span> <span class="fl">TRUE</span>),
-  <span class="kw">feverywhere</span> <span class="kw">=</span> <span class="fl">TRUE</span>
+  <span class="kw">feverywhere</span> <span class="kw">=</span> <span class="st">"break"</span>
 )
 
 <span class="co">## Antarctica's value is missing</span>
@@ -336,12 +352,39 @@
 <span class="co">#&gt;   ..$ Europe    : num 22.4</span>
 <span class="co">#&gt;   ..$ Oceania   : num 17.8</span></pre></div>
 </div>
+<div id="list-node-updating" class="section level3">
+<h3 class="hasAnchor">
+<a href="#list-node-updating" class="anchor"></a>List node updating</h3>
+<p>If <code>feverywhere = "recurse"</code>, <code>rrapply</code> applies the <code>f</code> function to any element (e.g. a sublist) that satisfies the <code>condition</code> and <code>classes</code> arguments similar to <code>feverywhere = "break"</code>, but recurses further into any <em>updated</em> list-like element after application of the <code>f</code> function. Using <code>feverywhere = "recurse"</code>, we can for instance recursively update all node names in a nested list:</p>
+<div class="sourceCode" id="cb8"><pre class="r"><span class="co">## Replace country names by M-49 attributes</span>
+<span class="no">renewable_M49</span> <span class="kw">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span>(
+  <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="no">renewable_energy_by_country</span>),
+  <span class="kw">condition</span> <span class="kw">=</span> <span class="no">is.list</span>,
+  <span class="kw">f</span> <span class="kw">=</span> <span class="kw">function</span>(<span class="no">x</span>) {
+    <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span>(<span class="no">x</span>) <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">vapply</a></span>(<span class="no">x</span>, <span class="no">attr</span>, <span class="fu"><a href="https://rdrr.io/r/base/character.html">character</a></span>(<span class="fl">1L</span>), <span class="kw">which</span> <span class="kw">=</span> <span class="st">"M49-code"</span>)
+    <span class="fu"><a href="https://rdrr.io/r/base/function.html">return</a></span>(<span class="no">x</span>)
+  },
+  <span class="kw">feverywhere</span> <span class="kw">=</span> <span class="st">"recurse"</span>
+)
+
+<span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span>(<span class="no">renewable_M49</span><span class="kw">[[</span><span class="fl">1</span>]], <span class="kw">max.level</span> <span class="kw">=</span> <span class="fl">3</span>, <span class="kw">list.len</span> <span class="kw">=</span> <span class="fl">3</span>, <span class="kw">give.attr</span> <span class="kw">=</span> <span class="fl">FALSE</span>)
+<span class="co">#&gt; List of 1</span>
+<span class="co">#&gt;  $ 001:List of 6</span>
+<span class="co">#&gt;   ..$ 002:List of 2</span>
+<span class="co">#&gt;   .. ..$ 015:List of 7</span>
+<span class="co">#&gt;   .. ..$ 202:List of 4</span>
+<span class="co">#&gt;   ..$ 019:List of 2</span>
+<span class="co">#&gt;   .. ..$ 419:List of 3</span>
+<span class="co">#&gt;   .. ..$ 021:List of 5</span>
+<span class="co">#&gt;   ..$ 010: logi NA</span>
+<span class="co">#&gt;   .. [list output truncated]</span></pre></div>
+</div>
 <div id="using-rrapply-on-dataframes" class="section level3">
 <h3 class="hasAnchor">
 <a href="#using-rrapply-on-dataframes" class="anchor"></a>Using <code>rrapply</code> on data.frames</h3>
 <p>Since base <code>rapply</code> recurses into all list-like objects, and data.frames are list-like objects, <code>rapply</code> always descends into the individual columns of a data.frame. For convenience, <code>rrapply</code> includes an additional <code>dfaslist</code> argument, which if <code>FALSE</code> does not treat a data.frame as a list and applies the <code>f</code> function to the data.frame as a whole instead of its individual columns.</p>
 <p>However, it can also be useful to exploit the property that a data.frame is a list-like object and use base <code>rapply</code> to apply a function <code>f</code> to data.frame columns of certain classes via the <code>classes</code> argument. Using the <code>condition</code> argument in <code>rrapply</code>, we can apply a function <code>f</code> to a subset of data.frame columns using a general predicate function,</p>
-<div class="sourceCode" id="cb7"><pre class="r"><span class="co">## Scale only Sepal columns in iris dataset</span>
+<div class="sourceCode" id="cb9"><pre class="r"><span class="co">## Scale only Sepal columns in iris dataset</span>
 <span class="no">iris_standard_sepal</span> <span class="kw">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span>(
   <span class="no">iris</span>,
   <span class="kw">condition</span> <span class="kw">=</span> <span class="kw">function</span>(<span class="no">x</span>, <span class="no">.xname</span>) <span class="fu"><a href="https://rdrr.io/r/base/grep.html">grepl</a></span>(<span class="st">"Sepal"</span>, <span class="no">.xname</span>),
@@ -395,7 +438,7 @@
 <span class="co">#&gt; $Petal.Width</span>
 <span class="co">#&gt;    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. </span>
 <span class="co">#&gt;   0.100   0.300   1.300   1.199   1.800   2.500</span></pre></div>
-<p>For more details and examples on how to use the <code>rrapply</code> function see the accompanying package vignette in the vignettes folder.</p>
+<p>For more details and examples on how to use the <code>rrapply</code> function see the accompanying package vignette in the vignettes folder or the ‘Articles’ section at <a href="https://jorischau.github.io/rrapply/" class="uri">https://jorischau.github.io/rrapply/</a>.</p>
 </div>
 </div>
 </div>
