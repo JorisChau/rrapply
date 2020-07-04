@@ -291,10 +291,12 @@ str(na_drop_oceania_attr2, max.level = 2)
 # Applying functions to data.frames
 
 ## Scale only Sepal columns in iris dataset
-rrapply(
-  iris,
-  condition = function(x, .xname) grepl("Sepal", .xname),
-  f = scale
+head(
+  rrapply(
+    iris,
+    condition = function(x, .xname) grepl("Sepal", .xname),
+    f = scale
+  )
 )
 
 ## Scale and keep only numeric columns
@@ -308,14 +310,13 @@ head(
 )
 
 ## Summarize only numeric columns with how = "flatten"
-head(
-  rrapply(
-    iris,
-    f = summary,
-    classes = "numeric",
-    how = "flatten"
-  )
+rrapply(
+  iris,
+  f = summary,
+  classes = "numeric",
+  how = "flatten"
 )
+
 }
 \seealso{
 \code{\link{rapply}}
