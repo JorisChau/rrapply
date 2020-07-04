@@ -1,10 +1,4 @@
-## CRAN package version 1.0.0 (resubmission)
-
-### Comments
-
-* The description text in the DESCRIPTION file has been extended en includes undirected single quotes for package and software names and parenthesis behind function names.
-* Included missing options() reset in the vignette.
-* The package code has been modified to not assign() to any environment other than the current evaluation environment. 
+## CRAN package version 1.1.0
 
 ### Test environments
 
@@ -21,7 +15,7 @@
 
 * linux-x86_64-rocker-gcc-san (rhub)
 * ubuntu-rchk (rhub)
-* ubuntu clang R-old-release (local install) --use-valgrind/--use-gct
+* ubuntu clang R-release (local install) --use-valgrind/--use-gct
 
 ### Notes
 
