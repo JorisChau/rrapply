@@ -310,13 +310,14 @@ head(
 )
 
 ## Summarize only numeric columns with how = "flatten"
-rrapply(
-  iris,
-  f = summary,
-  classes = "numeric",
-  how = "flatten"
+head(
+  rrapply(
+    iris,
+    f = summary,
+    classes = "numeric",
+    how = "flatten"
+  )
 )
-
 }
 \seealso{
 \code{\link{rapply}}

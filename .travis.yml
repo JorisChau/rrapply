@@ -1,6 +1,11 @@
 # R for travis: see documentation at https://docs.travis-ci.com/user/languages/r
 
-language: R
+language: r
+r:
+  - 3.5
+  - oldrel
+  - release
+  - devel
 warnings_are_errors: true
 sudo: false
 cache: packages
