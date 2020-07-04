@@ -73,7 +73,7 @@ a set of elements of a list and deciding how the result is structured." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">rrapply</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.1.0</span>
       </span>
     </div>
 
@@ -140,8 +140,8 @@ a set of elements of a list and deciding <em>how</em> the result is structured.<
   <span class='no'>f</span>,
   <span class='kw'>classes</span> <span class='kw'>=</span> <span class='st'>"ANY"</span>,
   <span class='kw'>deflt</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>how</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"replace"</span>, <span class='st'>"list"</span>, <span class='st'>"unlist"</span>, <span class='st'>"prune"</span>, <span class='st'>"flatten"</span>),
-  <span class='kw'>feverywhere</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>how</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"replace"</span>, <span class='st'>"list"</span>, <span class='st'>"unlist"</span>, <span class='st'>"prune"</span>, <span class='st'>"flatten"</span>, <span class='st'>"melt"</span>),
+  <span class='kw'>feverywhere</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>dfaslist</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='no'>...</span>
 )</pre>
@@ -178,7 +178,8 @@ a set of elements of a list and deciding <em>how</em> the result is structured.<
     </tr>
     <tr>
       <th>feverywhere</th>
-      <td><p>logical value to apply <code>f</code> to all (&#8220;list-like&#8221; or non &#8220;list-like&#8221;) elements of <code>object</code>.</p></td>
+      <td><p>character options <code>"break"</code> or <code>"recurse"</code> to override default behavior of <code>f</code>: see &#8216;Details&#8217;.
+By default <code>NULL</code>, which applies <code>f</code> only to non &#8220;list-like&#8221; elements.</p></td>
     </tr>
     <tr>
       <th>dfaslist</th>
@@ -195,7 +196,8 @@ a set of elements of a list and deciding <em>how</em> the result is structured.<
     <p>If <code>how = "unlist"</code>, a vector as in <code><a href='https://rdrr.io/r/base/rapply.html'>rapply</a></code>. If <code>how = "list"</code> or <code>how = "replace"</code>, &#8220;list-like&#8221; of similar 
 structure as <code>object</code> as in <code><a href='https://rdrr.io/r/base/rapply.html'>rapply</a></code>. If <code>how = "prune"</code>, a pruned &#8220;list-like&#8221; object of similar structure as <code>object</code>
 with pruned list elements based on <code>classes</code> and <code>condition</code>. If <code>how = "flatten"</code>, an unnested pruned list with pruned list elements 
-based on <code>classes</code> and <code>condition</code>.</p>
+based on <code>classes</code> and <code>condition</code>. If <code>how = "melt"</code>, a melted data.frame containing the node paths and values of the pruned list 
+elements based on <code>classes</code> and <code>condition</code>.</p>
     <h2 class="hasAnchor" id="note"><a class="anchor" href="#note"></a>Note</h2>
 
     <p><code>rrapply</code> allows the <code>f</code> function argument to be missing, in which case no function is applied to the list 
@@ -205,10 +207,13 @@ elements.</p>
     
 
 <p>In addition to <code><a href='https://rdrr.io/r/base/rapply.html'>rapply</a></code>'s modes to set <code>how</code> equal to <code>"replace"</code>, <code>"list"</code> or <code>"unlist"</code>, 
-two choices <code>"prune"</code> and <code>"flatten"</code> are available. <code>how = "prune"</code> filters all list elements not subject to 
+three choices <code>"prune"</code>, <code>"flatten"</code> and <code>"melt"</code> are available. <code>how = "prune"</code> filters all list elements not subject to 
 application of <code>f</code> from the list <code>object</code>. The original list structure is retained, similar to the non-pruned options 
 <code>how = "replace"</code> or <code>how = "list"</code>. <code>how = "flatten"</code> is an efficient way to return a flattened unnested version 
-of the pruned list.</p>
+of the pruned list. <code>how = "melt"</code> returns a melted data.frame of the pruned list, each row contains the path of a single terminal node in 
+the pruned list at depth layers <code>L1</code>, <code>L2</code>, and so on. The list-column <code>"value"</code> contains the values at the terminal nodes and is 
+equivalent to the flattened list returned by <code>how = "flatten"</code>. If no list names are present, the node names in the data.frame default to
+the indices of the list elements <code>"..1"</code>, <code>"..2"</code>, etc.</p>
     <h2 class="hasAnchor" id="condition-function"><a class="anchor" href="#condition-function"></a>Condition function</h2>
 
     
@@ -243,18 +248,25 @@ to the list element <code>x[[c(1, 2)]]</code>. The names <code>.xname</code> and
 
     
 
-<p>By default, <code>rrapply</code> applies the <code>f</code> function only to leaf elements by recursing into any list-like element that is encountered. 
-If <code>feverywhere = TRUE</code>, this behavior is overridden and the <code>f</code> function will be applied to any element of <code>object</code> (e.g. a sublist) 
-that satisfies the <code>condition</code> function. If the <code>condition</code> function is not satisfied for a list-like 
-element, <code>rrapply</code> will recurse further into the sublist, apply the <code>f</code> function to the nodes that 
-satisfy the <code>condition</code>, and so on. The primary use of <code>feverywhere = TRUE</code> is to aggregate list nodes or summarize sublists of <code>object</code>. 
-Additional examples can be found in the package vignette.</p>
+<p>By default, <code>rrapply</code> recurses into any &#8220;list-like&#8221; element. If <code>feverywhere = "break"</code>, this behavior is overridden and the 
+<code>f</code> function is applied to any element of <code>object</code> (e.g. a sublist) that satisfies <code>condition</code> and <code>classes</code>. 
+If the <code>condition</code> or <code>classes</code> arguments are not satisfied for a &#8220;list-like&#8221; element, <code>rrapply</code> will recurse further into the sublist, 
+apply the <code>f</code> function to the nodes that satisfy <code>condition</code> and <code>classes</code>, and so on. The primary use of <code>feverywhere = "break"</code> is 
+to aggregate list nodes or summarize sublists of <code>object</code>. Additional examples can be found in the package vignette.</p>
+    <h2 class="hasAnchor" id="list-node-updating"><a class="anchor" href="#list-node-updating"></a>List node updating</h2>
+
+    
+
+<p>If <code>feverywhere = "recurse"</code>, <code>rrapply</code> applies the <code>f</code> function to any element of <code>object</code> (e.g. a sublist) that satisfies 
+<code>condition</code> and <code>classes</code> similar to <code>feverywhere = "break"</code>, but recurses further into the <em>updated</em> list-like element 
+after application of the <code>f</code> function. The primary use of <code>feverywhere = "recurse"</code> is to recursively update for instance the names of 
+all nodes in a nested list. Additional examples are found in the package vignette.</p>
     <h2 class="hasAnchor" id="data-frames-as-lists"><a class="anchor" href="#data-frames-as-lists"></a>Data.frames as lists</h2>
 
     
 
-<p>If <code>feverywhere = FALSE</code>, <code>rrapply</code> recurses into all list-like objects equivalent to <code><a href='https://rdrr.io/r/base/rapply.html'>rapply</a></code>. 
-Since data.frames are list-like objects, the <code>f</code> function will descend into the individual columns of a data.frame. 
+<p>If <code>feverywhere = NULL</code> (default), <code>rrapply</code> recurses into all &#8220;list-like&#8221; objects equivalent to <code><a href='https://rdrr.io/r/base/rapply.html'>rapply</a></code>. 
+Since data.frames are &#8220;list-like&#8221; objects, the <code>f</code> function will descend into the individual columns of a data.frame. 
 If <code>dfaslist = FALSE</code>, data.frames are no longer viewed as lists and the <code>f</code> and <code>condition</code> functions are 
 applied directly to the data.frame itself and not its columns.</p>
     <h2 class="hasAnchor" id="list-attributes"><a class="anchor" href="#list-attributes"></a>List attributes</h2>
@@ -321,6 +333,20 @@ the result is no longer a nested list.</p>
 #&gt;  $ Kiribati                        : num 45.4
 #&gt;  $ Marshall Islands                : num 11.8
 #&gt;   [list output truncated]</div><div class='input'>
+<span class='co'>## Drop all logical NA's and return melted data.frame</span>
+<span class='no'>na_drop_oceania3</span> <span class='kw'>&lt;-</span> <span class='fu'>rrapply</span>(
+  <span class='no'>renewable_oceania</span>,
+  <span class='kw'>f</span> <span class='kw'>=</span> <span class='no'>identity</span>,
+  <span class='kw'>classes</span> <span class='kw'>=</span> <span class='st'>"numeric"</span>,
+  <span class='kw'>how</span> <span class='kw'>=</span> <span class='st'>"melt"</span>
+)
+<span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>na_drop_oceania3</span>)</div><div class='output co'>#&gt;        L1                        L2               L3 value
+#&gt; 1 Oceania Australia and New Zealand        Australia  9.32
+#&gt; 2 Oceania Australia and New Zealand      New Zealand 32.76
+#&gt; 3 Oceania                 Melanesia             Fiji 24.36
+#&gt; 4 Oceania                 Melanesia    New Caledonia  4.03
+#&gt; 5 Oceania                 Melanesia Papua New Guinea 50.34
+#&gt; 6 Oceania                 Melanesia  Solomon Islands 65.73</div><div class='input'>
 <span class='co'># Condition function</span>
 
 <span class='co'>## Drop all NA elements using condition function</span>
@@ -465,7 +491,7 @@ the result is no longer a nested list.</p>
   <span class='kw'>condition</span> <span class='kw'>=</span> <span class='kw'>function</span>(<span class='no'>x</span>, <span class='no'>.xname</span>) <span class='no'>.xname</span> <span class='kw'>==</span> <span class='st'>"Europe"</span>,
   <span class='kw'>f</span> <span class='kw'>=</span> <span class='kw'>function</span>(<span class='no'>x</span>) <span class='fu'><a href='https://rdrr.io/r/base/mean.html'>mean</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/unlist.html'>unlist</a></span>(<span class='no'>x</span>), <span class='kw'>na.rm</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>),
   <span class='kw'>how</span> <span class='kw'>=</span> <span class='st'>"flatten"</span>,
-  <span class='kw'>feverywhere</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
+  <span class='kw'>feverywhere</span> <span class='kw'>=</span> <span class='st'>"break"</span>
 )</div><div class='output co'>#&gt; $Europe
 #&gt; [1] 22.36565
 #&gt; </div><div class='input'>
@@ -474,7 +500,7 @@ the result is no longer a nested list.</p>
   <span class='no'>renewable_energy_by_country</span>,
   <span class='kw'>condition</span> <span class='kw'>=</span> <span class='kw'>function</span>(<span class='no'>x</span>, <span class='no'>.xpos</span>) <span class='fu'><a href='https://rdrr.io/r/base/length.html'>length</a></span>(<span class='no'>.xpos</span>) <span class='kw'>==</span> <span class='fl'>2</span>,
   <span class='kw'>f</span> <span class='kw'>=</span> <span class='kw'>function</span>(<span class='no'>x</span>) <span class='fu'><a href='https://rdrr.io/r/base/mean.html'>mean</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/unlist.html'>unlist</a></span>(<span class='no'>x</span>), <span class='kw'>na.rm</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>),
-  <span class='kw'>feverywhere</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
+  <span class='kw'>feverywhere</span> <span class='kw'>=</span> <span class='st'>"break"</span>
 )
 
 <span class='co'>## Antarctica's value is missing</span>
@@ -486,6 +512,29 @@ the result is no longer a nested list.</p>
 #&gt;   ..$ Asia      : num 17.9
 #&gt;   ..$ Europe    : num 22.4
 #&gt;   ..$ Oceania   : num 17.8</div><div class='input'>
+<span class='co'># List node updating</span>
+
+<span class='co'>## replace country names by M-49 codes</span>
+<span class='no'>renewable_M49</span> <span class='kw'>&lt;-</span> <span class='fu'>rrapply</span>(
+  <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(<span class='no'>renewable_energy_by_country</span>),
+  <span class='kw'>condition</span> <span class='kw'>=</span> <span class='no'>is.list</span>,
+  <span class='kw'>f</span> <span class='kw'>=</span> <span class='kw'>function</span>(<span class='no'>x</span>) {
+    <span class='fu'><a href='https://rdrr.io/r/base/names.html'>names</a></span>(<span class='no'>x</span>) <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/lapply.html'>vapply</a></span>(<span class='no'>x</span>, <span class='no'>attr</span>, <span class='fu'><a href='https://rdrr.io/r/base/character.html'>character</a></span>(<span class='fl'>1L</span>), <span class='kw'>which</span> <span class='kw'>=</span> <span class='st'>"M49-code"</span>)
+    <span class='fu'><a href='https://rdrr.io/r/base/function.html'>return</a></span>(<span class='no'>x</span>)
+  },
+  <span class='kw'>feverywhere</span> <span class='kw'>=</span> <span class='st'>"recurse"</span>
+)
+
+<span class='fu'><a href='https://rdrr.io/r/utils/str.html'>str</a></span>(<span class='no'>renewable_M49</span><span class='kw'>[[</span><span class='fl'>1</span>]], <span class='kw'>max.level</span> <span class='kw'>=</span> <span class='fl'>3</span>, <span class='kw'>list.len</span> <span class='kw'>=</span> <span class='fl'>3</span>, <span class='kw'>give.attr</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; List of 1
+#&gt;  $ 001:List of 6
+#&gt;   ..$ 002:List of 2
+#&gt;   .. ..$ 015:List of 7
+#&gt;   .. ..$ 202:List of 4
+#&gt;   ..$ 019:List of 2
+#&gt;   .. ..$ 419:List of 3
+#&gt;   .. ..$ 021:List of 5
+#&gt;   ..$ 010: logi NA
+#&gt;   .. [list output truncated]</div><div class='input'>
 <span class='co'># List attributes</span>
 
 <span class='co'>## how = "list" preserves all list attributes</span>
@@ -525,318 +574,34 @@ the result is no longer a nested list.</p>
 <span class='co'># Applying functions to data.frames</span>
 
 <span class='co'>## Scale only Sepal columns in iris dataset</span>
-<span class='fu'>rrapply</span>(
-  <span class='no'>iris</span>,
-  <span class='kw'>condition</span> <span class='kw'>=</span> <span class='kw'>function</span>(<span class='no'>x</span>, <span class='no'>.xname</span>) <span class='fu'><a href='https://rdrr.io/r/base/grep.html'>grepl</a></span>(<span class='st'>"Sepal"</span>, <span class='no'>.xname</span>),
-  <span class='kw'>f</span> <span class='kw'>=</span> <span class='no'>scale</span>
-)</div><div class='output co'>#&gt;     Sepal.Length Sepal.Width Petal.Length Petal.Width    Species
-#&gt; 1    -0.89767388  1.01560199          1.4         0.2     setosa
-#&gt; 2    -1.13920048 -0.13153881          1.4         0.2     setosa
-#&gt; 3    -1.38072709  0.32731751          1.3         0.2     setosa
-#&gt; 4    -1.50149039  0.09788935          1.5         0.2     setosa
-#&gt; 5    -1.01843718  1.24503015          1.4         0.2     setosa
-#&gt; 6    -0.53538397  1.93331463          1.7         0.4     setosa
-#&gt; 7    -1.50149039  0.78617383          1.4         0.3     setosa
-#&gt; 8    -1.01843718  0.78617383          1.5         0.2     setosa
-#&gt; 9    -1.74301699 -0.36096697          1.4         0.2     setosa
-#&gt; 10   -1.13920048  0.09788935          1.5         0.1     setosa
-#&gt; 11   -0.53538397  1.47445831          1.5         0.2     setosa
-#&gt; 12   -1.25996379  0.78617383          1.6         0.2     setosa
-#&gt; 13   -1.25996379 -0.13153881          1.4         0.1     setosa
-#&gt; 14   -1.86378030 -0.13153881          1.1         0.1     setosa
-#&gt; 15   -0.05233076  2.16274279          1.2         0.2     setosa
-#&gt; 16   -0.17309407  3.08045544          1.5         0.4     setosa
-#&gt; 17   -0.53538397  1.93331463          1.3         0.4     setosa
-#&gt; 18   -0.89767388  1.01560199          1.4         0.3     setosa
-#&gt; 19   -0.17309407  1.70388647          1.7         0.3     setosa
-#&gt; 20   -0.89767388  1.70388647          1.5         0.3     setosa
-#&gt; 21   -0.53538397  0.78617383          1.7         0.2     setosa
-#&gt; 22   -0.89767388  1.47445831          1.5         0.4     setosa
-#&gt; 23   -1.50149039  1.24503015          1.0         0.2     setosa
-#&gt; 24   -0.89767388  0.55674567          1.7         0.5     setosa
-#&gt; 25   -1.25996379  0.78617383          1.9         0.2     setosa
-#&gt; 26   -1.01843718 -0.13153881          1.6         0.2     setosa
-#&gt; 27   -1.01843718  0.78617383          1.6         0.4     setosa
-#&gt; 28   -0.77691058  1.01560199          1.5         0.2     setosa
-#&gt; 29   -0.77691058  0.78617383          1.4         0.2     setosa
-#&gt; 30   -1.38072709  0.32731751          1.6         0.2     setosa
-#&gt; 31   -1.25996379  0.09788935          1.6         0.2     setosa
-#&gt; 32   -0.53538397  0.78617383          1.5         0.4     setosa
-#&gt; 33   -0.77691058  2.39217095          1.5         0.1     setosa
-#&gt; 34   -0.41462067  2.62159911          1.4         0.2     setosa
-#&gt; 35   -1.13920048  0.09788935          1.5         0.2     setosa
-#&gt; 36   -1.01843718  0.32731751          1.2         0.2     setosa
-#&gt; 37   -0.41462067  1.01560199          1.3         0.2     setosa
-#&gt; 38   -1.13920048  1.24503015          1.4         0.1     setosa
-#&gt; 39   -1.74301699 -0.13153881          1.3         0.2     setosa
-#&gt; 40   -0.89767388  0.78617383          1.5         0.2     setosa
-#&gt; 41   -1.01843718  1.01560199          1.3         0.3     setosa
-#&gt; 42   -1.62225369 -1.73753594          1.3         0.3     setosa
-#&gt; 43   -1.74301699  0.32731751          1.3         0.2     setosa
-#&gt; 44   -1.01843718  1.01560199          1.6         0.6     setosa
-#&gt; 45   -0.89767388  1.70388647          1.9         0.4     setosa
-#&gt; 46   -1.25996379 -0.13153881          1.4         0.3     setosa
-#&gt; 47   -0.89767388  1.70388647          1.6         0.2     setosa
-#&gt; 48   -1.50149039  0.32731751          1.4         0.2     setosa
-#&gt; 49   -0.65614727  1.47445831          1.5         0.2     setosa
-#&gt; 50   -1.01843718  0.55674567          1.4         0.2     setosa
-#&gt; 51    1.39682886  0.32731751          4.7         1.4 versicolor
-#&gt; 52    0.67224905  0.32731751          4.5         1.5 versicolor
-#&gt; 53    1.27606556  0.09788935          4.9         1.5 versicolor
-#&gt; 54   -0.41462067 -1.73753594          4.0         1.3 versicolor
-#&gt; 55    0.79301235 -0.59039513          4.6         1.5 versicolor
-#&gt; 56   -0.17309407 -0.59039513          4.5         1.3 versicolor
-#&gt; 57    0.55148575  0.55674567          4.7         1.6 versicolor
-#&gt; 58   -1.13920048 -1.50810778          3.3         1.0 versicolor
-#&gt; 59    0.91377565 -0.36096697          4.6         1.3 versicolor
-#&gt; 60   -0.77691058 -0.81982329          3.9         1.4 versicolor
-#&gt; 61   -1.01843718 -2.42582042          3.5         1.0 versicolor
-#&gt; 62    0.06843254 -0.13153881          4.2         1.5 versicolor
-#&gt; 63    0.18919584 -1.96696410          4.0         1.0 versicolor
-#&gt; 64    0.30995914 -0.36096697          4.7         1.4 versicolor
-#&gt; 65   -0.29385737 -0.36096697          3.6         1.3 versicolor
-#&gt; 66    1.03453895  0.09788935          4.4         1.4 versicolor
-#&gt; 67   -0.29385737 -0.13153881          4.5         1.5 versicolor
-#&gt; 68   -0.05233076 -0.81982329          4.1         1.0 versicolor
-#&gt; 69    0.43072244 -1.96696410          4.5         1.5 versicolor
-#&gt; 70   -0.29385737 -1.27867961          3.9         1.1 versicolor
-#&gt; 71    0.06843254  0.32731751          4.8         1.8 versicolor
-#&gt; 72    0.30995914 -0.59039513          4.0         1.3 versicolor
-#&gt; 73    0.55148575 -1.27867961          4.9         1.5 versicolor
-#&gt; 74    0.30995914 -0.59039513          4.7         1.2 versicolor
-#&gt; 75    0.67224905 -0.36096697          4.3         1.3 versicolor
-#&gt; 76    0.91377565 -0.13153881          4.4         1.4 versicolor
-#&gt; 77    1.15530226 -0.59039513          4.8         1.4 versicolor
-#&gt; 78    1.03453895 -0.13153881          5.0         1.7 versicolor
-#&gt; 79    0.18919584 -0.36096697          4.5         1.5 versicolor
-#&gt; 80   -0.17309407 -1.04925145          3.5         1.0 versicolor
-#&gt; 81   -0.41462067 -1.50810778          3.8         1.1 versicolor
-#&gt; 82   -0.41462067 -1.50810778          3.7         1.0 versicolor
-#&gt; 83   -0.05233076 -0.81982329          3.9         1.2 versicolor
-#&gt; 84    0.18919584 -0.81982329          5.1         1.6 versicolor
-#&gt; 85   -0.53538397 -0.13153881          4.5         1.5 versicolor
-#&gt; 86    0.18919584  0.78617383          4.5         1.6 versicolor
-#&gt; 87    1.03453895  0.09788935          4.7         1.5 versicolor
-#&gt; 88    0.55148575 -1.73753594          4.4         1.3 versicolor
-#&gt; 89   -0.29385737 -0.13153881          4.1         1.3 versicolor
-#&gt; 90   -0.41462067 -1.27867961          4.0         1.3 versicolor
-#&gt; 91   -0.41462067 -1.04925145          4.4         1.2 versicolor
-#&gt; 92    0.30995914 -0.13153881          4.6         1.4 versicolor
-#&gt; 93   -0.05233076 -1.04925145          4.0         1.2 versicolor
-#&gt; 94   -1.01843718 -1.73753594          3.3         1.0 versicolor
-#&gt; 95   -0.29385737 -0.81982329          4.2         1.3 versicolor
-#&gt; 96   -0.17309407 -0.13153881          4.2         1.2 versicolor
-#&gt; 97   -0.17309407 -0.36096697          4.2         1.3 versicolor
-#&gt; 98    0.43072244 -0.36096697          4.3         1.3 versicolor
-#&gt; 99   -0.89767388 -1.27867961          3.0         1.1 versicolor
-#&gt; 100  -0.17309407 -0.59039513          4.1         1.3 versicolor
-#&gt; 101   0.55148575  0.55674567          6.0         2.5  virginica
-#&gt; 102  -0.05233076 -0.81982329          5.1         1.9  virginica
-#&gt; 103   1.51759216 -0.13153881          5.9         2.1  virginica
-#&gt; 104   0.55148575 -0.36096697          5.6         1.8  virginica
-#&gt; 105   0.79301235 -0.13153881          5.8         2.2  virginica
-#&gt; 106   2.12140867 -0.13153881          6.6         2.1  virginica
-#&gt; 107  -1.13920048 -1.27867961          4.5         1.7  virginica
-#&gt; 108   1.75911877 -0.36096697          6.3         1.8  virginica
-#&gt; 109   1.03453895 -1.27867961          5.8         1.8  virginica
-#&gt; 110   1.63835547  1.24503015          6.1         2.5  virginica
-#&gt; 111   0.79301235  0.32731751          5.1         2.0  virginica
-#&gt; 112   0.67224905 -0.81982329          5.3         1.9  virginica
-#&gt; 113   1.15530226 -0.13153881          5.5         2.1  virginica
-#&gt; 114  -0.17309407 -1.27867961          5.0         2.0  virginica
-#&gt; 115  -0.05233076 -0.59039513          5.1         2.4  virginica
-#&gt; 116   0.67224905  0.32731751          5.3         2.3  virginica
-#&gt; 117   0.79301235 -0.13153881          5.5         1.8  virginica
-#&gt; 118   2.24217198  1.70388647          6.7         2.2  virginica
-#&gt; 119   2.24217198 -1.04925145          6.9         2.3  virginica
-#&gt; 120   0.18919584 -1.96696410          5.0         1.5  virginica
-#&gt; 121   1.27606556  0.32731751          5.7         2.3  virginica
-#&gt; 122  -0.29385737 -0.59039513          4.9         2.0  virginica
-#&gt; 123   2.24217198 -0.59039513          6.7         2.0  virginica
-#&gt; 124   0.55148575 -0.81982329          4.9         1.8  virginica
-#&gt; 125   1.03453895  0.55674567          5.7         2.1  virginica
-#&gt; 126   1.63835547  0.32731751          6.0         1.8  virginica
-#&gt; 127   0.43072244 -0.59039513          4.8         1.8  virginica
-#&gt; 128   0.30995914 -0.13153881          4.9         1.8  virginica
-#&gt; 129   0.67224905 -0.59039513          5.6         2.1  virginica
-#&gt; 130   1.63835547 -0.13153881          5.8         1.6  virginica
-#&gt; 131   1.87988207 -0.59039513          6.1         1.9  virginica
-#&gt; 132   2.48369858  1.70388647          6.4         2.0  virginica
-#&gt; 133   0.67224905 -0.59039513          5.6         2.2  virginica
-#&gt; 134   0.55148575 -0.59039513          5.1         1.5  virginica
-#&gt; 135   0.30995914 -1.04925145          5.6         1.4  virginica
-#&gt; 136   2.24217198 -0.13153881          6.1         2.3  virginica
-#&gt; 137   0.55148575  0.78617383          5.6         2.4  virginica
-#&gt; 138   0.67224905  0.09788935          5.5         1.8  virginica
-#&gt; 139   0.18919584 -0.13153881          4.8         1.8  virginica
-#&gt; 140   1.27606556  0.09788935          5.4         2.1  virginica
-#&gt; 141   1.03453895  0.09788935          5.6         2.4  virginica
-#&gt; 142   1.27606556  0.09788935          5.1         2.3  virginica
-#&gt; 143  -0.05233076 -0.81982329          5.1         1.9  virginica
-#&gt; 144   1.15530226  0.32731751          5.9         2.3  virginica
-#&gt; 145   1.03453895  0.55674567          5.7         2.5  virginica
-#&gt; 146   1.03453895 -0.13153881          5.2         2.3  virginica
-#&gt; 147   0.55148575 -1.27867961          5.0         1.9  virginica
-#&gt; 148   0.79301235 -0.13153881          5.2         2.0  virginica
-#&gt; 149   0.43072244  0.78617383          5.4         2.3  virginica
-#&gt; 150   0.06843254 -0.13153881          5.1         1.8  virginica</div><div class='input'>
+<span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(
+  <span class='fu'>rrapply</span>(
+    <span class='no'>iris</span>,
+    <span class='kw'>condition</span> <span class='kw'>=</span> <span class='kw'>function</span>(<span class='no'>x</span>, <span class='no'>.xname</span>) <span class='fu'><a href='https://rdrr.io/r/base/grep.html'>grepl</a></span>(<span class='st'>"Sepal"</span>, <span class='no'>.xname</span>),
+    <span class='kw'>f</span> <span class='kw'>=</span> <span class='no'>scale</span>
+  )
+)</div><div class='output co'>#&gt;   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+#&gt; 1   -0.8976739  1.01560199          1.4         0.2  setosa
+#&gt; 2   -1.1392005 -0.13153881          1.4         0.2  setosa
+#&gt; 3   -1.3807271  0.32731751          1.3         0.2  setosa
+#&gt; 4   -1.5014904  0.09788935          1.5         0.2  setosa
+#&gt; 5   -1.0184372  1.24503015          1.4         0.2  setosa
+#&gt; 6   -0.5353840  1.93331463          1.7         0.4  setosa</div><div class='input'>
 <span class='co'>## Scale and keep only numeric columns</span>
-<span class='fu'>rrapply</span>(
-  <span class='no'>iris</span>,
-  <span class='kw'>f</span> <span class='kw'>=</span> <span class='no'>scale</span>,
-  <span class='kw'>classes</span> <span class='kw'>=</span> <span class='st'>"numeric"</span>,
-  <span class='kw'>how</span> <span class='kw'>=</span> <span class='st'>"prune"</span>
-)</div><div class='output co'>#&gt;     Sepal.Length Sepal.Width Petal.Length   Petal.Width
-#&gt; 1    -0.89767388  1.01560199  -1.33575163 -1.3110521482
-#&gt; 2    -1.13920048 -0.13153881  -1.33575163 -1.3110521482
-#&gt; 3    -1.38072709  0.32731751  -1.39239929 -1.3110521482
-#&gt; 4    -1.50149039  0.09788935  -1.27910398 -1.3110521482
-#&gt; 5    -1.01843718  1.24503015  -1.33575163 -1.3110521482
-#&gt; 6    -0.53538397  1.93331463  -1.16580868 -1.0486667950
-#&gt; 7    -1.50149039  0.78617383  -1.33575163 -1.1798594716
-#&gt; 8    -1.01843718  0.78617383  -1.27910398 -1.3110521482
-#&gt; 9    -1.74301699 -0.36096697  -1.33575163 -1.3110521482
-#&gt; 10   -1.13920048  0.09788935  -1.27910398 -1.4422448248
-#&gt; 11   -0.53538397  1.47445831  -1.27910398 -1.3110521482
-#&gt; 12   -1.25996379  0.78617383  -1.22245633 -1.3110521482
-#&gt; 13   -1.25996379 -0.13153881  -1.33575163 -1.4422448248
-#&gt; 14   -1.86378030 -0.13153881  -1.50569459 -1.4422448248
-#&gt; 15   -0.05233076  2.16274279  -1.44904694 -1.3110521482
-#&gt; 16   -0.17309407  3.08045544  -1.27910398 -1.0486667950
-#&gt; 17   -0.53538397  1.93331463  -1.39239929 -1.0486667950
-#&gt; 18   -0.89767388  1.01560199  -1.33575163 -1.1798594716
-#&gt; 19   -0.17309407  1.70388647  -1.16580868 -1.1798594716
-#&gt; 20   -0.89767388  1.70388647  -1.27910398 -1.1798594716
-#&gt; 21   -0.53538397  0.78617383  -1.16580868 -1.3110521482
-#&gt; 22   -0.89767388  1.47445831  -1.27910398 -1.0486667950
-#&gt; 23   -1.50149039  1.24503015  -1.56234224 -1.3110521482
-#&gt; 24   -0.89767388  0.55674567  -1.16580868 -0.9174741184
-#&gt; 25   -1.25996379  0.78617383  -1.05251337 -1.3110521482
-#&gt; 26   -1.01843718 -0.13153881  -1.22245633 -1.3110521482
-#&gt; 27   -1.01843718  0.78617383  -1.22245633 -1.0486667950
-#&gt; 28   -0.77691058  1.01560199  -1.27910398 -1.3110521482
-#&gt; 29   -0.77691058  0.78617383  -1.33575163 -1.3110521482
-#&gt; 30   -1.38072709  0.32731751  -1.22245633 -1.3110521482
-#&gt; 31   -1.25996379  0.09788935  -1.22245633 -1.3110521482
-#&gt; 32   -0.53538397  0.78617383  -1.27910398 -1.0486667950
-#&gt; 33   -0.77691058  2.39217095  -1.27910398 -1.4422448248
-#&gt; 34   -0.41462067  2.62159911  -1.33575163 -1.3110521482
-#&gt; 35   -1.13920048  0.09788935  -1.27910398 -1.3110521482
-#&gt; 36   -1.01843718  0.32731751  -1.44904694 -1.3110521482
-#&gt; 37   -0.41462067  1.01560199  -1.39239929 -1.3110521482
-#&gt; 38   -1.13920048  1.24503015  -1.33575163 -1.4422448248
-#&gt; 39   -1.74301699 -0.13153881  -1.39239929 -1.3110521482
-#&gt; 40   -0.89767388  0.78617383  -1.27910398 -1.3110521482
-#&gt; 41   -1.01843718  1.01560199  -1.39239929 -1.1798594716
-#&gt; 42   -1.62225369 -1.73753594  -1.39239929 -1.1798594716
-#&gt; 43   -1.74301699  0.32731751  -1.39239929 -1.3110521482
-#&gt; 44   -1.01843718  1.01560199  -1.22245633 -0.7862814418
-#&gt; 45   -0.89767388  1.70388647  -1.05251337 -1.0486667950
-#&gt; 46   -1.25996379 -0.13153881  -1.33575163 -1.1798594716
-#&gt; 47   -0.89767388  1.70388647  -1.22245633 -1.3110521482
-#&gt; 48   -1.50149039  0.32731751  -1.33575163 -1.3110521482
-#&gt; 49   -0.65614727  1.47445831  -1.27910398 -1.3110521482
-#&gt; 50   -1.01843718  0.55674567  -1.33575163 -1.3110521482
-#&gt; 51    1.39682886  0.32731751   0.53362088  0.2632599711
-#&gt; 52    0.67224905  0.32731751   0.42032558  0.3944526477
-#&gt; 53    1.27606556  0.09788935   0.64691619  0.3944526477
-#&gt; 54   -0.41462067 -1.73753594   0.13708732  0.1320672944
-#&gt; 55    0.79301235 -0.59039513   0.47697323  0.3944526477
-#&gt; 56   -0.17309407 -0.59039513   0.42032558  0.1320672944
-#&gt; 57    0.55148575  0.55674567   0.53362088  0.5256453243
-#&gt; 58   -1.13920048 -1.50810778  -0.25944625 -0.2615107354
-#&gt; 59    0.91377565 -0.36096697   0.47697323  0.1320672944
-#&gt; 60   -0.77691058 -0.81982329   0.08043967  0.2632599711
-#&gt; 61   -1.01843718 -2.42582042  -0.14615094 -0.2615107354
-#&gt; 62    0.06843254 -0.13153881   0.25038262  0.3944526477
-#&gt; 63    0.18919584 -1.96696410   0.13708732 -0.2615107354
-#&gt; 64    0.30995914 -0.36096697   0.53362088  0.2632599711
-#&gt; 65   -0.29385737 -0.36096697  -0.08950329  0.1320672944
-#&gt; 66    1.03453895  0.09788935   0.36367793  0.2632599711
-#&gt; 67   -0.29385737 -0.13153881   0.42032558  0.3944526477
-#&gt; 68   -0.05233076 -0.81982329   0.19373497 -0.2615107354
-#&gt; 69    0.43072244 -1.96696410   0.42032558  0.3944526477
-#&gt; 70   -0.29385737 -1.27867961   0.08043967 -0.1303180588
-#&gt; 71    0.06843254  0.32731751   0.59026853  0.7880306775
-#&gt; 72    0.30995914 -0.59039513   0.13708732  0.1320672944
-#&gt; 73    0.55148575 -1.27867961   0.64691619  0.3944526477
-#&gt; 74    0.30995914 -0.59039513   0.53362088  0.0008746178
-#&gt; 75    0.67224905 -0.36096697   0.30703027  0.1320672944
-#&gt; 76    0.91377565 -0.13153881   0.36367793  0.2632599711
-#&gt; 77    1.15530226 -0.59039513   0.59026853  0.2632599711
-#&gt; 78    1.03453895 -0.13153881   0.70356384  0.6568380009
-#&gt; 79    0.18919584 -0.36096697   0.42032558  0.3944526477
-#&gt; 80   -0.17309407 -1.04925145  -0.14615094 -0.2615107354
-#&gt; 81   -0.41462067 -1.50810778   0.02379201 -0.1303180588
-#&gt; 82   -0.41462067 -1.50810778  -0.03285564 -0.2615107354
-#&gt; 83   -0.05233076 -0.81982329   0.08043967  0.0008746178
-#&gt; 84    0.18919584 -0.81982329   0.76021149  0.5256453243
-#&gt; 85   -0.53538397 -0.13153881   0.42032558  0.3944526477
-#&gt; 86    0.18919584  0.78617383   0.42032558  0.5256453243
-#&gt; 87    1.03453895  0.09788935   0.53362088  0.3944526477
-#&gt; 88    0.55148575 -1.73753594   0.36367793  0.1320672944
-#&gt; 89   -0.29385737 -0.13153881   0.19373497  0.1320672944
-#&gt; 90   -0.41462067 -1.27867961   0.13708732  0.1320672944
-#&gt; 91   -0.41462067 -1.04925145   0.36367793  0.0008746178
-#&gt; 92    0.30995914 -0.13153881   0.47697323  0.2632599711
-#&gt; 93   -0.05233076 -1.04925145   0.13708732  0.0008746178
-#&gt; 94   -1.01843718 -1.73753594  -0.25944625 -0.2615107354
-#&gt; 95   -0.29385737 -0.81982329   0.25038262  0.1320672944
-#&gt; 96   -0.17309407 -0.13153881   0.25038262  0.0008746178
-#&gt; 97   -0.17309407 -0.36096697   0.25038262  0.1320672944
-#&gt; 98    0.43072244 -0.36096697   0.30703027  0.1320672944
-#&gt; 99   -0.89767388 -1.27867961  -0.42938920 -0.1303180588
-#&gt; 100  -0.17309407 -0.59039513   0.19373497  0.1320672944
-#&gt; 101   0.55148575  0.55674567   1.27004036  1.7063794137
-#&gt; 102  -0.05233076 -0.81982329   0.76021149  0.9192233541
-#&gt; 103   1.51759216 -0.13153881   1.21339271  1.1816087073
-#&gt; 104   0.55148575 -0.36096697   1.04344975  0.7880306775
-#&gt; 105   0.79301235 -0.13153881   1.15674505  1.3128013839
-#&gt; 106   2.12140867 -0.13153881   1.60992627  1.1816087073
-#&gt; 107  -1.13920048 -1.27867961   0.42032558  0.6568380009
-#&gt; 108   1.75911877 -0.36096697   1.43998331  0.7880306775
-#&gt; 109   1.03453895 -1.27867961   1.15674505  0.7880306775
-#&gt; 110   1.63835547  1.24503015   1.32668801  1.7063794137
-#&gt; 111   0.79301235  0.32731751   0.76021149  1.0504160307
-#&gt; 112   0.67224905 -0.81982329   0.87350679  0.9192233541
-#&gt; 113   1.15530226 -0.13153881   0.98680210  1.1816087073
-#&gt; 114  -0.17309407 -1.27867961   0.70356384  1.0504160307
-#&gt; 115  -0.05233076 -0.59039513   0.76021149  1.5751867371
-#&gt; 116   0.67224905  0.32731751   0.87350679  1.4439940605
-#&gt; 117   0.79301235 -0.13153881   0.98680210  0.7880306775
-#&gt; 118   2.24217198  1.70388647   1.66657392  1.3128013839
-#&gt; 119   2.24217198 -1.04925145   1.77986923  1.4439940605
-#&gt; 120   0.18919584 -1.96696410   0.70356384  0.3944526477
-#&gt; 121   1.27606556  0.32731751   1.10009740  1.4439940605
-#&gt; 122  -0.29385737 -0.59039513   0.64691619  1.0504160307
-#&gt; 123   2.24217198 -0.59039513   1.66657392  1.0504160307
-#&gt; 124   0.55148575 -0.81982329   0.64691619  0.7880306775
-#&gt; 125   1.03453895  0.55674567   1.10009740  1.1816087073
-#&gt; 126   1.63835547  0.32731751   1.27004036  0.7880306775
-#&gt; 127   0.43072244 -0.59039513   0.59026853  0.7880306775
-#&gt; 128   0.30995914 -0.13153881   0.64691619  0.7880306775
-#&gt; 129   0.67224905 -0.59039513   1.04344975  1.1816087073
-#&gt; 130   1.63835547 -0.13153881   1.15674505  0.5256453243
-#&gt; 131   1.87988207 -0.59039513   1.32668801  0.9192233541
-#&gt; 132   2.48369858  1.70388647   1.49663097  1.0504160307
-#&gt; 133   0.67224905 -0.59039513   1.04344975  1.3128013839
-#&gt; 134   0.55148575 -0.59039513   0.76021149  0.3944526477
-#&gt; 135   0.30995914 -1.04925145   1.04344975  0.2632599711
-#&gt; 136   2.24217198 -0.13153881   1.32668801  1.4439940605
-#&gt; 137   0.55148575  0.78617383   1.04344975  1.5751867371
-#&gt; 138   0.67224905  0.09788935   0.98680210  0.7880306775
-#&gt; 139   0.18919584 -0.13153881   0.59026853  0.7880306775
-#&gt; 140   1.27606556  0.09788935   0.93015445  1.1816087073
-#&gt; 141   1.03453895  0.09788935   1.04344975  1.5751867371
-#&gt; 142   1.27606556  0.09788935   0.76021149  1.4439940605
-#&gt; 143  -0.05233076 -0.81982329   0.76021149  0.9192233541
-#&gt; 144   1.15530226  0.32731751   1.21339271  1.4439940605
-#&gt; 145   1.03453895  0.55674567   1.10009740  1.7063794137
-#&gt; 146   1.03453895 -0.13153881   0.81685914  1.4439940605
-#&gt; 147   0.55148575 -1.27867961   0.70356384  0.9192233541
-#&gt; 148   0.79301235 -0.13153881   0.81685914  1.0504160307
-#&gt; 149   0.43072244  0.78617383   0.93015445  1.4439940605
-#&gt; 150   0.06843254 -0.13153881   0.76021149  0.7880306775</div><div class='input'>
+<span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(
+  <span class='fu'>rrapply</span>(
+    <span class='no'>iris</span>,
+    <span class='kw'>f</span> <span class='kw'>=</span> <span class='no'>scale</span>,
+    <span class='kw'>classes</span> <span class='kw'>=</span> <span class='st'>"numeric"</span>,
+    <span class='kw'>how</span> <span class='kw'>=</span> <span class='st'>"prune"</span>
+  )
+)</div><div class='output co'>#&gt;   Sepal.Length Sepal.Width Petal.Length Petal.Width
+#&gt; 1   -0.8976739  1.01560199    -1.335752   -1.311052
+#&gt; 2   -1.1392005 -0.13153881    -1.335752   -1.311052
+#&gt; 3   -1.3807271  0.32731751    -1.392399   -1.311052
+#&gt; 4   -1.5014904  0.09788935    -1.279104   -1.311052
+#&gt; 5   -1.0184372  1.24503015    -1.335752   -1.311052
+#&gt; 6   -0.5353840  1.93331463    -1.165809   -1.048667</div><div class='input'>
 <span class='co'>## Summarize only numeric columns with how = "flatten"</span>
 <span class='fu'>rrapply</span>(
   <span class='no'>iris</span>,

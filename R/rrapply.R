@@ -234,18 +234,22 @@
 #' # Applying functions to data.frames
 #' 
 #' ## Scale only Sepal columns in iris dataset
-#' rrapply(
-#'   iris,
-#'   condition = function(x, .xname) grepl("Sepal", .xname),
-#'   f = scale
+#' head(
+#'   rrapply(
+#'     iris,
+#'     condition = function(x, .xname) grepl("Sepal", .xname),
+#'     f = scale
+#'   )
 #' )
 #' 
 #' ## Scale and keep only numeric columns
-#' rrapply(
-#'   iris,
-#'   f = scale,
-#'   classes = "numeric",
-#'   how = "prune"
+#' head(
+#'   rrapply(
+#'     iris,
+#'     f = scale,
+#'     classes = "numeric",
+#'     how = "prune"
+#'   )
 #' )
 #'
 #' ## Summarize only numeric columns with how = "flatten"
