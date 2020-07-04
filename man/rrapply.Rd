@@ -298,21 +298,24 @@ rrapply(
 )
 
 ## Scale and keep only numeric columns
-rrapply(
-  iris,
-  f = scale,
-  classes = "numeric",
-  how = "prune"
+head(
+  rrapply(
+    iris,
+    f = scale,
+    classes = "numeric",
+    how = "prune"
+  )
 )
 
 ## Summarize only numeric columns with how = "flatten"
-rrapply(
-  iris,
-  f = summary,
-  classes = "numeric",
-  how = "flatten"
+head(
+  rrapply(
+    iris,
+    f = summary,
+    classes = "numeric",
+    how = "flatten"
+  )
 )
-
 }
 \seealso{
 \code{\link{rapply}}

@@ -241,21 +241,24 @@
 #' )
 #' 
 #' ## Scale and keep only numeric columns
-#' rrapply(
-#'   iris,
-#'   f = scale,
-#'   classes = "numeric",
-#'   how = "prune"
-#' )
-#'
-#' ## Summarize only numeric columns with how = "flatten"
-#' rrapply(
-#'   iris,
-#'   f = summary,
-#'   classes = "numeric",
-#'   how = "flatten"
+#' head(
+#'   rrapply(
+#'     iris,
+#'     f = scale,
+#'     classes = "numeric",
+#'     how = "prune"
+#'   )
 #' )
 #' 
+#' ## Summarize only numeric columns with how = "flatten"
+#' head(
+#'   rrapply(
+#'     iris,
+#'     f = summary,
+#'     classes = "numeric",
+#'     how = "flatten"
+#'   )
+#' )
 #' @inheritParams base::rapply
 #' @param f a \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname} and/or \code{.xpos} 
 #' (see \sQuote{Details}), passing further arguments via \code{\dots}.
