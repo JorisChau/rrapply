@@ -320,7 +320,7 @@ max(sublist_count)
 
 ## List node aggregation
 
-By default, both base `rapply` and `rrapply` recurse into any list-like element. To override this behavior, we can set `feverywhere = "break"` to apply `f` to *any* element of the nested list (e.g. a sublist) that satisfies the `condition` function. If the `condition` function is not satisfied for a list-like element, `rrapply` will recurse deeper into the sublist, apply the `f` function to the nodes that satisfy the `condition`, and so on.
+By default, both base `rapply` and `rrapply` recurse into any list-like element. To override this behavior, we can set `feverywhere = "break"` to apply `f` to *any* element of the nested list (e.g. a sublist) that satisfies the `condition` and `classes` arguments. If the `condition` of `classes` arguments are not satisfied for a list-like element, `rrapply` will recurse deeper into the sublist, apply the `f` function to the nodes that satisfy `condition` and `classes`, and so on.
 
 This option is useful to calculate summary statistics across nodes or to look up the position of intermediate nodes in the nested list. To illustrate, we can return the mean and standard deviation of the renewable energy share in Europe as follows:
 
@@ -357,7 +357,7 @@ str(renewable_continent_summary, give.attr = FALSE)
 
 ## List node updating
 
-If `feverywhere = "break"`, `rrapply` will not recurse further into list-like elements after application of the `f` function. This makes it for instance impossible to recursively update the name of each element in the nested list, as `rrapply` stops recursing after updating the first list layer. For this purpose, we can set `feverywhere = "recurse"` in which case `rrapply` recurses further into **updated** list-like element after application of the `f` function. In this context, the `condition` function should be interpreted as a passing criterion (i.e. the opposite of a stopping criterion). As long as the `condition` function is satisfied, `rrapply` will try to recurse further into any list-like elements.
+If `feverywhere = "break"`, `rrapply` will not recurse further into list-like elements after application of the `f` function. This makes it for instance impossible to recursively update the name of each element in the nested list, as `rrapply` stops recursing after updating the first list layer. For this purpose, we can set `feverywhere = "recurse"` in which case `rrapply` recurses further into any *updated* list-like element after application of the `f` function. In this context, the `condition` function should be interpreted as a passing criterion (i.e. the opposite of a stopping criterion). As long as the `condition` and `classes` arguments are satisfied, `rrapply` will try to recurse further into any list-like elements.
 
 Using `feverywhere = "recurse"`, we can recursively replace all names in the nested list by their M49-codes:
 
