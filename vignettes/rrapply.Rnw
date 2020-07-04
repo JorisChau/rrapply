@@ -176,6 +176,34 @@ na_drop_oceania_flat <- rrapply(
 )
 str(na_drop_oceania_flat, list.len = 10, give.attr = FALSE)
 @
+Another option is to set \code{how = "melt"} to return a melted data.frame of the pruned list similar in format to \code{reshape2::melt} applied to a nested list. The rows of the melted data.frame contain the node paths of the elements in the pruned list. The \code{"value"} column is a list-column with the values of the terminal nodes analogous to the flattened list returned by \code{how = "flatten"}. 
+<<>>=
+na_drop_melt <- rrapply(
+  renewable_oceania,
+  f = function(x) x,
+  classes = "numeric",
+  how = "melt"
+)
+head(na_drop_melt)
+@
+If no names are present in a sublist of the input list, \code{how = "melt"} replaces the names in the melted data.frame by the list element indices \code{"..1"}, \code{"..2"}, and so on:
+<<>>=
+## Remove all names at L2 (these arguments are explained in the following sections)
+oceania_unnamed <- rrapply(
+  renewable_oceania,
+  condition = function(x, .xpos) length(.xpos) < 2,
+  f = unname,
+  feverywhere = "break"
+)
+
+na_drop_melt2 <- rrapply(
+  oceania_unnamed,
+  f = function(x) x,
+  classes = "numeric",
+  how = "melt"
+)
+head(na_drop_melt2)
+@
 
 \subsection{Condition function}
 
@@ -368,8 +396,8 @@ max(sublist_count)
 
 \subsection{List node aggregation}
 
-By construction, both base \code{rapply} and \code{rrapply} apply the \code{f} function only to leaf elements of a nested list by recursing further into any list-like element that is encountered. In \code{rrapply}, it is possible to override this default behavior using the argument \code{feverywhere = "break"}. In this case, \code{rrapply} does not automatically recurse deeper into list-like objects, and the \code{f} function will be applied to any element (e.g. a sublist) that satisfies the \code{condition} function. If the \code{condition} function is not satisfied for a list-like element, \code{rrapply} will recurse further into the sublist, apply the \code{f} function to the nodes that satisfy the \code{condition}, and so on.\\[3mm]
-A primary use of \code{feverywhere = "break"} is to perform node aggregation by calculating some type of summary statistic over sublists of the nested list. Together with the \code{.xname} and \code{.xpos} arguments, we have flexibility in deciding which sublists to summarize or collapse trough the \code{condition} function.\\[3mm]
+By construction, both base \code{rapply} and \code{rrapply} apply the \code{f} function only to leaf elements of a nested list by recursing further into any list-like element that is encountered. In \code{rrapply}, it is possible to override this default behavior using the argument \code{feverywhere = "break"}. In this case, \code{rrapply} does not automatically recurse deeper into list-like objects, and the \code{f} function will be applied to any element (e.g. a sublist) that satisfies the \code{condition} and \code{classes} arguments. If the \code{condition} or \code{classes} arguments are not satisfied for a list-like element, \code{rrapply} will recurse further into the sublist, apply the \code{f} function to the nodes that satisfy \code{condition} and \code{classes}, and so on.\\[3mm]
+A primary use of \code{feverywhere = "break"} is to perform node aggregation by calculating some type of summary statistic over sublists of the nested list. Together with the \code{.xname} and \code{.xpos} arguments, we have flexibility in deciding which sublists to summarize or collapse through the \code{condition} function.\\[3mm]
 To illustrate, we can return the mean and standard deviation of the renewable energy share in Europe as follows:
 <<>>=
 rrapply(
@@ -412,15 +440,33 @@ renewable_continent_summary <- rrapply(
 str(renewable_continent_summary, give.attr = FALSE)
 @
 
+\subsection{List node updating}
+
+If \code{feverywhere = "break"}, \code{rrapply} will not recurse further into list-like elements after application of the \code{f} function. This makes it for instance impossible to recursively update the name of each element in the nested list as \code{rrapply} stops recursing after updating the first list layer. For this purpose, we can set \code{feverywhere = "recurse"} in which case \code{rrapply} recurses further into any \emph{updated} list-like element after application of the \code{f} function. In this context, the \code{condition} and \code{classes} arguments should be interpreted as a passing criterion (i.e. the opposite of a stopping criterion). As long as the \code{condition} and \code{classes} arguments are satisfied, \code{rrapply} will try to recurse further into any list-like elements.\\[3mm]
+Using \code{feverywhere = "recurse"}, we can recursively replace all names in the nested list by their M49-codes:
+<<>>=
+renewable_M49 <- rrapply(
+  list(renewable_energy_by_country), 
+  condition = is.list,
+  f = function(x) {
+    names(x) <- vapply(x, attr, character(1L), which = "M49-code")
+    return(x)
+  },
+  feverywhere = "recurse"
+)
+
+str(renewable_M49[[1]], max.level = 3, list.len = 3, give.attr = FALSE)
+@
+\begin{remark}
+Here we passed \code{list(renewable\_energy\_by\_country)} to the call of \code{rrapply} in order to start application of the \code{f} function at the level of the list \code{renewable\_energy\_by\_country} itself, instead of starting at its list elements. 
+\end{remark}
+
 \subsection{Miscellaneous}
 
 \subsubsection{Data.frames as lists}
 
 As already discussed, base \code{rapply} recurses into all list-like objects. Since data.frames are
-list-like objects, the \code{f} function always descends into the
-individual columns of a data.frame. Sometimes we wish to apply \code{f} to a data.fame object as a whole, instead of its individual
-columns, which is not possible with \code{rapply}. For this purpose, \code{rrapply} includes a convenience argument \code{dfaslist}. If \code{dfaslist = TRUE}, \code{rrapply} behaves in
-the same way as \code{rapply} by recursing into the individual columns of a data.frame. If \code{dfaslist = FALSE}, the \code{f} and \code{condition} functions are applied directly to the data.frame object itself and not its columns. 
+list-like objects, the \code{f} function always descends into the individual columns of a data.frame. Sometimes we wish to apply \code{f} to a data.fame object as a whole, instead of its individual columns, which is not possible with \code{rapply}. For this purpose, \code{rrapply} includes a convenience argument \code{dfaslist}. If \code{dfaslist = TRUE}, \code{rrapply} behaves in the same way as \code{rapply} by recursing into the individual columns of a data.frame. If \code{dfaslist = FALSE}, the \code{f} and \code{condition} functions are applied directly to the data.frame object itself and not its columns. 
 <<>>=
 ## create a list of data.frames
 oceania_df <- list(
@@ -458,7 +504,7 @@ rrapply(
   feverywhere = "break"
 )
 @
-Using the \code{dfaslist} argument is somewhat more concise and also slightly more efficient as the class of the list element is checked directly analogous to the \code{classes} argument. 
+Using the \code{dfaslist} argument better reflects our purpose and is also slightly more efficient as the class of the list element is checked directly analogous to the \code{classes} argument. 
 \end{remark}
 
 \subsubsection{List attributes}
@@ -466,7 +512,7 @@ Using the \code{dfaslist} argument is somewhat more concise and also slightly mo
 Base \code{rapply} may produce different results when using \code{how = "replace"} or \code{how = "list"} when working with list attributes. The former preserves intermediate
 list attributes whereas the latter does not. To avoid unexpected behavior,
 \code{rrapply} always preserves intermediate list attributes when using
-\code{how = "replace"}, \code{how = "list"} or \code{how = "prune"}.  Note that if we set \code{how = "flatten"} or \code{how = "unlist"} intermediate list attributes cannot be
+\code{how = "replace"}, \code{how = "list"} or \code{how = "prune"}.  Note that if we set \code{how = "flatten"}, \code{how = "melt"} or \code{how = "unlist"} intermediate list attributes cannot be
 preserved as the result is no longer a nested list.
 <<>>=
 ## how = "list" now preserves all list attributes
@@ -529,45 +575,6 @@ iris_standard_summarize <- rrapply(
 iris_standard_summarize
 @
 
-\subsubsection{Computational effort}
-
-As \code{rrapply} is written in \textsf{R}'s internal \textsf{C} interface, it can be computationally significantly more efficient than its equivalent implementation based on recursion through a large nested list in interpreted \textsf{R}. In the figures below, several benchmark timings of \code{rrapply} against that of base \code{rapply} are displayed in the context of data.frame manipulation. More precisely, we time the application of a dummy function \code{f} (unit multiplication) respectively to each column and to each \emph{numeric} column of a data.frame \code{x} of size $(M \times N)$, where the entries of the data.frame \code{x} are randomly sampled from a uniform distribution on the unit interval.\\[3mm]
-The displayed timings are the median computation times (ms) of 100 evaluations of the benchmarked expressions in R 3.6.2 on a single-core processor (Intel i7-8550U, 1.80 GHz, 16 GB system memory). In the left-hand plots, the number of data.frame rows is fixed at $M = 1000$ and the number of columns increases from $N = 100$ to $N = 10\ 000$, and in the right-hand plots the number of data.frame columns is fixed at $N = 100$ and the number of rows increases from $M = 1000$ to $M = 10^6$.
-\\[3mm]
-The benchmarked expressions to mutate all columns of the data.frame \code{x} evaluated in the first figure are:
-<<eval=FALSE>>=
-## rapply(how = "replace")
-rapply(x, f = `*`, e2 = 1, how = "replace")  
-## rrapply(how = "replace")
-rrapply(x, f = `*`, e2 = 1, how = "replace")
-## rrapply(how = "prune")
-rrapply(x, f = `*`, e2 = 1, how = "prune")
-@
-The benchmarked expressions to mutate all \emph{numeric} columns of the data.frame \code{x} evaluated in the second figure are:
-<<eval=FALSE>>=
-## rapply(classes = "numeric", how = "replace")
-rapply(x, f = `*`, e2 = 1, classes = "numeric", how = "replace")    
-## rrapply(classes = "numeric", how = "replace")
-rrapply(x, f = `*`, e2 = 1, classes = "numeric", how = "replace")
-## rrapply(classes = "numeric", how = "prune")
-rrapply(x, f = `*`, e2 = 1, classes = "numeric", how = "prune")
-## rrapply(condition = "numeric", how = "replace")
-rrapply(dat, condition = is.numeric, f = function(x) `*`(x, 1), how = "replace")
-@
-
-\begin{remark}
-The same processing tasks executed with \texttt{data.table} (v1.8.2) and \texttt{dplyr} (v0.8.4) resulted in roughly equivalent computation times. These results have not been included in the figures as it is difficult to make an objective comparison between R-packages. For instance, \texttt{data.table} at this moment does not include a native procedure to perform conditional column mutations, whereas \texttt{dplyr} does with \code{mutate\_if}.
-\end{remark}
-
-\newpage
-\begin{figure}
-\centering
-\includegraphics[width=15cm]{Fig1.pdf}
-\end{figure}
-\begin{figure}
-\centering
-\includegraphics[width=15cm]{Fig2.pdf}
-\end{figure}
 \end{document} 
 
 <<echo=false>>=

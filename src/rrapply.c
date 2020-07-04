@@ -606,15 +606,15 @@ static SEXP C_eval_list(
 			if (args.fArgs > 0)
 			{
 				funVal = PROTECT(R_forceAndCall(fcall, args.fArgs, env));
-				nprotect++;
 
 				if (MAYBE_REFERENCED(funVal))
 					funVal = Rf_lazy_duplicate(funVal);
 			}
 			else
 			{
-				funVal = Rf_lazy_duplicate(Xi);
+				funVal = PROTECT(Rf_lazy_duplicate(Xi));
 			}
+			nprotect++;
 
 			/* recurse further with new list (type 2) if feverywhere == 2 */
 			if (args.feverywhere == 2 && Rf_isVectorList(funVal))
@@ -623,9 +623,7 @@ static SEXP C_eval_list(
 			}
 			else /* otherwise return current value */
 			{
-				if (nprotect > 0)
-					UNPROTECT(nprotect);
-
+				UNPROTECT(nprotect);
 				return funVal;
 			}
 		}
@@ -666,7 +664,7 @@ static SEXP C_eval_list(
 			else
 			{
 				/* VECEXP initializes with R_NilValues */
-				Xnew = PROTECT(Rf_allocVector(VECSXP, Rf_length(Xi)));
+				Xnew = PROTECT(Rf_allocVector(VECSXP, m));
 				C_copyAttrs(Xi, Xnew, names, TRUE);
 			}
 		}
@@ -691,6 +689,19 @@ static SEXP C_eval_list(
 		/* descend one level */
 		countlocal.depth++;
 
+		if (args.feverywhere == 2) 
+		{
+			if (countlocal.depth > 100) /* stop with error if depth too large */
+			{
+				Rf_error("a hard limit of maximum 100 nested layers is enforced to avoid infinite recursion");
+			}
+			if (countlocal.depth >= countglobal->depthmax)
+			{
+				*xloc = (R_len_t *)S_realloc((char *)*xloc, 2 * countglobal->depthmax, countglobal->depthmax, sizeof(R_len_t));
+				countglobal->depthmax *= 2;
+			}
+		}
+
 		for (R_len_t j = 0; j < m; j++)
 		{
 			/* update current node info */
@@ -699,11 +710,6 @@ static SEXP C_eval_list(
 				/* reallocate arrays if necessary in this case */
 				if (args.feverywhere == 2)
 				{
-					if (countlocal.depth >= countglobal->depthmax)
-					{
-						*xloc = (R_len_t *)S_realloc((char *)*xloc, 2 * countglobal->depthmax, countglobal->depthmax, sizeof(R_len_t));
-						countglobal->depthmax *= 2;
-					}
 					if ((countglobal->node + 1) >= countglobal->maxnodes)
 					{
 						*xinfo = (R_len_t(*)[3])S_realloc((char *)*xinfo, 2 * countglobal->maxnodes, countglobal->maxnodes, sizeof(**xinfo));
@@ -744,6 +750,7 @@ static SEXP C_eval_list(
 	else
 	{
 		/* should not normally be reached */
+		UNPROTECT(nprotect);
 		return R_NilValue;
 	}
 }
