@@ -39,16 +39,21 @@
 #' \code{.xpos} variables.  
 #' 
 #' @section List node aggregation:
-#' By default, \code{rrapply} applies the \code{f} function only to leaf elements by recursing into any list-like element that is encountered. 
-#' If \code{feverywhere = "break"}, this behavior is overridden and the \code{f} function will be applied to any element of \code{object} (e.g. a sublist) 
-#' that satisfies the \code{condition} function. If the \code{condition} function is not satisfied for a list-like 
-#' element, \code{rrapply} will recurse further into the sublist, apply the \code{f} function to the nodes that 
-#' satisfy the \code{condition}, and so on. The primary use of \code{feverywhere = "break"} is to aggregate list nodes or summarize sublists of \code{object}. 
-#' Additional examples can be found in the package vignette.
+#' By default, \code{rrapply} recurses into any \dQuote{list-like} element. If \code{feverywhere = "break"}, this behavior is overridden and the 
+#' \code{f} function is applied to any element of \code{object} (e.g. a sublist) that satisfies \code{condition} and \code{classes}. 
+#' If the \code{condition} or \code{classes} arguments are not satisfied for a \dQuote{list-like} element, \code{rrapply} will recurse further into the sublist, 
+#' apply the \code{f} function to the nodes that satisfy \code{condition} and \code{classes}, and so on. The primary use of \code{feverywhere = "break"} is 
+#' to aggregate list nodes or summarize sublists of \code{object}. Additional examples can be found in the package vignette.
+#' 
+#' @section List node updating:
+#' If \code{feverywhere = "recurse"}, \code{rrapply} applies the \code{f} function to any element of \code{object} (e.g. a sublist) that satisfies 
+#' \code{condition} and \code{classes} similar to \code{feverywhere = "break"}, but recurses further into the \emph{updated} list-like element 
+#' after application of the \code{f} function. The primary use of \code{feverywhere = "recurse"} is to recursively update for instance the names of 
+#' all nodes in a nested list. Additional examples are found in the package vignette.
 #' 
 #' @section Data.frames as lists:
-#' If \code{feverywhere = FALSE}, \code{rrapply} recurses into all list-like objects equivalent to \code{\link{rapply}}. 
-#' Since data.frames are list-like objects, the \code{f} function will descend into the individual columns of a data.frame. 
+#' If \code{feverywhere = NULL} (default), \code{rrapply} recurses into all \dQuote{list-like} objects equivalent to \code{\link{rapply}}. 
+#' Since data.frames are \dQuote{list-like} objects, the \code{f} function will descend into the individual columns of a data.frame. 
 #' If \code{dfaslist = FALSE}, data.frames are no longer viewed as lists and the \code{f} and \code{condition} functions are 
 #' applied directly to the data.frame itself and not its columns.
 #' 
@@ -61,8 +66,8 @@
 #' @return If \code{how = "unlist"}, a vector as in \code{\link{rapply}}. If \code{how = "list"} or \code{how = "replace"}, \dQuote{list-like} of similar 
 #' structure as \code{object} as in \code{\link{rapply}}. If \code{how = "prune"}, a pruned \dQuote{list-like} object of similar structure as \code{object}
 #' with pruned list elements based on \code{classes} and \code{condition}. If \code{how = "flatten"}, an unnested pruned list with pruned list elements 
-#' based on \code{classes} and \code{condition}. If \code{how = "melt"} a melted data.frame containing the node paths of the pruned list elements based on 
-#' \code{classes} and \code{condition}.
+#' based on \code{classes} and \code{condition}. If \code{how = "melt"}, a melted data.frame containing the node paths and values of the pruned list 
+#' elements based on \code{classes} and \code{condition}.
 #'  
 #' @note \code{rrapply} allows the \code{f} function argument to be missing, in which case no function is applied to the list 
 #' elements.
@@ -94,6 +99,15 @@
 #'   how = "flatten"
 #' )
 #' str(na_drop_oceania2, list.len = 10, give.attr = FALSE)
+#' 
+#' ## Drop all logical NA's and return melted data.frame
+#' na_drop_oceania3 <- rrapply(
+#'   renewable_oceania,
+#'   f = identity,
+#'   classes = "numeric",
+#'   how = "melt"
+#' )
+#' head(na_drop_oceania3)
 #' 
 #' # Condition function
 #' 
@@ -183,6 +197,21 @@
 #'
 #' ## Antarctica's value is missing
 #' str(renewable_continent_summary, give.attr = FALSE)
+#' 
+#' # List node updating
+#' 
+#' ## replace country names by M-49 codes
+#' renewable_M49 <- rrapply(
+#'   list(renewable_energy_by_country), 
+#'   condition = is.list,
+#'   f = function(x) {
+#'     names(x) <- vapply(x, attr, character(1L), which = "M49-code")
+#'     return(x)
+#'   },
+#'   feverywhere = "recurse"
+#' )
+#' 
+#' str(renewable_M49[[1]], max.level = 3, list.len = 3, give.attr = FALSE)
 #' 
 #' # List attributes
 #' 

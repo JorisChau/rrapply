@@ -13,9 +13,10 @@ Status](https://travis-ci.org/JorisChau/rrapply.svg?branch=master)](https://trav
 
 The rrapply-package contains a single function `rrapply`, providing an
 extended implementation of R-base’s `rapply` function, which applies a
-function `f` to all elements of a nested list recursively. rrapply is
-implemented using R’s native C API and for this reason requires no
-external R-package dependencies.
+function `f` to all elements of a nested list recursively and provides
+control in structuring the returned result. `rrapply` is implemented
+using R’s native C API and for this reason requires no external
+R-package dependencies.
 
 ## Installation
 
@@ -67,7 +68,7 @@ str(renewable_oceania, list.len = 3, give.attr = FALSE)
 ## Drop all logical NA's while preserving list structure 
 na_drop_oceania <- rrapply(
   renewable_oceania,
-  f = function(x) x,
+  f = identity,
   classes = "numeric",
   how = "prune"
 )
@@ -97,7 +98,7 @@ the pruned list,
 ## Drop all logical NA's and return unnested list
 na_drop_oceania2 <- rrapply(
   renewable_oceania,
-  f = function(x) x,
+  f = identity,
   classes = "numeric",
   how = "flatten"
 )
@@ -114,6 +115,27 @@ str(na_drop_oceania2, list.len = 10, give.attr = FALSE)
 #>  $ Kiribati                        : num 45.4
 #>  $ Marshall Islands                : num 11.8
 #>   [list output truncated]
+```
+
+Or, use `how = "melt"` to return a melted data.frame of the pruned list
+similar in format to `reshape2::melt` applied to a nested list.
+
+``` r
+## Drop all logical NA's and return melted data.frame
+na_drop_oceania3 <- rrapply(
+  renewable_oceania,
+  f = identity,
+  classes = "numeric",
+  how = "melt"
+)
+head(na_drop_oceania3)
+#>        L1                        L2               L3 value
+#> 1 Oceania Australia and New Zealand        Australia  9.32
+#> 2 Oceania Australia and New Zealand      New Zealand 32.76
+#> 3 Oceania                 Melanesia             Fiji 24.36
+#> 4 Oceania                 Melanesia    New Caledonia  4.03
+#> 5 Oceania                 Melanesia Papua New Guinea 50.34
+#> 6 Oceania                 Melanesia  Solomon Islands 65.73
 ```
 
 ### Condition function
@@ -259,12 +281,12 @@ renewable_energy_by_country[[xpos_sweden$Sweden]]
 ### List node aggregation
 
 By default, both base `rapply` and `rrapply` recurse into any list-like
-element. Use `feverywhere = TRUE` to override this behavior and apply
+element. Use `feverywhere = "break"` to override this behavior and apply
 `f` to any list element (e.g. a sublist) that satisfies the `condition`
-function. This is useful to collapse sublists or calculate summary
-statistics of sublists of a nested list. Together with the `.xname` and
-`.xpos` arguments, we have a flexible way in deciding which sublists to
-summarize through the `condition` function.
+and `classes` arguments. This is useful to collapse sublists or
+calculate summary statistics of sublists of a nested list. Together with
+the `.xname` and `.xpos` arguments, we have a flexible way in deciding
+which sublists to summarize through the `condition` function.
 
 ``` r
 ## Calculate mean value of Europe
@@ -273,7 +295,7 @@ rrapply(
   condition = function(x, .xname) .xname == "Europe",
   f = function(x) mean(unlist(x), na.rm = TRUE),
   how = "flatten",
-  feverywhere = TRUE
+  feverywhere = "break"
 )
 #> $Europe
 #> [1] 22.36565
@@ -283,7 +305,7 @@ renewable_continent_summary <- rrapply(
   renewable_energy_by_country,  
   condition = function(x, .xpos) length(.xpos) == 2,
   f = function(x) mean(unlist(x), na.rm = TRUE),
-  feverywhere = TRUE
+  feverywhere = "break"
 )
 
 ## Antarctica's value is missing
@@ -296,6 +318,40 @@ str(renewable_continent_summary, give.attr = FALSE)
 #>   ..$ Asia      : num 17.9
 #>   ..$ Europe    : num 22.4
 #>   ..$ Oceania   : num 17.8
+```
+
+### List node updating
+
+If `feverywhere = "recurse"`, `rrapply` applies the `f` function to any
+element (e.g. a sublist) that satisfies the `condition` and `classes`
+arguments similar to `feverywhere = "break"`, but recurses further into
+any *updated* list-like element after application of the `f` function.
+Using `feverywhere = "recurse"`, we can for instance recursively update
+all node names in a nested list:
+
+``` r
+## Replace country names by M-49 attributes
+renewable_M49 <- rrapply(
+  list(renewable_energy_by_country), 
+  condition = is.list,
+  f = function(x) {
+    names(x) <- vapply(x, attr, character(1L), which = "M49-code")
+    return(x)
+  },
+  feverywhere = "recurse"
+)
+
+str(renewable_M49[[1]], max.level = 3, list.len = 3, give.attr = FALSE)
+#> List of 1
+#>  $ 001:List of 6
+#>   ..$ 002:List of 2
+#>   .. ..$ 015:List of 7
+#>   .. ..$ 202:List of 4
+#>   ..$ 019:List of 2
+#>   .. ..$ 419:List of 3
+#>   .. ..$ 021:List of 5
+#>   ..$ 010: logi NA
+#>   .. [list output truncated]
 ```
 
 ### Using `rrapply` on data.frames
@@ -371,4 +427,5 @@ iris_standard_summarize
 ```
 
 For more details and examples on how to use the `rrapply` function see
-the accompanying package vignette in the vignettes folder.
+the accompanying package vignette in the vignettes folder or the
+‘Articles’ section at <https://jorischau.github.io/rrapply/>.
