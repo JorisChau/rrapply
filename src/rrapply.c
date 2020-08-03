@@ -15,7 +15,8 @@ typedef struct Args
 		1: list (fill default, return nested list)
 		2: unlist (fill default, return nested list, unlist in R-function)
 		3: prune (return nested list)
-		4: flatten (prune, return flat list)    
+		4: flatten (prune, return flat list)  
+		5: melt (prune, return melted list)
 	*/
 
 	int how_C;		 // how argument
@@ -57,11 +58,12 @@ static SEXP C_fill_list(SEXP Xi, R_len_t (*xinfo)[3], R_len_t *buf, R_len_t node
 static void C_fill_flat(SEXP ansNew, SEXP Xi, R_len_t (*xinfo)[3], R_len_t *ix, R_len_t *ians);
 static void C_fill_flat_names(SEXP ansNew, SEXP newNames, SEXP Xi, SEXP name, R_len_t (*xinfo)[3], R_len_t *ix, R_len_t *ians);
 static void C_fill_melt(SEXP ansFlat, SEXP ansNames, SEXP Xi, SEXP name, R_len_t (*xinfo)[3], R_len_t *ix, R_len_t *ians);
+static SEXP C_fill_unmelt(SEXP X, SEXP Xval, R_len_t *namesCount, R_len_t lvl, R_len_t nlvls, R_len_t start, R_len_t end);
 SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPred, SEXP classes, SEXP how, SEXP deflt, SEXP R_dfaslist, SEXP R_feverywhere);
-
+SEXP C_unmelt(SEXP X);
 /* ---------------------- */
 
-/* Main function */
+/* Main functions */
 
 SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPred, SEXP classes, SEXP R_how, SEXP deflt, SEXP R_dfaslist, SEXP R_feverywhere)
 {
@@ -180,14 +182,14 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		initGlobal.anynames = TRUE;
 
 	/* allocate output list */
-	if (R_args.how_C == 0 || R_args.how_C > 2)
-	{
-		ans = PROTECT(Rf_shallow_duplicate(X));
-	}
-	else
+	if (R_args.how_C == 1 || R_args.how_C == 2)
 	{
 		ans = PROTECT(Rf_allocVector((SEXPTYPE)TYPEOF(X), n));
 		C_copyAttrs(X, ans, names, TRUE);
+	}
+	else
+	{
+		ans = PROTECT(Rf_shallow_duplicate(X));
 	}
 	nprotect += 2;
 
@@ -232,7 +234,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		{
 			/* if nested list filter only level zero evaluated nodes, 
 			   otherwise filter evaluated terminal nodes */
-			if (R_args.how_C == 3 ? (xinfo[i][0] && xinfo[i][1] == -1) : (xinfo[i][0] == 1)) 
+			if (R_args.how_C == 3 ? (xinfo[i][0] && xinfo[i][1] == -1) : (xinfo[i][0] == 1))
 			{
 				buf[m] = i;
 				m++;
@@ -303,7 +305,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 			SEXP ansNames = PROTECT(Rf_allocVector(STRSXP, initGlobal.maxnodes));
 			PROTECT_WITH_INDEX(namesNew = Rf_getAttrib(ans, R_NamesSymbol), &ipx);
 			nprotect += 4;
-			
+
 			/* extract all evaluated parent names + populate flat list */
 			Rboolean noNames = Rf_isNull(namesNew);
 			if (noNames)
@@ -345,10 +347,9 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 					}
 				}
 				// deep copy of column
-				if(keep)
+				if (keep)
 					SET_VECTOR_ELT(ansNew, depth, Rf_duplicate(ansColumn));
 			}
-
 		}
 
 		UNPROTECT(nprotect);
@@ -361,12 +362,22 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 	}
 }
 
+/* unmelt data.frame to nested list */
+SEXP C_unmelt(SEXP X)
+{
+	R_len_t ncols = (R_len_t)Rf_length(X);
+	R_len_t nrows = (R_len_t)Rf_length(VECTOR_ELT(X, ncols - 1));
+	R_len_t *namesCount = (R_len_t *)R_alloc(nrows, sizeof(R_len_t));
+
+	return C_fill_unmelt(X, VECTOR_ELT(X, ncols - 1), namesCount, 0, ncols - 2, 0, nrows);
+}
+
 /* Helper functions */
 
 /* convert integer to character */
 static SEXP C_int2char(int i)
 {
-	char buf[100];  // fixed buffer size
+	char buf[100]; // fixed buffer size
 	snprintf(buf, 100, "..%d", i);
 	return Rf_mkChar(buf);
 }
@@ -594,7 +605,7 @@ static SEXP C_eval_list(
 					if (i2 > -1)
 					{
 						i1 = i2;
-						(*xinfo)[i1][0] = 2; 
+						(*xinfo)[i1][0] = 2;
 						i2 = (*xinfo)[i1][1];
 					}
 					else
@@ -689,7 +700,7 @@ static SEXP C_eval_list(
 		/* descend one level */
 		countlocal.depth++;
 
-		if (args.feverywhere == 2) 
+		if (args.feverywhere == 2)
 		{
 			if (countlocal.depth > 100) /* stop with error if depth too large */
 			{
@@ -861,7 +872,7 @@ static void C_fill_melt(SEXP ansFlat, SEXP ansNames, SEXP Xi, SEXP name, R_len_t
 {
 	// add name to vector
 	SET_STRING_ELT(ansNames, *ix, name);
-	
+
 	if (xinfo[*ix][0] == 1) // terminal nodes only
 	{
 		SET_VECTOR_ELT(ansFlat, *ians, Xi);
@@ -875,19 +886,77 @@ static void C_fill_melt(SEXP ansFlat, SEXP ansNames, SEXP Xi, SEXP name, R_len_t
 		PROTECT_WITH_INDEX(names = Rf_getAttrib(Xi, R_NamesSymbol), &ipx);
 		Rboolean noNames = Rf_isNull(names);
 
-		if(noNames)
+		if (noNames)
 			REPROTECT(names = Rf_allocVector(STRSXP, m), ipx);
 
 		for (R_len_t i = 0; i < m; i++)
 		{
 			(*ix)++;
 			// use counter for missing names
-			if(noNames)
+			if (noNames)
 				SET_STRING_ELT(names, i, C_int2char(i + 1));
-			
+
 			// recurse further
 			C_fill_melt(ansFlat, ansNames, VECTOR_ELT(Xi, i), STRING_ELT(names, i), xinfo, ix, ians);
 		}
 		UNPROTECT(1);
 	}
+}
+
+/* unmelt data.frame to nested list */
+static SEXP C_fill_unmelt(SEXP X, SEXP Xval, R_len_t *namesCount, R_len_t lvl, R_len_t nlvls, R_len_t start, R_len_t end)
+{
+	// get column
+	SEXP Xi = VECTOR_ELT(X, lvl);
+	SEXP Xi1 = VECTOR_ELT(X, lvl + 1);
+	R_len_t m = 0;
+
+	// count names
+	for (R_len_t i = start; i < end; i++)
+	{
+		if (i == start ||
+			lvl >= nlvls ||
+			STRING_ELT(Xi1, i) == NA_STRING ||
+			STRING_ELT(Xi, i - 1) == NA_STRING ||
+			STRING_ELT(Xi, i) == NA_STRING ||
+			strcmp(CHAR(STRING_ELT(Xi, i - 1)), CHAR(STRING_ELT(Xi, i))) != 0)
+		{
+			if (i > start)
+				m++;
+			namesCount[m] = 0;
+		}
+
+		(namesCount[m])++;
+	}
+
+	SEXP ansNew = PROTECT(Rf_allocVector(VECSXP, m + 1));
+	SEXP ansNames = PROTECT(Rf_allocVector(STRSXP, m + 1));
+	R_len_t mcum = start;
+
+	for (R_len_t j = 0; j < (m + 1); j++)
+	{
+		SET_STRING_ELT(ansNames, j, STRING_ELT(Xi, mcum));
+		mcum += namesCount[j];
+	}
+
+	Rf_setAttrib(ansNew, R_NamesSymbol, ansNames);
+	R_len_t jstart = 0;
+	R_len_t jend = start;
+	R_len_t *jcounts = (R_len_t *)R_alloc((size_t)(m + 1), sizeof(R_len_t));
+	memcpy(jcounts, namesCount, (size_t)(m + 1) * sizeof(R_len_t));
+
+	for (R_len_t j = 0; j < (m + 1); j++)
+	{
+		jstart += (j == 0 ? start : jcounts[j - 1]);
+		jend += jcounts[j];
+
+		if ((jend - jstart) > 1 ||
+			(lvl < nlvls && STRING_ELT(Xi1, jstart) != NA_STRING))
+			SET_VECTOR_ELT(ansNew, j, C_fill_unmelt(X, Xval, namesCount, lvl + 1, nlvls, jstart, jend));
+		else
+			SET_VECTOR_ELT(ansNew, j, VECTOR_ELT(Xval, jstart));
+	}
+
+	UNPROTECT(2);
+	return ansNew;
 }

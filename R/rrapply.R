@@ -279,23 +279,35 @@
 #' @useDynLib rrapply, .registration = TRUE
 #' @export 
 rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL, 
-                    how = c("replace", "list", "unlist", "prune", "flatten", "melt"),
+                    how = c("replace", "list", "unlist", "prune", "flatten", "melt", "unmelt"),
                     feverywhere = NULL, dfaslist = TRUE, ...)
 {
   
   ## non-function arguments
-  if(!is.list(object) || length(object) < 1) stop("'object' argument should be list-like and of length greater than zero")
-  how <- match.arg(how, c("replace", "list", "unlist", "prune", "flatten", "melt"))
-  howInt <- match(how, c("replace", "list", "unlist", "prune", "flatten", "melt"))
+  how <- match.arg(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "unmelt"))
+  howInt <- match(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "unmelt"))
   dfaslist <- isTRUE(dfaslist)
   feverywhere <- match.arg(feverywhere, c("no", "break", "recurse"))
   feverywhereInt <- match(feverywhere, c("no", "break", "recurse"))
   
+  if(!is.list(object) || length(object) < 1) stop("'object' argument should be list-like and of length greater than zero")
+  ## unmelt data.frame to nested list
+  if(identical(how, "unmelt"))
+  {
+    if(is.data.frame(object) && is.list(object[[length(object)]]) && all(vapply(object[, -length(object)], is.character, logical(1))))
+    {
+      object <- .Call(C_unmelt, object)
+      how <- "replace"
+      howInt <- 1L
+    }
+    else
+      stop("'object' argument must be a data.frame consisting of naming character columns and a value list column")
+  }
   ## function arguments  
   if(missing(f)) f <- NULL else f <- match.fun(f)
   if(missing(condition)) condition <- NULL else condition <- match.fun(condition)
   
-  if(is.null(f) && (is.null(condition) || howInt == 0L) && (feverywhereInt < 1L) && howInt < 4L) 
+  if(is.null(f) && (is.null(condition) || identical(how, "replace")) && identical(feverywhereInt, 1L) && howInt < 5L) 
   {  
     ## nothing to be done
     res <- object  
@@ -312,7 +324,7 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
     res <- .Call(C_rrapply, environment(), object, f, fArgs, condition, conditionArgs, classes, howInt, deflt, dfaslist, feverywhereInt)  
   }
   
-  if(how == "melt")
+  if(identical(how, "melt"))
   {
     ## drop NULL name columns
     res <- res[vapply(res, Negate(is.null), logical(1L))]
@@ -338,7 +350,7 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
   }
   
   ## unlist result
-  if(how == "unlist") res <- unlist(res, recursive = TRUE)
+  if(identical(how, "unlist")) res <- unlist(res, recursive = TRUE)
   
   return(res)
   

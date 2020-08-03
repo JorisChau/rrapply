@@ -10,7 +10,7 @@ rrapply(
   f,
   classes = "ANY",
   deflt = NULL,
-  how = c("replace", "list", "unlist", "prune", "flatten", "melt"),
+  how = c("replace", "list", "unlist", "prune", "flatten", "melt", "unmelt"),
   feverywhere = NULL,
   dfaslist = TRUE,
   ...
