@@ -333,11 +333,11 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
   } else 
   { 
     ## check for .xname and .xpos args
-    fArgs <- conditionArgs <- c(0L, 0L)
+    fArgs <- conditionArgs <- c(0L, 0L, 0L)
     if(identical(typeof(f), "closure"))
-      fArgs <- match(c(".xname", ".xpos"), names(formals(f)), nomatch = 0L) 
+      fArgs <- match(c(".xname", ".xpos", ".xparents"), names(formals(f)), nomatch = 0L) 
     if(identical(typeof(condition), "closure"))
-      conditionArgs <- match(c(".xname", ".xpos"), names(formals(condition)), nomatch = 0L)
+      conditionArgs <- match(c(".xname", ".xpos", ".xparents"), names(formals(condition)), nomatch = 0L)
     
     ## call main C function
     res <- .Call(C_rrapply, environment(), object, f, fArgs, condition, conditionArgs, classes, howInt, deflt, dfaslist, feverywhereInt)  
