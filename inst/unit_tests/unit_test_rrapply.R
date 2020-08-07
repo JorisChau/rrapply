@@ -42,11 +42,14 @@ xout0.7 <- list(a = c("a", "1"), b = list(b1 = c("b1", "2", "1"), b2 = c("b2", "
 xout0.8 <- xout0.7
 xout0.9 <- rapply(xin, f = function(x) c("a", "1"), how = "replace")
 xout0.10 <- list(a = c("a", "1"), b = list(b1 = c("a", "1"), b2 = c("a", "1")), c = c("a", "1"))
+xout0.11 <- list(a = "a", b = list(b1 = c("b", "b1"), b2 = c("b", "b2")), c = "c")
+xout0.12 <- list(a = c("a", "1", "a"), b = list(b1 = c("b1", "2", "1", "b", "b1"), 
+                                                b2 = c("b2", "2", "2", "b", "b2")), c = c("c", "3", "c"))
 
 dotest("0.1", rrapply(xin, f = `-`, classes = "ANY"), xout0.1)
 dotest("0.2", rrapply(xin, f = `+`, e2 = 1L), xout0.2)
 
-.xpos <- .xname <- 1L
+.xpos <- .xname <- .xparents <-  1L
 
 dotest("0.3", rrapply(xin, f = function(x, .xpos) .xpos), xout0.3)
 dotest("0.4", rrapply(xin, f = function(x, xpos) xpos, xpos = 1L), xout0.4)
@@ -56,6 +59,8 @@ dotest("0.7", rrapply(xin, f = function(x, .xname, .xpos) c(.xname, .xpos)), xou
 dotest("0.8", rrapply(xin, f = function(x, .xpos, .xname) c(.xname, .xpos)), xout0.8)
 dotest("0.9", rrapply(xin, f = function(x, xname, xpos) c(xname, xpos), xpos = 1L, xname = "a"), xout0.9)
 dotest("0.10", rrapply(xin, f = function(x, .xname, .xpos) {.xpos = 1L; .xname = "a"; c(.xname, .xpos)}), xout0.10)
+dotest("0.11", rrapply(xin, f = function(x, .xparents) .xparents), xout0.11)
+dotest("0.12", rrapply(xin, f = function(x, .xparents, .xpos, .xname) c(.xname, .xpos, .xparents)), xout0.12)
 
 ## condition argument
 xout1.1 <- list(a = -1L, b = list(b1 = 2L, b2 = 3L), c = 4L)
@@ -65,6 +70,9 @@ xout1.4 <- xout0.1
 xout1.5 <- xout1.1
 xout1.6 <- xout0.1
 xout1.7 <- xout1.1
+xout1.8 <- list(a = 1L, b = list(b1 = -2L, b2 = -3L), c = 4L)
+xout1.9 <- xout0.1
+xout1.10 <- xout0.1
 
 dotest("1.1", rrapply(xin, f = `-`, condition = function(x) x == 1L), xout1.1)
 dotest("1.2", rrapply(xin, f = `-`, condition = `==`, e2 = 1L), xout1.2)
@@ -73,11 +81,15 @@ dotest("1.4", rrapply(xin, f = function(x, xpos) -x, condition = function(x, xpo
 dotest("1.5", rrapply(xin, f = `-`, condition = function(x, .xname) .xname == names(xin)[1]), xout1.5)
 dotest("1.6", rrapply(xin, f = function(x, xname) -x, condition = function(x, xname) xname == "a", xname = "a"), xout1.6)
 dotest("1.7", rrapply(xin, f = `-`, condition = function(x, .xpos, .xname) .xname == names(xin)[1] & .xpos == 1L), xout1.7)
+dotest("1.8", rrapply(xin, f = `-`, condition = function(x, .xparents) any(.xparents == "b")), xout1.8)
+dotest("1.9", rrapply(xin, f = `-`, condition = function(x, .xparents, .xname) .xparents[length(.xparents)] == .xname), xout1.9)
+dotest("1.10", rrapply(xin, f = `-`, condition = function(x, .xparents, .xname, .xpos) .xparents[length(.xpos)] == .xname), xout1.10)
 
-dotest("1.8", .xpos, 1L)
-dotest("1.9", .xname, 1L)
-dotest("1.10", exists("X"), FALSE)
-rm(.xpos, .xname)
+dotest("1.11", .xpos, 1L)
+dotest("1.12", .xname, 1L)
+dotest("1.13", .xparents, 1L)
+dotest("1.14", exists("X"), FALSE)
+rm(.xpos, .xname, .xparents)
 
 ## how argument
 xout2.1 <- list(a = -1L, b = list(b1 = 2L, b2 = 3L), c = -4L)
@@ -88,9 +100,10 @@ xout2.5 <- xout2.4
 xout2.6 <- structure(list(L1 = c("b", "b"), L2 = c("b1", "b2"), value = list(-2L, -3L)), row.names = 1:2, class = "data.frame")
 xout2.7 <- structure(list(L1 = c("a", "c"), value = list(-1L, -4L)), row.names = 1:2, class = "data.frame")
 xout2.8 <- structure(list(L1 = c("a", "b"), L2 = c(NA, "b1"), value = list(-1L, -2L)), row.names = 1:2, class = "data.frame")
-xout2.9 <- list(b = list(b1 = 2L, b2 = 3L))
-xout2.10 <- list(a = 1L, c = 4L)
-xout2.11 <- list(a = 1L, b = list(b1 = 2L))
+xout2.9 <- xout2.8
+xout2.10 <- list(b = list(b1 = 2L, b2 = 3L))
+xout2.11 <- list(a = 1L, c = 4L)
+xout2.12 <- list(a = 1L, b = list(b1 = 2L))
 
 dotest("2.1", rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "replace"), xout2.1)
 dotest("2.2", rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "list"), xout2.2)
@@ -100,13 +113,15 @@ dotest("2.5", rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(
 dotest("2.6", rrapply(xin, f = `-`, condition = function(x, .xpos) length(.xpos) > 1, how = "melt"), xout2.6)
 dotest("2.7", rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "melt"), xout2.7)
 dotest("2.8", rrapply(xin, f = `-`, condition = function(x, .xname) grepl("a|b1", .xname), how = "melt"), xout2.8)
-dotest("2.9", rrapply(xout2.6, f = `-`, how = "unmelt"), xout2.9)
-dotest("2.10", rrapply(xout2.7, f = `-`, how = "unmelt"), xout2.10)
-dotest("2.11", rrapply(xout2.8, f = `-`, how = "unmelt"), xout2.11)
+dotest("2.9", rrapply(xin, f = `-`, condition = function(x, .xparents, .xname) any(grepl("a|b1", .xparents)), how = "melt"), xout2.9)
+dotest("2.10", rrapply(xout2.6, f = `-`, how = "unmelt"), xout2.10)
+dotest("2.11", rrapply(xout2.7, f = `-`, how = "unmelt"), xout2.11)
+dotest("2.12", rrapply(xout2.8, f = `-`, how = "unmelt"), xout2.12)
 
-## check for trailing .xpos and .xname variables
-dotest("2.11", exists(".xpos"), FALSE)
-dotest("2.12", exists(".xname"), FALSE)
+## check for trailing .xpos, .xname, .xparents variables
+dotest("2.13", exists(".xpos"), FALSE)
+dotest("2.14", exists(".xname"), FALSE)
+dotest("2.15", exists(".xparents"), FALSE)
 
 ## classes argument
 xout3.1 <- list(a = structure(-1L, .Dim = c(1L, 1L)), b = list(b1 = 2L, b2 = 3L), c = 4L)
@@ -184,6 +199,11 @@ xout6.23 <- list(b = structure(-2:-3, .Names = c("b1", "b2")))
 xout6.24 <- list(a = -1L, b = list(b1_ = -2L, b2_ = -3L), c = -4L)
 xout6.25 <- list(a = list("..1" = list(-1L)))
 
+xout6.26 <- xout6.1
+xout6.27 <- list(a = 1L, b = list(b1 = list(b11 = c("b", "b1", "b11")), b2 = 3L), c = 4L)
+xout6.28 <- list(a = 1L, b = list(b = list(b = list(b1 = 2L, b2 = 3L))), c = 4L)
+
+
 dotest("6.1", rrapply(xin1, f = function(x, .xname) .xname, feverywhere = "break"), xout6.1)
 dotest("6.2", rrapply(xin1, f = function(x, .xname) .xname, condition = function(x, .xname) .xname == "b", feverywhere = "break"), xout6.2)
 dotest("6.3", rrapply(xin1, f = function(x, .xname) .xname, condition = function(x, .xpos) length(.xpos) == 2, feverywhere = "break"), xout6.3)
@@ -214,6 +234,10 @@ dotest("6.23", rrapply(xout6.10, f = `-`, how = "unmelt"), xout6.23)
 dotest("6.24", rrapply(xout6.16, f = `-`, how = "unmelt"), xout6.24)
 dotest("6.25", rrapply(xout6.22, f = `-`, how = "unmelt"), xout6.25)
 
+dotest("6.26", rrapply(xin1, f = function(x, .xparents) .xparents, feverywhere = "break"), xout6.26)
+dotest("6.27", rrapply(xin1, f = function(x, .xparents) .xparents, condition = function(x, .xparents) length(.xparents) == 3, feverywhere = "break"), xout6.27)
+dotest("6.28", rrapply(xin2, f = function(x) list(b = x), condition = function(x, .xparents) length(.xparents) < 3 & "b" %in% .xparents, feverywhere = "recurse"), xout6.28)
+
 ## named flat list
 xin1 <- list(a = 1L, b = 2L, c = 3L)
 xin2 <- list(a = 1L, b = NULL)
@@ -231,6 +255,9 @@ xout7.10 <- xout7.8
 xout7.11 <- structure(list(L1 = c("a", "b"), value = list(FALSE, TRUE)), row.names = 1:2, class = "data.frame")
 xout7.12 <- list(a = 1L, c = 3L)
 xout7.13 <- list(a = 0L, b = -1L)
+xout7.14 <- xout7.3
+xout7.15 <- list(a = list(list(1L)), b = 2L, c = list(list(3L)))
+
 
 dotest("7.1", rrapply(xin1, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "replace"), xout7.1)
 dotest("7.2", rrapply(xin1, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "list"), xout7.2)
@@ -245,6 +272,8 @@ dotest("7.10", rrapply(xin2, f = is.null, how = "flatten"), xout7.10)
 dotest("7.11", rrapply(xin2, f = is.null, how = "melt"), xout7.11)
 dotest("7.12", rrapply(xout7.7, f = `-`, how = "unmelt"), xout7.12)
 dotest("7.13", rrapply(xout7.11, f = `-`, how = "unmelt"), xout7.13)
+dotest("7.14", rrapply(xin1, f = `-`, condition = function(x, .xparents) any(c("a", "c") %in% .xparents), how = "prune"), xout7.14)
+dotest("7.15", rrapply(xin1, f = list, condition = function(x, .xparents, .xpos) length(.xpos) < 3 & any(c("a", "c") %in% .xparents), feverywhere = "recurse"), xout7.15)
 
 ## unnamed nested list
 xin <- list(1L, 2L, list(3L, 4L))
@@ -258,6 +287,11 @@ xout8.6 <- list(-1L, -2L, list(-3L, -4L))
 xout8.7 <- list(-1L, 2L, -3L)
 xout8.8 <- list(list(1L), 2L, list(3L, 4L))
 xout8.9 <- list("..1" = 1L)
+xout8.10 <- xout8.6
+xout8.11 <-  structure(list(L1 = c("..1", "..2", "..3", "..3"), 
+                            L2 = c(NA,  NA, "..1", "..2"), 
+                            value = list(-1L, -2L, -3L, -4L)), 
+                            row.names = c(NA, 4L), class = "data.frame")
 
 dotest("8.1", rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "replace"), xout8.1)
 dotest("8.2", rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "list"), xout8.2)
@@ -268,6 +302,8 @@ dotest("8.6", rrapply(xin, f = `-`, condition = function(x, .xname) is.na(.xname
 dotest("8.7", rrapply(xin, f = function(x, .xpos) -.xpos, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), feverywhere = "break"), xout8.7)
 dotest("8.8", rrapply(xin, f = list, condition = function(x, .xpos) length(.xpos) < 2 & all(.xpos == 1L), feverywhere = "recurse"), xout8.8)
 dotest("8.9", rrapply(xout8.5, f = `-`, how = "unmelt"), xout8.9)
+dotest("8.10", rrapply(xin, f = `-`, condition = function(x, .xparents) all(is.na(.xparents)), how = "replace"), xout8.10)
+dotest("8.11", rrapply(xin, f = `-`, condition = function(x, .xparents) all(is.na(.xparents)), how = "melt"), xout8.11)
 
 ## partially named list 1
 xin <- list(a = 1L, 2L, list(c1 = 3L, 4L))
@@ -281,6 +317,8 @@ xout9.6 <- list(a = -1L)
 xout9.7 <- list(a = "a", 2L, list(c1 = "c1", 4L))
 xout9.8 <- list(a = list(1L), 2L, list(c1 = 3L, 4L))
 xout9.9 <- list(a = 1L, list(c1 = 3L))
+xout9.10 <- list(a = "a", "", list(c1 = c("", "c1"), c("", "")))
+xout9.11 <- list(a = -1L, -2L)
 
 dotest("9.1", rrapply(xin, f = `-`, condition = function(x, .xname) nzchar(.xname), how = "replace"), xout9.1)
 dotest("9.2", rrapply(xin, f = `-`, condition = function(x, .xname) nzchar(.xname), how = "list"), xout9.2)
@@ -291,6 +329,8 @@ dotest("9.6", rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos == 1L, 
 dotest("9.7", rrapply(xin, f = function(x, .xname) .xname, condition = function(x, .xname) nzchar(.xname), feverywhere = "break"), xout9.7)
 dotest("9.8", rrapply(xin, f = list, condition = function(x, .xpos) length(.xpos) < 2 & all(.xpos == 1L), feverywhere = "recurse"), xout9.8)
 dotest("9.9", rrapply(xout9.5, f = `-`, how = "unmelt"), xout9.9)
+dotest("9.10", rrapply(xin, f = function(x, .xparents) .xparents), xout9.10)
+dotest("9.11", rrapply(xin, f = `-`, condition = function(x, .xparents) length(.xparents) == 1, how = "prune"), xout9.11)
 
 ## partially named list 2
 xin <- list(1L, 2L, list(c1 = 3L, c2 = 4L))
@@ -304,7 +344,9 @@ xout10.6 <- list(list(c1 = -3L))
 xout10.7 <- list(1L, 2L, list(c1 = "c1", c2 = "c2"))
 xout10.8 <- list(list(1L), 2L, list(c1 = 3L, c2 = 4L))
 xout10.9 <- list("..3" = list(c1 = 3L, c2 = 4L))
-
+xout10.10 <- list(1L, 2L, list(c1 = -3L, c2 = -4L))
+xout10.11 <- xout10.10 
+  
 dotest("10.1", rrapply(xin, f = `-`, condition = function(x, .xname) !is.na(.xname), how = "replace"), xout10.1)
 dotest("10.2", rrapply(xin, f = `-`, condition = function(x, .xname) !is.na(.xname), how = "list"), xout10.2)
 dotest("10.3", rrapply(xin, f = `-`, condition = function(x, .xname) !is.na(.xname), how = "prune"), xout10.3)
@@ -314,6 +356,8 @@ dotest("10.6", rrapply(xin, f = `-`, condition = function(x, .xpos) identical(.x
 dotest("10.7", rrapply(xin, f = function(x, .xname) .xname, condition = function(x, .xname) !is.na(.xname), feverywhere = "break"), xout10.7)
 dotest("10.8", rrapply(xin, f = list, condition = function(x, .xpos) length(.xpos) < 2 & all(.xpos == 1L), feverywhere = "recurse"), xout10.8)
 dotest("10.9", rrapply(xout10.5, f = `-`, how = "unmelt"), xout10.9)
+dotest("10.10", rrapply(xin, f = `-`, condition = function(x, .xparents) any(!is.na(.xparents)), how = "replace"), xout10.10)
+dotest("10.11", rrapply(xin, f = `-`, condition = function(x, .xparents) any(!is.na(.xparents)), feverywhere = "break"), xout10.11)
 
 ## empty lists
 xin1 <- list(a = 1L, b = list(list(2L)))
@@ -343,6 +387,8 @@ dotest("11.17", rrapply(xin2, condition = function(x) FALSE, how = "prune", feve
 dotest("11.18", rrapply(xin2, condition = function(x) FALSE, how = "flatten", feverywhere = "break"), xout11.2)
 dotest("11.19", rrapply(xin2, condition = function(x) FALSE, how = "prune", feverywhere = "recurse"), xout11.2)
 dotest("11.20", rrapply(xin2, condition = function(x) FALSE, how = "flatten", feverywhere = "recurse"), xout11.2)
+dotest("11.21", rrapply(xin1, condition = function(x, .xparents) "c" %in% .xparents, how = "prune"), xout11.1)
+dotest("11.22", rrapply(xin2, condition = function(x, .xparents) any(!is.na(.xparents)), how = "flatten"), xout11.2)
 
 ## check wrong inputs
 tools::assertError(rrapply(xin1, f = `-`, how = "unmelt"))
@@ -380,6 +426,8 @@ xout12.15 <- list("..1" = list("..1" = list("..1" = list("..1" = list("..1" = li
     "..1" = list("..1" = list("..1" = list("..1" = list("..1" = 2L)))))))))))))))))
 xout12.16 <- list("..1" = list("..1" = list("..1" = list("..1" = 2L, "..2" = 2L, "..3" = 2L), 
                                             "..2" = list("..1" = 2L, "..2" = 2L, "..3" = 2L))))
+xout12.17 <- f(len = 1, d = 1, dmax = 17, expr = list(rep(NA_character_, 17), rep(NA_character_, 17)))
+xout12.18 <- f(len = 2, d = 1, dmax = 4, expr = replicate(3L, rep(NA_character_, 4), simplify = FALSE ))
 
 dotest("12.1", rrapply(xin1, condition = is.null, f = function(x) NA, how = "replace"), xout12.1)
 dotest("12.2", rrapply(xin1, condition = Negate(is.null), f = function(x) 1L, deflt = NA, how = "list"), xout12.2)
@@ -397,5 +445,7 @@ dotest("12.13", rrapply(xin2, condition = function(x, .xpos) identical(.xpos[4],
 dotest("12.14", rrapply(xin2, condition = function(x, .xpos) identical(.xpos[c(1, 2)], c(1L, 1L)), f = function(x) 2L, how = "melt"), xout12.14)
 dotest("12.15", rrapply(xout12.7, how = "unmelt"), xout12.15)
 dotest("12.16", rrapply(xout12.14, how = "unmelt"), xout12.16)
+dotest("12.17", rrapply(xin1, f = function(x, .xparents) .xparents, how = "replace"), xout12.17)
+dotest("12.18", rrapply(xin2, f = function(x, .xparents) .xparents, how = "replace"), xout12.18)
 
 cat("Completed rrapply unit tests\n")
