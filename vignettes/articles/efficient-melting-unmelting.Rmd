@@ -1,0 +1,180 @@
+---
+title: "Efficient list melting and unmelting with rrapply"
+author: "Joris Chau"
+date: "Latest date: `r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: false
+vignette: >
+  %\VignetteIndexEntry{Efficient list melting and unmelting with rrapply}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+  
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+  
+# Efficient list melting
+  
+The tutorial `vignette("when-to-use-rrapply")` describes the use of `rrapply()` when applied directly to data formatted as a nested list. If there is no specific reason to keep the data in the form of a nested list, it is often more practical to transform the nested list into a more manageable rectangular format and execute any further data processing steps on the unnested object (e.g. a data.frame). 
+  
+For this purpose, `rrapply()` includes the option `how = "melt"`, which returns a *melted* data.frame of the nested list similar in format to the `"list"`-method of `reshape2::melt()`. The rows of the melted data.frame contain the individual node paths of the elements in the nested list after pruning (based on the `condition` or `classes` arguments). The `"value"` column is a list-column with the values of the terminal nodes analogous to the flattened list returned by `how = "flatten"`, see also `vignette("when-to-use-rrapply")`.
+  
+In comparison to `reshape2::melt()`, `rrapply()` provides additional flexibility to filter or transform specific list elements before melting a nested list using e.g. the `f`, `classes`  or `condition` arguments. More importantly, `rrapply()` is optimized specifically for nested lists, whereas `reshape2::melt()` was mainly aimed at melting data.frames before it was superseded by `tidyr::gather()` and the more recent `tidyr::pivot_longer()`. For this reason, `reshape2::melt()` tends to be quite slow when applied to larger nested lists as demonstrated below. 
+  
+For illustration purposes, we use the same dataset `renewable_energy_by_country` as in `vignette("when-to-use-rrapply")`, a nested list containing the shares of renewable energy as a percentage in the total energy consumption per country in 2016.
+  
+```{r}
+library(rrapply)
+data("renewable_energy_by_country")
+```
+
+First, let us convert the nested list to a melted data.frame:
+
+```{r}
+system.time(
+  renewable_energy_melted <- rrapply(renewable_energy_by_country, how = "melt")
+)
+
+head(renewable_energy_melted, 10)
+```
+
+As data processing and reshaping for data.frames is familiar R territory, any subsequent processing tasks are likely more straightforward to execute using the melted data.frame than using the original nested list. For instance, we can easily filter all Western European countries with base R's `subset` (or analogous `dplyr` or `data.table` commands among others):
+
+```{r}
+renewable_energy_melted_west_eu <- subset(renewable_energy_melted, L3 == "Western Europe")
+
+renewable_energy_melted_west_eu
+```
+
+For completeness, note that a similar result can be also be obtained directly with `rrapply` using the `.xparents` argument:
+
+```{r}
+rrapply(
+  renewable_energy_by_country, 
+  condition = function(x, .xparents) "Western Europe" %in% .xparents,
+  how = "melt"
+)
+```
+Here, the `L5` column is no longer present as the pruned list does not contain any elements at this depth before melting to a data.frame.
+
+<div class="bs-callout bs-callout-warning">
+The `.xparents` argument is currently only available in the development version of `rrapply` installed with `devtools::install_github("JorisChau/rrapply")`.
+</div>
+
+Now let us return the same results with `reshape2::melt()`, 
+
+```{r}
+system.time(
+  renewable_energy_melted_reshape2 <- reshape2::melt(renewable_energy_by_country)
+)
+```
+```{r}
+head(renewable_energy_melted_reshape2, 10)
+```
+
+`rrapply()` orders the columns differently by default and produces a `"value"` list-column instead of `reshape2:melt()`'s numeric `"value"` column, but other than that the data contained in the melted data.frame is identical. For a medium-sized list as used here, the computational speed of `reshape2::melt()` is acceptable for practical usage. However, its computational efficiency quickly decreases when melting larger or more deeply nested lists:
+
+```{r}
+## generate a large shallow list with 3 layers and a total of 10^6 elements
+ls_shallow <- rrapply(
+  setNames(replicate(100L, NA, simplify = FALSE), as.character(1:100)),
+  condition = function(x, .xpos) length(.xpos) < 3, 
+  f = function(x, .xpos) setNames(replicate(100L, 1L, simplify = FALSE), 
+                                  paste(paste(.xpos, collapse = "."), as.character(1:100), sep = ".")),
+  feverywhere = "recurse"
+)
+
+## benchmark timing with rrapply how = "melt"
+system.time(ls_shallow_melted <- rrapply(ls_shallow, how = "melt")) 
+head(ls_shallow_melted)
+
+## benchmark timing with reshape2::melt
+system.time(ls_shallow_melted_reshape2 <- reshape2::melt(ls_shallow))
+head(ls_shallow_melted_reshape2)
+```
+
+```{r}
+## generate a deeply nested list with 18 layers and a total of 2^18 elements
+ls_deep <- rrapply(
+  list("1" = NA, "2" = NA), 
+  condition = function(x, .xpos) length(.xpos) < 18, 
+  f = function(x, .xpos) setNames(list(1L, 2L), 
+                                  paste(paste(.xpos, collapse = "."), c("1", "2"), sep = ".")),
+  feverywhere = "recurse"
+)
+
+## benchmark timing with rrapply how = "melt"
+system.time(ls_deep_melted <- rrapply(ls_deep, how = "melt")) 
+
+## benchmark timing with reshape2::melt
+system.time(ls_deep_melted_reshape2 <- reshape2::melt(ls_deep))
+```
+
+Although unlikely to encounter such large or deeply nested lists in practice, these artificial examples serve to illustrate that `reshape2::melt` is not very well-suited to convert large nested lists to melted data.frames. 
+
+# Efficient unmelting of melted data.frames
+
+<div class="bs-callout bs-callout-warning">
+  The option `how = "unmelt"` is currently only available in the development version of `rrapply` installed with `devtools::install_github("JorisChau/rrapply")`.
+</div>
+
+Let's return to the example of the melted data.frame containing only the renewable energy shares of Western European countries:
+
+```{r}
+renewable_energy_melted_west_eu
+```
+
+Suppose that this data.frame needs to be converted back to a nested list object in order to write it to a JSON- or XML-object, or for some other purpose. Writing a recursive function to restore the nested list can prove to be quite a time-consuming task. Base R's `unlist()` function has an inverse function `relist()`, but `relist()` requires a `skeleton` nested list to repopulate, and such a `skeleton` is clearly unavailable in the current context. In particular, since we have filtered entries from the melted data.frame, we can no longer use the original list as a template object, without filtering nodes from the original list as well.
+
+To this purpose, `rrapply()` includes the additional option `how = "unmelt"` that performs the inverse operation of `how = "melt"`. No skeleton object is needed in this case, only a data.frame in the format returned by `how = "melt"`. To illustrate, we can convert the melted data.frame above to a nested list as follows:
+
+```{r}
+renewable_energy_west_eu_unmelted <- rrapply(renewable_energy_melted_west_eu, how = "unmelt")
+str(renewable_energy_west_eu_unmelted, give.attr = FALSE)
+```
+
+**Remark 1:** `how = "unmelt"` is based on a *greedy* approach parsing data.frame rows as list elements starting from the top of the data.frame. That is, `rrapply()` continues collecting children nodes as long as the parent node name remains unchanged. If, for instance, we wish to create two separate nodes (on the same level) with the name `"Western Europe"`, these nodes should not be listed after one another in the melted data.frame as `rrapply()` will group all children under a single `"Western Europe"` list element.
+
+**Remark 2:** Internally, `how = "unmelt"` reconstructs a nested list from the melted data.frame and subsequently follows the same conceptual framework as `how = "replace"`. Any other function arguments, such as `f` and `condition` should therefore be used in exactly the same way as one would use them for `how = "replace"` applied to a nested list object.
+
+**Remark 3:** `how = "unmelt"` does (currently) not restore the attributes of intermediate list nodes and is therefore not an exact inverse of `how = "melt"`. The other way around will always produce the same results:
+
+```{r}
+renewable_energy_unmelted <- rrapply(renewable_energy_melted, how = "unmelt")
+renewable_energy_remelted <- rrapply(renewable_energy_unmelted, how = "melt")
+
+all.equal(renewable_energy_melted, renewable_energy_remelted)
+```
+
+In terms of computational effort, `rrapply()`'s `how = "unmelt"` can be equally or more efficient than base R's `relist()` even though there is no template list object that can be repopulated. This is illustrated using the large list objects generated above,
+
+```{r}
+## deeply nested list with 18 layers and a total of 2^18 elements
+## benchmark timing with rrapply how = "unmelt"
+system.time(ls_deep_unmelted <- rrapply(ls_deep_melted, how = "unmelt")) 
+all.equal(ls_deep_unmelted, ls_deep)
+
+## benchmark timing with relist
+ls_deep_unlist <- unlist(as.relistable(ls_deep))
+system.time(ls_deep_relist <- relist(ls_deep_unlist))
+
+## large shallow list with 3 layers and a total of 10^6 elements
+## benchmark timing with rrapply how = "unmelt"
+system.time(ls_shallow_unmelted <- rrapply(ls_shallow_melted, how = "unmelt")) 
+all.equal(ls_shallow_unmelted, ls_shallow)
+
+## benchmark timing with relist
+ls_shallow_unlist <- unlist(as.relistable(ls_shallow))
+system.time(ls_shallow_relist <- relist(ls_shallow_unlist))
+```
+
+
+
+
+
+
