@@ -1,4 +1,4 @@
-## CRAN package version 1.1.0
+## CRAN package version 1.1.1
 
 ### Test environments
 
