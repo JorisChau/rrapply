@@ -19,12 +19,7 @@
 
 ### Notes
 
-win-builder note:
+N  checking for future file timestamps (701ms)
+   unable to verify current time
 
-* checking CRAN incoming feasibility ... NOTE
-Maintainer: ‘Joris Chau <joris.chau@openanalytics.eu>’
-
-Possibly mis-spelled words in DESCRIPTION:
-  Rapply (3:24)
-  rapply (7:45)
-  reimplementation (7:16)
+* http://worldclockapi.com/ is currently offline (https://stackoverflow.com/questions/63613301/r-cmd-check-note-unable-to-verify-current-time)
