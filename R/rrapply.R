@@ -33,13 +33,13 @@
 #' argument need to be defined as function arguments in \emph{both} the \code{f} and \code{condition} function (if existing), even if they are not
 #'  used in the function itself. See also the \sQuote{Examples} section.
 #' 
-#' @section Special arguments \code{.xname} and \code{.xpos}:
-#' The \code{f} and \code{condition} functions accept two special arguments \code{.xname} and \code{.xpos} in addition to the first principal argument. 
+#' @section Special arguments \code{.xname}, \code{.xpos} and \code{.xparents}:
+#' The \code{f} and \code{condition} functions accept three special arguments \code{.xname}, \code{.xpos} and \code{.xparents} in addition to the first principal argument. 
 #' The \code{.xname} argument evaluates to the name of the list element. The \code{.xpos} argument evaluates to the position of the element in the nested 
 #' list structured as an integer vector. That is, if \code{x = list(list("y", "z"))}, then an \code{.xpos} location of \code{c(1, 2)} corresponds 
-#' to the list element \code{x[[c(1, 2)]]}. The names \code{.xname} and \code{.xpos} need to be explicitly included as function arguments in \code{f} and 
-#' \code{condition} (in addition to the principal argument). See the package vignette for example uses of the \code{.xname} and 
-#' \code{.xpos} variables.  
+#' to the list element \code{x[[c(1, 2)]]}. The \code{.xparents} argument evaluates to a vector of all parent node names in the path to the list element.
+#' The names \code{.xname}, \code{.xpos} or \code{.xparents} need to be explicitly included as function arguments in \code{f} and 
+#' \code{condition} (in addition to the principal argument). See the package vignette for example uses of these special variables.
 #' 
 #' @section List node aggregation:
 #' By default, \code{rrapply} recurses into any \dQuote{list-like} element. If \code{feverywhere = "break"}, this behavior is overridden and the 
@@ -85,7 +85,7 @@
 #' ## Subset values for countries and areas in Oceania
 #' renewable_oceania <- renewable_energy_by_country[["World"]]["Oceania"]
 #'
-#' # List pruning
+#' # List pruning and unnesting
 #' 
 #' ## Drop all logical NA's while preserving list structure 
 #' na_drop_oceania <- rrapply(
@@ -154,7 +154,7 @@
 #' )
 #' str(renewable_energy_above_85, give.attr = FALSE)
 #' 
-#' # Special arguments .xname and .xpos
+#' # Special arguments .xname, .xpos and .xparents
 #' 
 #' ## Apply a function using the name of the node
 #' renewable_oceania_text <- rrapply(
@@ -177,6 +177,14 @@
 #' renewable_europe_above_50 <- rrapply(
 #'   renewable_energy_by_country,
 #'   condition = function(x, .xpos) identical(.xpos[c(1, 2)], c(1L, 5L)) & x > 50,
+#'   how = "prune"
+#' )
+#' str(renewable_europe_above_50, give.attr = FALSE)
+#' 
+#' ## Filter European countries with value above 50%
+#' renewable_europe_above_50 <- rrapply(
+#'   renewable_energy_by_country,
+#'   condition = function(x, .xparents) "Europe" %in% .xparents & x > 50,
 #'   how = "prune"
 #' )
 #' str(renewable_europe_above_50, give.attr = FALSE)
@@ -275,9 +283,11 @@
 #' )
 #' 
 #' @inheritParams base::rapply
+#' @param object a \code{\link{list}}, \code{\link{expression}} vector, or \code{\link{call}} object, i.e., \dQuote{list-like}.
 #' @param f a \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname} and/or \code{.xpos} 
 #' (see \sQuote{Details}), passing further arguments via \code{\dots}.
-#' @param condition a condition \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname} and/or 
+#' @param condition a condition \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname}, \code{.xpos} 
+#' and/or \code{.xparents} 
 #' \code{.xpos} (see \sQuote{Details}), passing further arguments via \code{\dots}.
 #' @param how character string partially matching the six possibilities given: see \sQuote{Details}.
 #' @param deflt the default result (only used if \code{how = "list"} or \code{how = "unlist"}).
@@ -296,15 +306,16 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
                     how = c("replace", "list", "unlist", "prune", "flatten", "melt", "unmelt"),
                     feverywhere = NULL, dfaslist = TRUE, ...)
 {
-  
   ## non-function arguments
+  if(!(is.list(object) || is.call(object) || is.expression(object)) || length(object) < 1) 
+    stop("'object' argument should be list-like and of length greater than zero")
+    
   how <- match.arg(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "unmelt"))
   howInt <- match(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "unmelt"))
   dfaslist <- isTRUE(dfaslist)
   feverywhere <- match.arg(feverywhere, c("no", "break", "recurse"))
   feverywhereInt <- match(feverywhere, c("no", "break", "recurse"))
   
-  if(!is.list(object) || length(object) < 1) stop("'object' argument should be list-like and of length greater than zero")
   ## unmelt data.frame to nested list
   if(identical(how, "unmelt"))
   {
@@ -326,13 +337,14 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
   if(missing(f)) f <- NULL else f <- match.fun(f)
   if(missing(condition)) condition <- NULL else condition <- match.fun(condition)
   
-  if(is.null(f) && (is.null(condition) || identical(how, "replace")) && identical(feverywhereInt, 1L) && howInt < 5L) 
+  if(is.null(f) && (is.null(condition) || identical(how, "replace")) && identical(feverywhereInt, 1L) && 
+     ((is.list(object) && howInt < 5L) || (!is.list(object) && howInt < 2L)))
   {  
     ## nothing to be done
     res <- object  
   } else 
   { 
-    ## check for .xname and .xpos args
+    ## check for special args
     fArgs <- conditionArgs <- c(0L, 0L, 0L)
     if(identical(typeof(f), "closure"))
       fArgs <- match(c(".xname", ".xpos", ".xparents"), names(formals(f)), nomatch = 0L) 

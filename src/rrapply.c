@@ -67,7 +67,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 
 SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPred, SEXP classes, SEXP R_how, SEXP deflt, SEXP R_dfaslist, SEXP R_feverywhere)
 {
-	SEXP ans, names, xsym, xname, xpos, xparents, R_xparents, R_fcall, R_pcall;
+	SEXP ans, ansptr, xptr, names, xsym, xname, xpos, xparents, R_xparents, R_fcall, R_pcall;
 
 	/* protect calls */
 	int nprotect = 0;
@@ -110,7 +110,6 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		PROTECT_WITH_INDEX(R_xparents = Rf_allocVector(STRSXP, initGlobal.depthmax), &parentipx);
 	else
 		PROTECT_WITH_INDEX(R_xparents = Rf_ScalarString(NA_STRING), &parentipx);
-
 	nprotect++;
 
 	/* install arguments and initialize call objects */
@@ -218,14 +217,23 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		initGlobal.anynames = TRUE;
 
 	/* allocate output list */
-	if (R_args.how_C == 1 || R_args.how_C == 2)
+	ansptr = NULL; /* avoid unitialized warning */
+	xptr = NULL;
+	if (Rf_isPairList(X))
+		xptr = X;
+
+	if ((Rf_isVectorList(X) && (R_args.how_C == 1 || R_args.how_C == 2)) || (Rf_isPairList(X) && R_args.how_C > 0))
 	{
-		ans = PROTECT(Rf_allocVector((SEXPTYPE)TYPEOF(X), n));
-		C_copyAttrs(X, ans, names, TRUE);
+		ans = PROTECT(Rf_allocVector(VECSXP, n));
+		C_copyAttrs(X, ans, names, !Rf_isPairList(X));
+		if (Rf_isPairList(X))
+			Rf_copyMostAttrib(X, ans);
 	}
 	else
 	{
 		ans = PROTECT(Rf_shallow_duplicate(X));
+		if (Rf_isPairList(X))
+			ansptr = ans;
 	}
 	nprotect += 2;
 
@@ -258,7 +266,23 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		}
 
 		/* main recursion part */
-		SET_VECTOR_ELT(ans, i, C_eval_list(env, VECTOR_ELT(X, i), R_fcall, R_pcall, classes, deflt, xsym, &R_xparents, parentipx, R_args, &initGlobal, initLocal, &xinfo, &xloc, &xdepth));
+		if (Rf_isVectorList(X))
+		{
+			SET_VECTOR_ELT(ans, i, C_eval_list(env, VECTOR_ELT(X, i), R_fcall, R_pcall, classes, deflt, xsym, &R_xparents, parentipx, R_args, &initGlobal, initLocal, &xinfo, &xloc, &xdepth));
+		}
+		else if (Rf_isPairList(X))
+		{
+			if (R_args.how_C > 0)
+			{
+				SET_VECTOR_ELT(ans, i, C_eval_list(env, CAR(xptr), R_fcall, R_pcall, classes, deflt, xsym, &R_xparents, parentipx, R_args, &initGlobal, initLocal, &xinfo, &xloc, &xdepth));
+			}
+			else
+			{
+				SETCAR(ansptr, C_eval_list(env, CAR(xptr), R_fcall, R_pcall, classes, deflt, xsym, &R_xparents, parentipx, R_args, &initGlobal, initLocal, &xinfo, &xloc, &xdepth));
+				ansptr = CDR(ansptr);
+			}
+			xptr = CDR(xptr);
+		}
 	}
 
 	/* list pruning */
@@ -495,16 +519,26 @@ static int C_matchClass(SEXP obj, SEXP classes)
 static void C_traverse(SEXP X, CountGlobal *count, int depth)
 {
 	SEXP Xi;
+	SEXP xptr = X;
 	/* increment max depth if current depth is higher than max depth */
 	R_len_t n = Rf_length(X);
 	depth++;
 	count->maxnodes += n;
 	count->depthmax += (depth > count->depthmax);
+
 	for (R_len_t i = 0; i < n; i++)
 	{
-		Xi = VECTOR_ELT(X, i);
+		if (Rf_isVectorList(X))
+		{
+			Xi = VECTOR_ELT(X, i);
+		}
+		else
+		{
+			Xi = CAR(xptr);
+			xptr = CDR(xptr);
+		}
 		/* descend one level */
-		if (Rf_isVectorList(Xi))
+		if (TYPEOF(Xi) != NILSXP && (Rf_isVectorList(Xi) || Rf_isPairList(Xi))) // skip NILSXP
 		{
 			C_traverse(Xi, count, depth);
 		}
@@ -529,14 +563,17 @@ static SEXP C_eval_list(
 	R_len_t **xdepth		  // current depth (only used for melting)
 )
 {
-	SEXP funVal = NULL; /* avoid unitialized warning */
-	int nprotect = 0;
+	/* initialize function value */
+	SEXP funVal;
+	PROTECT_INDEX childipx;
+	PROTECT_WITH_INDEX(funVal = Rf_lazy_duplicate(Xi), &childipx);
+	int nprotect = 1;
 
 	/* if Xi is list (and data.frame is treated as list if !dfaslist)
 	   and !feverywhere recurse, otherwise evaluate functions */
 	int doRecurse = 0;
 
-	if (args.feverywhere < 1 && Rf_isVectorList(Xi))
+	if (args.feverywhere < 1 && ((Rf_isVectorList(Xi) || Rf_isPairList(Xi)) && TYPEOF(Xi) != NILSXP))
 	{
 		doRecurse = 1;
 		if (!args.dfaslist)
@@ -634,13 +671,23 @@ static SEXP C_eval_list(
 		/* evaluate predicate */
 		int doEval = TRUE;
 		int matched = FALSE;
+		int skip = FALSE;
 
+		/* skip empty symbols */
+		if (Rf_isSymbol(Xi))
+		{
+			const char *str = CHAR(PRINTNAME(Xi));
+			if (strlen(str) < 1)
+				skip = TRUE;
+		}
+
+		/* match classes argument */
 		if (strcmp(CHAR(STRING_ELT(classes, 0)), "ANY") == 0) /* ASCII */
 			matched = TRUE;
 		else
 			matched = C_matchClass(Xi, classes);
 
-		if (args.pArgs > 0)
+		if (args.pArgs > 0 && !skip)
 		{
 			/* set default to FALSE */
 			doEval = FALSE;
@@ -660,7 +707,7 @@ static SEXP C_eval_list(
 		}
 
 		/* evaluate f and decide what to return or recurse further */
-		if (doEval && matched)
+		if (doEval && matched && !skip)
 		{
 			/* update current node info only for pruning and melting */
 			if (args.how_C > 2)
@@ -685,19 +732,10 @@ static SEXP C_eval_list(
 			/* evaluate f */
 			if (args.fArgs > 0)
 			{
-				funVal = PROTECT(R_forceAndCall(fcall, args.fArgs, env));
-
-				if (MAYBE_REFERENCED(funVal))
-					funVal = Rf_lazy_duplicate(funVal);
+				REPROTECT(funVal = R_forceAndCall(fcall, args.fArgs, env), childipx);
 			}
-			else
-			{
-				funVal = PROTECT(Rf_lazy_duplicate(Xi));
-			}
-			nprotect++;
-
 			/* recurse further with new list (type 2) if feverywhere == 2 */
-			if (args.feverywhere == 2 && Rf_isVectorList(funVal))
+			if (args.feverywhere == 2 && ((Rf_isVectorList(funVal) || Rf_isPairList(funVal)) && TYPEOF(funVal) != NILSXP))
 			{
 				doRecurse = 2;
 			}
@@ -707,7 +745,7 @@ static SEXP C_eval_list(
 				return funVal;
 			}
 		}
-		else if (args.feverywhere > 0 && Rf_isVectorList(Xi))
+		else if (args.feverywhere > 0 && !skip && ((Rf_isVectorList(Xi) || Rf_isPairList(Xi)) && TYPEOF(Xi) != NILSXP))
 		{
 			/* recurse further with original list (type 1) */
 			doRecurse = 1;
@@ -715,44 +753,43 @@ static SEXP C_eval_list(
 		else
 		{
 			/* return original list (or default) here if feverywhere == 0 */
-			if (args.how_C == 0 || args.how_C > 2)
+			if (args.how_C == 1 || args.how_C == 2)
 			{
-				return Rf_lazy_duplicate(Xi);
-			}
-			else /* fill list by default */
-			{
+				UNPROTECT(nprotect);
 				return Rf_lazy_duplicate(deflt);
+			}
+			else
+			{
+				UNPROTECT(nprotect);
+				return funVal;
 			}
 		}
 	}
 
 	if (doRecurse > 0)
 	{
-		SEXP Xnew, names;
-		R_len_t m;
+		/* create new object for recursion */
+		SEXP Xnew;
+		SEXP xnewptr = NULL; /* avoid unitialized warning */
+		SEXP funptr = NULL;
+		if (Rf_isPairList(funVal))
+			funptr = funVal;
 
-		/* create new object for recursion only if doRecurse != 2 */
-		if (doRecurse != 2)
+		R_len_t m = Rf_length(funVal);
+		SEXP names = PROTECT(Rf_getAttrib(funVal, R_NamesSymbol));
+		if ((Rf_isVectorList(funVal) && (args.how_C == 1 || args.how_C == 2)) || (Rf_isPairList(funVal) && args.how_C > 0))
 		{
-			m = Rf_length(Xi);
-			names = PROTECT(Rf_getAttrib(Xi, R_NamesSymbol));
-
-			if (args.how_C == 0 || args.how_C > 2)
-			{
-				Xnew = PROTECT(Rf_shallow_duplicate(Xi));
-			}
-			else
-			{
-				/* VECEXP initializes with R_NilValues */
-				Xnew = PROTECT(Rf_allocVector(VECSXP, m));
-				C_copyAttrs(Xi, Xnew, names, TRUE);
-			}
+			/* VECEXP initializes with R_NilValues */
+			Xnew = PROTECT(Rf_allocVector(VECSXP, m));
+			C_copyAttrs(funVal, Xnew, names, !Rf_isPairList(funVal));
+			if (Rf_isPairList(funVal))
+				Rf_copyMostAttrib(funVal, Xnew);
 		}
 		else
 		{
-			m = Rf_length(funVal);
-			names = PROTECT(Rf_getAttrib(funVal, R_NamesSymbol));
 			Xnew = PROTECT(Rf_shallow_duplicate(funVal));
+			if (Rf_isPairList(funVal))
+				xnewptr = Xnew;
 		}
 		nprotect += 2;
 
@@ -827,13 +864,22 @@ static SEXP C_eval_list(
 			SET_STRING_ELT(*xparents, (args.fxparents || args.pxparents) ? countlocal.depth : 0, Rf_isNull(names) ? NA_STRING : STRING_ELT(names, j));
 
 			/* evaluate list element */
-			if (doRecurse != 2)
-			{
-				SET_VECTOR_ELT(Xnew, j, C_eval_list(env, VECTOR_ELT(Xi, j), fcall, pcall, classes, deflt, xsym, xparents, ipx, args, countglobal, countlocal, xinfo, xloc, xdepth));
-			}
-			else
+			if (Rf_isVectorList(funVal))
 			{
 				SET_VECTOR_ELT(Xnew, j, C_eval_list(env, VECTOR_ELT(funVal, j), fcall, pcall, classes, deflt, xsym, xparents, ipx, args, countglobal, countlocal, xinfo, xloc, xdepth));
+			}
+			else if (Rf_isPairList(funVal))
+			{
+				if (args.how_C > 0)
+				{
+					SET_VECTOR_ELT(Xnew, j, C_eval_list(env, CAR(funptr), fcall, pcall, classes, deflt, xsym, xparents, ipx, args, countglobal, countlocal, xinfo, xloc, xdepth));
+				}
+				else
+				{
+					SETCAR(xnewptr, C_eval_list(env, CAR(funptr), fcall, pcall, classes, deflt, xsym, xparents, ipx, args, countglobal, countlocal, xinfo, xloc, xdepth));
+					xnewptr = CDR(xnewptr);
+				}
+				funptr = CDR(funptr);
 			}
 		}
 

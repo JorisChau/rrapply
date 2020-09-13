@@ -31,7 +31,7 @@ devtools::install_github("JorisChau/rrapply")
 
 ## Example usage
 
-### List pruning
+### List pruning and unnesting
 
 With base `rapply`, there is no convenient way to prune or filter list
 elements from the input list. The `rrapply` function adds an option `how
@@ -138,6 +138,34 @@ head(na_drop_oceania3)
 #> 6 Oceania                 Melanesia  Solomon Islands 65.73
 ```
 
+A melted data.frame can be used to reconstruct a nested list with `how =
+"unmelt"`,
+
+``` r
+## Reconstruct nested list from melted data.frame
+na_drop_oceania4 <- rrapply(
+  na_drop_oceania3, 
+  how = "unmelt"
+)
+str(na_drop_oceania4, list.len = 3, give.attr = FALSE)
+#> List of 1
+#>  $ Oceania:List of 4
+#>   ..$ Australia and New Zealand:List of 2
+#>   .. ..$ Australia  : num 9.32
+#>   .. ..$ New Zealand: num 32.8
+#>   ..$ Melanesia                :List of 5
+#>   .. ..$ Fiji            : num 24.4
+#>   .. ..$ New Caledonia   : num 4.03
+#>   .. ..$ Papua New Guinea: num 50.3
+#>   .. .. [list output truncated]
+#>   ..$ Micronesia               :List of 7
+#>   .. ..$ Guam                            : num 3.03
+#>   .. ..$ Kiribati                        : num 45.4
+#>   .. ..$ Marshall Islands                : num 11.8
+#>   .. .. [list output truncated]
+#>   .. [list output truncated]
+```
+
 ### Condition function
 
 Base `rapply` allows to apply a function `f` to list elements of certain
@@ -198,16 +226,17 @@ str(renewable_energy_above_85, give.attr = FALSE)
 #>   .. .. .. ..$ Guinea-Bissau: num 86.5
 ```
 
-### Special arguments `.xname` and `.xpos`
+### Special arguments `.xname`, `.xpos` and `.xparents`
 
 In base `rapply`, the `f` function only has access to the content of the
 list element under evaluation, and there is no convenient way to access
 its name or location in the nested list from inside the `f` function.
-`rrapply` allows the use of the special arguments `.xname` and `.xpos`
-inside the `f` and `condition` functions (in addition to the principal
-function argument). `.xname` evaluates to the name of the list element,
-and `.xpos` evaluates to the position of the element in the nested list
-structured as an integer vector.
+`rrapply` allows the use of the special arguments `.xname`, `.xpos` and
+`.xparents` inside the `f` and `condition` functions (in addition to the
+principal function argument). `.xname` evaluates to the name of the list
+element, `.xpos` evaluates to the position of the element in the nested
+list structured as an integer vector, and `.xparents` evaluates to a
+vector of parent node names in the path to the current list element.
 
 ``` r
 ## Apply a function using the name of the node
@@ -246,7 +275,7 @@ str(renewable_benelux, give.attr = FALSE)
 #>   .. .. ..$ Luxembourg : num 13.5
 #>   .. .. ..$ Netherlands: num 5.78
 
-## Filter European countries with value above 50%
+## Filter European countries > 50% using .xpos
 renewable_europe_above_50 <- rrapply(
   renewable_energy_by_country,
   condition = function(x, .xpos) identical(head(.xpos, 2), c(1L, 5L)) & x > 50,
@@ -262,6 +291,13 @@ str(renewable_europe_above_50, give.attr = FALSE)
 #>   .. .. ..$ Sweden : num 51.4
 #>   .. ..$ Western Europe :List of 1
 #>   .. .. ..$ Liechtenstein: num 62.9
+
+## Filter European countries > 50% using .xparents
+renewbale_europe_above_50 <- rrapply(
+  renewable_energy_by_country, 
+  condition = function(x, .xparents) "Europe" %in% .xparents & x > 50,
+  how = "prune"
+)
 
 ## Return position of Sweden in list
 (xpos_sweden <- rrapply(
