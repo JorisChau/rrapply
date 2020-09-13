@@ -17,7 +17,7 @@ rrapply(
 )
 }
 \arguments{
-\item{object}{a \code{\link[base]{list}} or \code{\link[base]{expression}}, i.e., \dQuote{list-like}.}
+\item{object}{a \code{\link{list}}, \code{\link{expression}} vector, or \code{\link{call}} object, i.e., \dQuote{list-like}.}
 
 \item{condition}{a condition \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname}, \code{.xpos} 
 and/or \code{.xparents} 

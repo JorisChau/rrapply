@@ -283,6 +283,7 @@
 #' )
 #' 
 #' @inheritParams base::rapply
+#' @param object a \code{\link{list}}, \code{\link{expression}} vector, or \code{\link{call}} object, i.e., \dQuote{list-like}.
 #' @param f a \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname} and/or \code{.xpos} 
 #' (see \sQuote{Details}), passing further arguments via \code{\dots}.
 #' @param condition a condition \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname}, \code{.xpos} 
