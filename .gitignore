@@ -1,6 +1,7 @@
 inst/doc
 doc
 Meta
+.RData
 .Rproj.user
 .Rhistory
 .project
@@ -13,3 +14,4 @@ README.Rmd
 *.out
 *.o
 *.so
+*.gz
