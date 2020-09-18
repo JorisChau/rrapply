@@ -19,12 +19,11 @@ rrapply(
 \arguments{
 \item{object}{a \code{\link{list}}, \code{\link{expression}} vector, or \code{\link{call}} object, i.e., \dQuote{list-like}.}
 
-\item{condition}{a condition \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname}, \code{.xpos} 
-and/or \code{.xparents} 
-\code{.xpos} (see \sQuote{Details}), passing further arguments via \code{\dots}.}
+\item{condition}{a condition \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname}, \code{.xpos}, 
+\code{.xparents} and/or \code{.xsiblings} (see \sQuote{Details}), passing further arguments via \code{\dots}.}
 
-\item{f}{a \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname} and/or \code{.xpos} 
-(see \sQuote{Details}), passing further arguments via \code{\dots}.}
+\item{f}{a \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname}, \code{.xpos}, \code{.xparents} 
+and/or \code{.xsiblings} (see \sQuote{Details}), passing further arguments via \code{\dots}.}
 
 \item{classes}{character vector of \code{\link[base]{class}} names, or
     \code{"ANY"} to match any class.}
@@ -93,13 +92,14 @@ argument need to be defined as function arguments in \emph{both} the \code{f} an
  used in the function itself. See also the \sQuote{Examples} section.
 }
 
-\section{Special arguments \code{.xname}, \code{.xpos} and \code{.xparents}}{
+\section{Special arguments \code{.xname}, \code{.xpos}, \code{.xparents} and \code{.xsiblings}}{
 
-The \code{f} and \code{condition} functions accept three special arguments \code{.xname}, \code{.xpos} and \code{.xparents} in addition to the first principal argument. 
-The \code{.xname} argument evaluates to the name of the list element. The \code{.xpos} argument evaluates to the position of the element in the nested 
-list structured as an integer vector. That is, if \code{x = list(list("y", "z"))}, then an \code{.xpos} location of \code{c(1, 2)} corresponds 
-to the list element \code{x[[c(1, 2)]]}. The \code{.xparents} argument evaluates to a vector of all parent node names in the path to the list element.
-The names \code{.xname}, \code{.xpos} or \code{.xparents} need to be explicitly included as function arguments in \code{f} and 
+The \code{f} and \code{condition} functions accept four special arguments \code{.xname}, \code{.xpos}, \code{.xparents} and \code{.xsiblings} in
+addition to the first principal argument. The \code{.xname} argument evaluates to the name of the list element. The \code{.xpos} argument evaluates 
+to the position of the element in the nested list structured as an integer vector. That is, if \code{x = list(list("y", "z"))}, then an \code{.xpos} 
+location of \code{c(1, 2)} corresponds to the list element \code{x[[c(1, 2)]]}. The \code{.xparents} argument evaluates to a vector of all parent 
+node names in the path to the list element. The \code{.xsiblings} argument evaluates to the complete (sub)list that includes the list element as a direct child.
+The names \code{.xname}, \code{.xpos}, \code{.xparents} or \code{.xsiblings} need to be explicitly included as function arguments in \code{f} and 
 \code{condition} (in addition to the principal argument). See the package vignette for example uses of these special variables.
 }
 
