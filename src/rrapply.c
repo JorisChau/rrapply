@@ -164,6 +164,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		}
 		if (R_args.fxparents)
 		{
+			fCDR = CDR(fCDR);
 			SET_TAG(CDR(fCDR), xparents);
 		}
 		if (R_args.fxsiblings)
@@ -217,6 +218,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		}
 		if (R_args.pxparents)
 		{
+			pCDR = CDR(pCDR);
 			SET_TAG(CDR(pCDR), xparents);
 		}
 		if (R_args.pxsiblings)
