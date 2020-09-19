@@ -33,12 +33,13 @@
 #' argument need to be defined as function arguments in \emph{both} the \code{f} and \code{condition} function (if existing), even if they are not
 #'  used in the function itself. See also the \sQuote{Examples} section.
 #' 
-#' @section Special arguments \code{.xname}, \code{.xpos} and \code{.xparents}:
-#' The \code{f} and \code{condition} functions accept three special arguments \code{.xname}, \code{.xpos} and \code{.xparents} in addition to the first principal argument. 
-#' The \code{.xname} argument evaluates to the name of the list element. The \code{.xpos} argument evaluates to the position of the element in the nested 
-#' list structured as an integer vector. That is, if \code{x = list(list("y", "z"))}, then an \code{.xpos} location of \code{c(1, 2)} corresponds 
-#' to the list element \code{x[[c(1, 2)]]}. The \code{.xparents} argument evaluates to a vector of all parent node names in the path to the list element.
-#' The names \code{.xname}, \code{.xpos} or \code{.xparents} need to be explicitly included as function arguments in \code{f} and 
+#' @section Special arguments \code{.xname}, \code{.xpos}, \code{.xparents} and \code{.xsiblings}:
+#' The \code{f} and \code{condition} functions accept four special arguments \code{.xname}, \code{.xpos}, \code{.xparents} and \code{.xsiblings} in
+#' addition to the first principal argument. The \code{.xname} argument evaluates to the name of the list element. The \code{.xpos} argument evaluates 
+#' to the position of the element in the nested list structured as an integer vector. That is, if \code{x = list(list("y", "z"))}, then an \code{.xpos} 
+#' location of \code{c(1, 2)} corresponds to the list element \code{x[[c(1, 2)]]}. The \code{.xparents} argument evaluates to a vector of all parent 
+#' node names in the path to the list element. The \code{.xsiblings} argument evaluates to the complete (sub)list that includes the list element as a direct child.
+#' The names \code{.xname}, \code{.xpos}, \code{.xparents} or \code{.xsiblings} need to be explicitly included as function arguments in \code{f} and 
 #' \code{condition} (in addition to the principal argument). See the package vignette for example uses of these special variables.
 #' 
 #' @section List node aggregation:
@@ -284,11 +285,10 @@
 #' 
 #' @inheritParams base::rapply
 #' @param object a \code{\link{list}}, \code{\link{expression}} vector, or \code{\link{call}} object, i.e., \dQuote{list-like}.
-#' @param f a \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname} and/or \code{.xpos} 
-#' (see \sQuote{Details}), passing further arguments via \code{\dots}.
-#' @param condition a condition \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname}, \code{.xpos} 
-#' and/or \code{.xparents} 
-#' \code{.xpos} (see \sQuote{Details}), passing further arguments via \code{\dots}.
+#' @param f a \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname}, \code{.xpos}, \code{.xparents} 
+#' and/or \code{.xsiblings} (see \sQuote{Details}), passing further arguments via \code{\dots}.
+#' @param condition a condition \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname}, \code{.xpos}, 
+#' \code{.xparents} and/or \code{.xsiblings} (see \sQuote{Details}), passing further arguments via \code{\dots}.
 #' @param how character string partially matching the six possibilities given: see \sQuote{Details}.
 #' @param deflt the default result (only used if \code{how = "list"} or \code{how = "unlist"}).
 #' @param dfaslist logical value to treat data.frames as \dQuote{list-like} object.
@@ -345,11 +345,11 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
   } else 
   { 
     ## check for special args
-    fArgs <- conditionArgs <- c(0L, 0L, 0L)
+    fArgs <- conditionArgs <- c(0L, 0L, 0L, 0L)
     if(identical(typeof(f), "closure"))
-      fArgs <- match(c(".xname", ".xpos", ".xparents"), names(formals(f)), nomatch = 0L) 
+      fArgs <- match(c(".xname", ".xpos", ".xparents", ".xsiblings"), names(formals(f)), nomatch = 0L) 
     if(identical(typeof(condition), "closure"))
-      conditionArgs <- match(c(".xname", ".xpos", ".xparents"), names(formals(condition)), nomatch = 0L)
+      conditionArgs <- match(c(".xname", ".xpos", ".xparents", ".xsiblings"), names(formals(condition)), nomatch = 0L)
     
     ## call main C function
     res <- .Call(C_rrapply, environment(), object, f, fArgs, condition, conditionArgs, classes, howInt, deflt, dfaslist, feverywhereInt)  

@@ -24,10 +24,12 @@ typedef struct Args
 	int fxname;		 // .xname present in f
 	int fxpos;		 // .xpos present in f
 	int fxparents;	 // .xparents present in f
+	int fxsiblings;	 // .xsiblings present in f
 	int pArgs;		 // number of arguments condition
 	int pxname;		 // .xname present in condition
 	int pxpos;		 // .xpos present in condition
 	int pxparents;	 // .xparents present in condition
+	int pxsiblings;	 // .xsiblings present in condition
 	int dfaslist;	 // dfaslist argument
 	int feverywhere; // feverywhere argument
 } Args;
@@ -50,12 +52,12 @@ typedef struct CountLocal
 } CountLocal;
 
 /* prototypes */
-
+static SEXP C_lang7(SEXP s, SEXP t, SEXP u, SEXP v, SEXP w, SEXP x, SEXP y);
 static SEXP C_int2char(int i);
 static void C_copyAttrs(SEXP obj, SEXP ans, SEXP names, Rboolean copyAttrs);
 static int C_matchClass(SEXP obj, SEXP classes);
 static void C_traverse(SEXP X, CountGlobal *count, int depth);
-static SEXP C_eval_list(SEXP env, SEXP Xi, SEXP fcall, SEXP pcall, SEXP classes, SEXP deflt, SEXP xsym, SEXP *xparents, PROTECT_INDEX ipx, Args args, CountGlobal *countglobal, CountLocal countlocal, R_len_t (**xinfo)[3], R_len_t **xloc, R_len_t **xdepth);
+static SEXP C_eval_list(SEXP env, SEXP Xi, SEXP fcall, SEXP pcall, SEXP classes, SEXP deflt, SEXP xsym, SEXP *xparents, SEXP xsiblings, PROTECT_INDEX ipx, Args args, CountGlobal *countglobal, CountLocal countlocal, R_len_t (**xinfo)[3], R_len_t **xloc, R_len_t **xdepth);
 static SEXP C_fill_list(SEXP Xi, R_len_t (*xinfo)[3], R_len_t *buf, R_len_t node, R_len_t maxnodes, R_len_t ibuf);
 static void C_fill_flat(SEXP ansNew, SEXP Xi, R_len_t (*xinfo)[3], R_len_t *ix, R_len_t *ians);
 static void C_fill_flat_names(SEXP ansNew, SEXP newNames, SEXP Xi, SEXP name, R_len_t (*xinfo)[3], R_len_t *ix, R_len_t *ians);
@@ -67,7 +69,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 
 SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPred, SEXP classes, SEXP R_how, SEXP deflt, SEXP R_dfaslist, SEXP R_feverywhere)
 {
-	SEXP ans, ansptr, xptr, names, xsym, xname, xpos, xparents, R_xparents, R_fcall, R_pcall;
+	SEXP ans, ansptr, xptr, names, xsym, xname, xpos, xparents, xsiblings, R_xparents, R_fcall, R_pcall;
 
 	/* protect calls */
 	int nprotect = 0;
@@ -79,10 +81,12 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 	R_args.fxname = INTEGER_ELT(argsFun, 0) > 0;
 	R_args.fxpos = INTEGER_ELT(argsFun, 1) > 0;
 	R_args.fxparents = INTEGER_ELT(argsFun, 2) > 0;
+	R_args.fxsiblings = INTEGER_ELT(argsFun, 3) > 0;
 	R_args.pArgs = 0;
 	R_args.pxname = INTEGER_ELT(argsPred, 0) > 0;
 	R_args.pxpos = INTEGER_ELT(argsPred, 1) > 0;
 	R_args.pxparents = INTEGER_ELT(argsPred, 2) > 0;
+	R_args.pxsiblings = INTEGER_ELT(argsPred, 3) > 0;
 	R_args.dfaslist = LOGICAL_ELT(R_dfaslist, 0);
 	R_args.feverywhere = INTEGER_ELT(R_feverywhere, 0) - 1;
 
@@ -117,11 +121,12 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 	xname = Rf_install(".xname");
 	xpos = Rf_install(".xpos");
 	xparents = Rf_install(".xparents");
+	xsiblings = Rf_install(".xsiblings");
 
 	if (Rf_isFunction(FUN))
 	{
 		/* call definitions depend on presence of special arguments */
-		R_args.fArgs = 1 + R_args.fxname + R_args.fxpos + R_args.fxparents;
+		R_args.fArgs = 1 + R_args.fxname + R_args.fxpos + R_args.fxparents + R_args.fxsiblings;
 
 		switch (R_args.fArgs)
 		{
@@ -136,6 +141,9 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 			break;
 		case 4:
 			R_fcall = PROTECT(Rf_lang6(FUN, xsym, R_NilValue, R_NilValue, R_NilValue, R_DotsSymbol));
+			break;
+		case 5:
+			R_fcall = PROTECT(C_lang7(FUN, xsym, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_DotsSymbol));
 			break;
 		default:
 			R_fcall = PROTECT(Rf_lang3(FUN, xsym, R_DotsSymbol)); // not reached
@@ -156,7 +164,12 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		}
 		if (R_args.fxparents)
 		{
+			fCDR = CDR(fCDR);
 			SET_TAG(CDR(fCDR), xparents);
+		}
+		if (R_args.fxsiblings)
+		{
+			SET_TAG(CDR(fCDR), xsiblings);
 		}
 	}
 	else
@@ -167,7 +180,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 	if (Rf_isFunction(PRED))
 	{
 		/* call definitions depend on presence of special arguments */
-		R_args.pArgs = 1 + R_args.pxname + R_args.pxpos + R_args.pxparents;
+		R_args.pArgs = 1 + R_args.pxname + R_args.pxpos + R_args.pxparents + R_args.pxsiblings;
 
 		switch (R_args.pArgs)
 		{
@@ -182,6 +195,9 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 			break;
 		case 4:
 			R_pcall = PROTECT(Rf_lang6(PRED, xsym, R_NilValue, R_NilValue, R_NilValue, R_DotsSymbol));
+			break;
+		case 5:
+			R_pcall = PROTECT(C_lang7(PRED, xsym, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_DotsSymbol));
 			break;
 		default:
 			R_pcall = PROTECT(Rf_lang3(PRED, xsym, R_DotsSymbol)); // not reached
@@ -202,7 +218,12 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		}
 		if (R_args.pxparents)
 		{
+			pCDR = CDR(pCDR);
 			SET_TAG(CDR(pCDR), xparents);
+		}
+		if (R_args.pxsiblings)
+		{
+			SET_TAG(CDR(pCDR), xsiblings);
 		}
 	}
 	else
@@ -268,17 +289,17 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		/* main recursion part */
 		if (Rf_isVectorList(X))
 		{
-			SET_VECTOR_ELT(ans, i, C_eval_list(env, VECTOR_ELT(X, i), R_fcall, R_pcall, classes, deflt, xsym, &R_xparents, parentipx, R_args, &initGlobal, initLocal, &xinfo, &xloc, &xdepth));
+			SET_VECTOR_ELT(ans, i, C_eval_list(env, VECTOR_ELT(X, i), R_fcall, R_pcall, classes, deflt, xsym, &R_xparents, (R_args.fxsiblings || R_args.pxsiblings) ? X : R_NilValue, parentipx, R_args, &initGlobal, initLocal, &xinfo, &xloc, &xdepth));
 		}
 		else if (Rf_isPairList(X))
 		{
 			if (R_args.how_C > 0)
 			{
-				SET_VECTOR_ELT(ans, i, C_eval_list(env, CAR(xptr), R_fcall, R_pcall, classes, deflt, xsym, &R_xparents, parentipx, R_args, &initGlobal, initLocal, &xinfo, &xloc, &xdepth));
+				SET_VECTOR_ELT(ans, i, C_eval_list(env, CAR(xptr), R_fcall, R_pcall, classes, deflt, xsym, &R_xparents, (R_args.fxsiblings || R_args.pxsiblings) ? X : R_NilValue, parentipx, R_args, &initGlobal, initLocal, &xinfo, &xloc, &xdepth));
 			}
 			else
 			{
-				SETCAR(ansptr, C_eval_list(env, CAR(xptr), R_fcall, R_pcall, classes, deflt, xsym, &R_xparents, parentipx, R_args, &initGlobal, initLocal, &xinfo, &xloc, &xdepth));
+				SETCAR(ansptr, C_eval_list(env, CAR(xptr), R_fcall, R_pcall, classes, deflt, xsym, &R_xparents, (R_args.fxsiblings || R_args.pxsiblings) ? X : R_NilValue, parentipx, R_args, &initGlobal, initLocal, &xinfo, &xloc, &xdepth));
 				ansptr = CDR(ansptr);
 			}
 			xptr = CDR(xptr);
@@ -426,6 +447,15 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 
 /* Helper functions */
 
+/* create long language object */
+static SEXP C_lang7(SEXP s, SEXP t, SEXP u, SEXP v, SEXP w, SEXP x, SEXP y)
+{
+	PROTECT(s);
+	s = Rf_lcons(s, Rf_list6(t, u, v, w, x, y));
+	UNPROTECT(1);
+	return s;
+}
+
 /* convert integer to character */
 static SEXP C_int2char(int i)
 {
@@ -554,6 +584,7 @@ static SEXP C_eval_list(
 	SEXP deflt,				  // deflt argument
 	SEXP xsym,				  // principal argument symbol
 	SEXP *xparents,			  // current value .xname and .xparents arguments
+	SEXP xsiblings,			  // current value .xsiblings argument
 	PROTECT_INDEX ipx,		  // protection index xparents
 	Args args,				  // integer arguments
 	CountGlobal *countglobal, // global node counters
@@ -590,6 +621,7 @@ static SEXP C_eval_list(
 		SEXP xname_val = NULL; /* avoid uninitialized warnings */
 		SEXP xpos_val = NULL;
 		SEXP xparents_val = NULL;
+		SEXP xsiblings_val = NULL;
 		int nargprotect = 0;
 
 		/* define X argument */
@@ -624,6 +656,30 @@ static SEXP C_eval_list(
 			nargprotect++;
 		}
 
+		/* update current .xsiblings value */
+		if (args.fxsiblings || args.pxsiblings)
+		{
+			if(Rf_isPairList(xsiblings))
+			{
+				R_len_t n = Rf_length(xsiblings);
+				xsiblings_val = PROTECT(Rf_allocVector(VECSXP, n));
+				SEXP xsiblingsptr = xsiblings;
+				for (R_len_t i = 0; i < n; i++)
+				{
+					SET_VECTOR_ELT(xsiblings_val, i, CAR(xsiblingsptr));
+					xsiblingsptr = CDR(xsiblingsptr);
+				}
+				Rf_copyMostAttrib(xsiblings, xsiblings_val);
+				Rf_setAttrib(xsiblings_val, R_NamesSymbol, PROTECT(Rf_getAttrib(xsiblings, R_NamesSymbol)));
+				UNPROTECT(1);
+			}
+			else 
+			{
+				xsiblings_val = PROTECT(Rf_duplicate(xsiblings));
+			}
+			nargprotect++;
+		}
+
 		/* define f special arguments */
 		if (args.fArgs > 1)
 		{
@@ -642,6 +698,11 @@ static SEXP C_eval_list(
 			if (args.fxparents)
 			{
 				SETCAR(fCDR, xparents_val);
+				fCDR = CDR(fCDR);
+			}
+			if (args.fxsiblings)
+			{
+				SETCAR(fCDR, xsiblings_val);
 			}
 		}
 
@@ -663,6 +724,11 @@ static SEXP C_eval_list(
 			if (args.pxparents)
 			{
 				SETCAR(pCDR, xparents_val);
+				pCDR = CDR(pCDR);
+			}
+			if (args.pxsiblings)
+			{
+				SETCAR(pCDR, xsiblings_val);
 			}
 		}
 
@@ -866,17 +932,17 @@ static SEXP C_eval_list(
 			/* evaluate list element */
 			if (Rf_isVectorList(funVal))
 			{
-				SET_VECTOR_ELT(Xnew, j, C_eval_list(env, VECTOR_ELT(funVal, j), fcall, pcall, classes, deflt, xsym, xparents, ipx, args, countglobal, countlocal, xinfo, xloc, xdepth));
+				SET_VECTOR_ELT(Xnew, j, C_eval_list(env, VECTOR_ELT(funVal, j), fcall, pcall, classes, deflt, xsym, xparents, (args.fxsiblings || args.pxsiblings) ? funVal : R_NilValue, ipx, args, countglobal, countlocal, xinfo, xloc, xdepth));
 			}
 			else if (Rf_isPairList(funVal))
 			{
 				if (args.how_C > 0)
 				{
-					SET_VECTOR_ELT(Xnew, j, C_eval_list(env, CAR(funptr), fcall, pcall, classes, deflt, xsym, xparents, ipx, args, countglobal, countlocal, xinfo, xloc, xdepth));
+					SET_VECTOR_ELT(Xnew, j, C_eval_list(env, CAR(funptr), fcall, pcall, classes, deflt, xsym, xparents, (args.fxsiblings || args.pxsiblings) ? funVal : R_NilValue, ipx, args, countglobal, countlocal, xinfo, xloc, xdepth));
 				}
 				else
 				{
-					SETCAR(xnewptr, C_eval_list(env, CAR(funptr), fcall, pcall, classes, deflt, xsym, xparents, ipx, args, countglobal, countlocal, xinfo, xloc, xdepth));
+					SETCAR(xnewptr, C_eval_list(env, CAR(funptr), fcall, pcall, classes, deflt, xsym, xparents, (args.fxsiblings || args.pxsiblings) ? funVal : R_NilValue, ipx, args, countglobal, countlocal, xinfo, xloc, xdepth));
 					xnewptr = CDR(xnewptr);
 				}
 				funptr = CDR(funptr);
