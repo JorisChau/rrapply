@@ -707,6 +707,7 @@ a flattened list and a melted data.frame respectively. This is identical to appl
 <span class='no'>expr_melt</span> <span class='kw'>&lt;-</span> <span class='fu'>rrapply</span>(<span class='no'>expr</span>,
   <span class='kw'>classes</span> <span class='kw'>=</span> <span class='st'>"name"</span>,
   <span class='kw'>condition</span> <span class='kw'>=</span> <span class='no'>is_new_name</span>,
+  <span class='kw'>f</span> <span class='kw'>=</span> <span class='no'>as.character</span>,
   <span class='kw'>how</span> <span class='kw'>=</span> <span class='st'>"melt"</span>
 )
 <span class='no'>expr_melt</span></div><div class='output co'>#&gt;    L1  L2   L3 value

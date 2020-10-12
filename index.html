@@ -550,7 +550,7 @@
 <span class="co">#&gt;  $ : symbol g</span>
 
 <span class="co">## Prune and melt expression</span>
-<span class="no">expr_melt</span> <span class="kw">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span>(<span class="no">expr</span>, <span class="kw">classes</span> <span class="kw">=</span> <span class="st">"name"</span>, <span class="kw">condition</span> <span class="kw">=</span> <span class="no">is_new_name</span>, <span class="kw">how</span> <span class="kw">=</span> <span class="st">"melt"</span>)
+<span class="no">expr_melt</span> <span class="kw">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span>(<span class="no">expr</span>, <span class="kw">classes</span> <span class="kw">=</span> <span class="st">"name"</span>, <span class="kw">condition</span> <span class="kw">=</span> <span class="no">is_new_name</span>, <span class="kw">f</span> <span class="kw">=</span> <span class="no">as.character</span>, <span class="kw">how</span> <span class="kw">=</span> <span class="st">"melt"</span>)
 <span class="no">expr_melt</span>
 <span class="co">#&gt;    L1  L2   L3 value</span>
 <span class="co">#&gt; 1 ..1 ..2 &lt;NA&gt;     y</span>
