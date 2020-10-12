@@ -9,7 +9,7 @@ r:
 r_packages:
   - covr
 after_success:
-  - Rscript -e 'library(covr); codecov()'
+  - Rscript -e 'covr::codecov(token = "${{secrets.CODECOV_TOKEN}}")'
 warnings_are_errors: true
 sudo: false
 cache: packages
