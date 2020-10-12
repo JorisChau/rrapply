@@ -79,7 +79,7 @@ op <- options(width = 60, continue = "  ")
 
 \begin{abstract} 
 \noindent 
-The \texttt{rrapply}-package contains a single function \code{rrapply()}, providing an extended implementation of \textsf{R}-base's \code{rapply()} function. Base \code{rapply()} applies a function \code{f} to all elements of a list recursively. The \code{rrapply()} function extends base \code{rapply()} by including a condition or predicate function for the application of \code{f} and the option to prune or aggregate list elements from the result. In addition, special arguments \code{.xname}, \code{.xpos} and \code{.xparents} can be used inside the \code{f} and \code{condition} functions to access the name, location and path in the nested list of the list element under evaluation. The \code{rrapply()} function is implemented using \textsf{R}'s \textsf{C} interface and for this reason requires no external \textsf{R}-package dependencies. 
+The \texttt{rrapply}-package contains a single function \code{rrapply()}, providing an extended implementation of \textsf{R}-base's \code{rapply()} function. Base \code{rapply()} applies a function \code{f} to all elements of a list recursively. The \code{rrapply()} function extends base \code{rapply()} by including a condition or predicate function for the application of \code{f} and the option to prune or aggregate list elements from the result. In addition, special arguments \code{.xname}, \code{.xpos}, \code{.xparents} and \code{.xsiblings} can be used inside the \code{f} and \code{condition} functions to access the name, location, parents and siblings in the nested list of the list element under evaluation. The \code{rrapply()} function is implemented using \textsf{R}'s \textsf{C} interface and for this reason requires no external \textsf{R}-package dependencies. 
 \end{abstract}
 
 \spacingset{1.45} 
@@ -150,7 +150,7 @@ str(na_zero_oceania_replace_attr, max.level = 2)
 str(na_zero_oceania_list_attr, max.level = 2)
 @
 
-\section{When to use \texttt{rrapply()}}
+\section{When to use \texttt{rrapply()}} 
 
 \subsection{List pruning and unnesting}
 
@@ -298,7 +298,7 @@ na_zero_oceania_replace3 <- rrapply(
 )
 str(na_zero_oceania_replace3, list.len = 3, give.attr = FALSE)
 @
-\subsection{Special arguments \texttt{.xname}, \texttt{.xpos} and \texttt{.xparents}}
+\subsection{Special arguments \texttt{.xname}, \texttt{.xpos}, \texttt{.xparents} and \texttt{.xsiblings}}
 
 For illustration purposes, let us return all non-missing values in
 \code{renewable\_oceania} as a non-nested flattened list:
@@ -327,10 +327,10 @@ In base \code{rapply()}, the \code{f} function only has access to the content of
 element through its principal argument, but there is no convenient way to access the list element its name or location from
 inside the \code{f} function. This makes \code{rapply()} impractical if we want to apply
 a function \code{f} that relies on e.g. the name of the leaf element as in the above example.\\[3mm]
-To address this issue, \code{rrapply()} allows the use of three special arguments 
-\code{.xname}, \code{.xpos} and \code{.xparents} in addition to the principal argument in the \code{f} and \code{condition} functions. The \code{.xname} argument evaluates to the name of the leaf element. The \code{.xpos} argument evaluates to the position of the leaf element in the nested list structured as an integer vector. For instance, if \code{x = list(list("y", "z"))}, then an \code{.xpos} location of \code{c(1, 2)} corresponds to the leaf element \code{x[[1]][[2]]} or equivalently
-\code{x[[c(1, 2)]]}. The \code{.xparents} argument evaluates to a vector of all parent node names in the path to the list element. The names in \code{.xparents} are ordered by increasing depth in the nested list, with the final element always matching to \code{.xname}.\\[3mm]
-The arguments \code{.xname}, \code{.xpos} and \code{.xparents} need to be defined explicitly as function arguments in \code{f} and \code{condition} whenever they are used. Note that the principal function arguments of \code{f} and \code{condition} always evaluate to the content of the list element, for this reason the arguments \code{.xname}, \code{.xpos} and \code{.xparents} should always be defined in addition to a principal function argument. It is allowed to use any combination of special arguments in \code{f} and \code{condition}.\\[3mm]
+To address this and similar issues, \code{rrapply()} allows the use of a number of special arguments 
+\code{.xname}, \code{.xpos}, \code{.xparents} and \code{.xsiblings} in addition to the principal argument in the \code{f} and \code{condition} functions. The \code{.xname} argument evaluates to the name of the leaf element. The \code{.xpos} argument evaluates to the position of the leaf element in the nested list structured as an integer vector. For instance, if \code{x = list(list("y", "z"))}, then an \code{.xpos} location of \code{c(1, 2)} corresponds to the leaf element \code{x[[1]][[2]]} or equivalently
+\code{x[[c(1, 2)]]}. The \code{.xparents} argument evaluates to a vector of all parent node names in the path to the list element. The names in \code{.xparents} are ordered by increasing depth in the nested list, with the final element always matching to \code{.xname}. The \code{.xsiblings} argument evaluates to the parent list containing the current list element and all of its direct siblings. \\[3mm]
+The arguments \code{.xname}, \code{.xpos}, \code{.xparents} and \code{.xsiblings} need to be defined explicitly as function arguments in \code{f} and \code{condition} whenever they are used. Note that the principal function arguments of \code{f} and \code{condition} always evaluate to the content of the list element, for this reason the arguments \code{.xname}, \code{.xpos},  \code{.xparents} and \code{.xsiblings} should always be defined in addition to a principal function argument. It is allowed to use any combination of special arguments in \code{f} and \code{condition}.\\[3mm]
 Using the \code{.xname} argument, we can reproduce the \code{mapply()} example above also from a nested list as input:
 <<>>=
 renewable_oceania_flat_text <- rrapply(
@@ -401,6 +401,16 @@ sublist_count <- rrapply(
   how = "unlist"
 )
 max(sublist_count)
+@
+The \code{.xsiblings} argument allows us to evaluate the sibling nodes of the current list element under evalution. An example usage is to look up all direct neighbors of a particular country in the nested list:
+<<>>=
+## look up sibling countries of Sweden in list
+siblings_sweden <- rrapply(
+  renewable_energy_by_country,
+  condition = function(x, .xsiblings) "Sweden" %in% names(.xsiblings),
+  how = "flatten"
+)
+str(siblings_sweden, give.attr = FALSE)
 @
 
 \subsection{List node aggregation}
@@ -609,6 +619,104 @@ iris_standard_summarize <- rrapply(
 )
 iris_standard_summarize
 @
+
+\section{Using \texttt{rrapply()} on expressions}
+
+Unevaluated R code is parsed or captured as a set of \emph{expressions}, which is a collective term used to refer to any of the following types of objects: scalar constants e.g. \code{TRUE} or \code{1}, symbols e.g. \code{quote(x)}, call objects e.g. \code{quote(x <- 1)}, expression vectors e.g. \code{expression(a <- 1, 2 * b)} or pairlists e.g. \code{formals(seq.default)}. Call objects and expression vectors are hierarchically structured objects, i.e. \emph{abstract syntax trees}, that can be decomposed into symbols and scalar constants as atomic building blocks.\\[3mm]
+Call objects and expression vectors generally behave as nested lists, e.g. subsetting a call object works the same as subsetting a nested list. To illustrate, we can retrieve the abstract syntax tree of a call object by recursing through the object in the same way as for a nested list:
+<<>>=
+## recurse through call as nested list
+ast <- function(expr) {
+  lapply(expr, function(x) {
+    if(is.call(x) || is.expression(x)) {
+      ast(x) 
+    } else {
+      x
+    }
+  })
+}
+
+## decompose call object
+str(ast(quote(y <- x <- 1 + TRUE)))
+@
+Given this information, we might be inclined to assume that base \code{rapply()} also recurses through call objects and expression vectors in the same way as for nested lists, but this is unfortunately not the case. To be precise, \code{rapply()} does accept expression vectors as input, but effectively treats them as flat lists of call objects similar to \code{lapply()}. Call objects are not accepted at all by \code{rapply()} and return an error.
+<<>>=
+## rapply on an expression vector
+rapply(expression(y <- x <- 1, f(g(2 * pi))), f = identity)
+
+## rapply on a call object (not ok!) 
+tryCatch({
+  rapply(quote(y <- x <- 1), f = identity)
+}, error = function(error) error$message)
+@
+Starting from version 1.2.0 \code{rrapply()} also supports recursion of call objects and expression vectors, which are treated as nested lists based on their internal abstract syntax trees. As such, all functionality described in the previous sections extends directly to call objects and expression vectors. 
+
+\subsection{Structuring the result}
+
+When applying \code{rrapply()} (or base \code{rapply()}) to nested lists the difference between \code{how = "replace"} and \code{how = "list"} is relatively minor. Both choices return a nested list, but only \code{how = "list"} replaces elements not subject to \code{f} by the argument \code{deflt}. For call objects and expression objects, the difference is more important as \code{how = "replace"} always maintains the type of the object after application of \code{rrapply()}, whereas \code{how = "list"} returns the object formatted as a nested list. \\[3mm]
+With \code{how = "replace"}, we can for instance directly update the abstract syntax tree of a call object:
+<<>>=
+call_old <- quote(y <- x <- 1 + TRUE)
+str(call_old)
+
+## update call object
+call_new <- rrapply(
+  call_old, 
+  classes = "logical", 
+  f = as.numeric, 
+  how = "replace"
+)
+str(call_new)
+@
+Using \code{how = "list"}, we can update the abstract syntax tree and return it as a nested list:
+<<>>=
+## update and decompose call object
+call_ast <- rrapply(
+  call_old, 
+  f = function(x) ifelse(is.logical(x), as.numeric(x), x), 
+  how = "list"
+)
+str(call_ast)
+@
+\begin{remark}
+Note that in the second function call we did not use \code{classes = "logical"} to avoid that all list elements that are not of class \code{"logical"} are replaced by the \code{deflt} argument (\code{NULL}).
+\end{remark}
+The choices \code{how = "prune"}, \code{how = "flatten"} and \code{how = "melt"} return the pruned abstract syntax tree as: a nested list, a flattened list and a melted data.frame respectively. This is identical to application of \code{rrapply()} to the abstract syntax tree formatted as a nested list. To illustrate, let us return all names in the abstract syntax tree of an expression vector that are not part of base R.
+<<>>=
+## example expression
+expr <- expression(y <- x <- 1, f(g(2 * pi)))
+## helper function
+is_new_name <- function(x) !exists(as.character(x), envir = baseenv())
+@
+<<>>=
+## prune and decompose expression
+expr_prune <- rrapply(
+  expr, 
+  classes = "name", 
+  condition = is_new_name, 
+  how = "prune"
+)
+str(expr_prune)
+
+## prune and flatten expression
+expr_flatten <- rrapply(
+  expr, 
+  classes = "name", 
+  condition = is_new_name, 
+  how = "flatten"
+)
+str(expr_flatten)
+
+## prune and melt expression
+expr_melt <- rrapply(
+  expr, 
+  classes = "name", 
+  condition = is_new_name, 
+  how = "melt"
+)
+expr_melt
+@
+For additional details and worked out code examples, also visit the \emph{Articles} section at the package website: \href{https://jorischau.github.io/rrapply/}{https://jorischau.github.io/rrapply/}.
 
 \end{document} 
 

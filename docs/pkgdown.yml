@@ -2,7 +2,8 @@ pandoc: 2.7.3
 pkgdown: 1.5.1
 pkgdown_sha: ~
 articles:
-  efficient-melting-unmelting: articles/efficient-melting-unmelting.html
-  when-to-use-rrapply: articles/when-to-use-rrapply.html
-last_built: 2020-08-08T18:54Z
+  1-when-to-use-rrapply: articles/1-when-to-use-rrapply.html
+  2-efficient-melting-unmelting: articles/2-efficient-melting-unmelting.html
+  3-calls-and-expressions: articles/3-calls-and-expressions.html
+last_built: 2020-10-12T07:15Z
 
