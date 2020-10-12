@@ -639,10 +639,12 @@ ast <- function(expr) {
 ## decompose call object
 str(ast(quote(y <- x <- 1 + TRUE)))
 @
-Given this information, we might be inclined to assume that base \code{rapply()} also recurses through call objects and expression vectors in the same way as for nested lists, but this is unfortunately not the case. To be precise, \code{rapply()} does accept expression vectors as input, but effectively treats them as flat lists of call objects similar to \code{lapply()}. Call objects are not accepted at all by \code{rapply()} and return an error.
+Given this information, we might be inclined to assume that base \code{rapply()} also recurses through call objects and expression vectors in the same way as for nested lists, but this is unfortunately not the case. To be precise, \code{rapply()} does accept expression vectors as input for R >= 3.6, but effectively treats them as flat lists of call objects similar to \code{lapply()}. Call objects are not accepted by \code{rapply()} (for any R version) and return an error.
 <<>>=
-## rapply on an expression vector
-rapply(expression(y <- x <- 1, f(g(2 * pi))), f = identity)
+## rapply on an expression vector (ok for R >= 3.6)
+tryCatch({
+  rapply(expression(y <- x <- 1, f(g(2 * pi))), f = identity)
+}, error = function(error) error$message)
 
 ## rapply on a call object (not ok!) 
 tryCatch({
