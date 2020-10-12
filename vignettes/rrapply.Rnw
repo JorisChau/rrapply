@@ -402,7 +402,7 @@ sublist_count <- rrapply(
 )
 max(sublist_count)
 @
-The \code{.xsiblings} argument allows us to evaluate the sibling nodes of the current list element under evalution. An example usage is to look up all direct neighbors of a particular country in the nested list:
+The \code{.xsiblings} argument allows us to evaluate the sibling nodes of the current list element under evaluation. An example usage is to look up all direct neighbors of a particular country in the nested list:
 <<>>=
 ## look up sibling countries of Sweden in list
 siblings_sweden <- rrapply(
@@ -712,6 +712,7 @@ expr_melt <- rrapply(
   expr, 
   classes = "name", 
   condition = is_new_name, 
+  f = as.character,
   how = "melt"
 )
 expr_melt

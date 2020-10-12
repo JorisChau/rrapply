@@ -560,7 +560,7 @@ str(expr_flatten)
 #>  $ : symbol g
 
 ## Prune and melt expression
-expr_melt <- rrapply(expr, classes = "name", condition = is_new_name, how = "melt")
+expr_melt <- rrapply(expr, classes = "name", condition = is_new_name, f = as.character, how = "melt")
 expr_melt
 #>    L1  L2   L3 value
 #> 1 ..1 ..2 <NA>     y

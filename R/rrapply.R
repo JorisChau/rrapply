@@ -309,6 +309,7 @@
 #' expr_melt <- rrapply(expr, 
 #'   classes = "name", 
 #'   condition = is_new_name, 
+#'   f = as.character,
 #'   how = "melt"
 #' )
 #' expr_melt
@@ -333,13 +334,13 @@
 #' @useDynLib rrapply, .registration = TRUE
 #' @export 
 rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL, 
-                    how = c("replace", "list", "unlist", "prune", "flatten", "melt", "unmelt"),
-                    feverywhere = NULL, dfaslist = TRUE, ...)
+    how = c("replace", "list", "unlist", "prune", "flatten", "melt", "unmelt"),
+    feverywhere = NULL, dfaslist = TRUE, ...)
 {
   ## non-function arguments
   if(!(is.list(object) || is.call(object) || is.expression(object)) || length(object) < 1) 
     stop("'object' argument should be list-like and of length greater than zero")
-    
+  
   how <- match.arg(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "unmelt"))
   howInt <- match(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "unmelt"))
   dfaslist <- isTRUE(dfaslist)
@@ -368,7 +369,7 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
   if(missing(condition)) condition <- NULL else condition <- match.fun(condition)
   
   if(is.null(f) && (is.null(condition) || identical(how, "replace")) && identical(feverywhereInt, 1L) && 
-     ((is.list(object) && howInt < 5L) || (!is.list(object) && howInt < 2L)))
+      ((is.list(object) && howInt < 5L) || (!is.list(object) && howInt < 2L)))
   {  
     ## nothing to be done
     res <- object  
@@ -392,20 +393,25 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
     ## convert list to data.frame
     if(length(res) > 1)
     {
-      res <- structure(
-        res,
-        names =  c(paste0("L", seq_len(length(res) - 1L)), "value"),
-        row.names = seq_len(length(res[[1L]])),
-        class = "data.frame"
-      )
+      if(getRversion() >= "4.0.0" || !any(vapply(res[[length(res)]], is.symbol, logical(1L)))) {
+        res <- structure(
+            res,
+            names =  c(paste0("L", seq_len(length(res) - 1L)), "value"),
+            row.names = seq_len(length(res[[1L]])),
+            class = "data.frame"
+        )
+      } else {
+        ## no format method for names in R < 4.0.0 
+        names(res) <- c(paste0("L", seq_len(length(res) - 1L)), "value")
+      }
     }
     else
     {
       res <- structure(
-        res,
-        names = "value",
-        row.names = integer(0L),
-        class = "data.frame"
+          res,
+          names = "value",
+          row.names = integer(0L),
+          class = "data.frame"
       )
     }
   }

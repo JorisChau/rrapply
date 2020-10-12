@@ -369,6 +369,7 @@ str(expr_flatten)
 expr_melt <- rrapply(expr, 
   classes = "name", 
   condition = is_new_name, 
+  f = as.character,
   how = "melt"
 )
 expr_melt
