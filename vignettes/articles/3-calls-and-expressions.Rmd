@@ -57,7 +57,7 @@ tryCatch({
 
 # Expressions and `rrapply()` 
 
-Starting from version 1.2.0 `rrapply()` also supports recursion of call objects and expression vectors, which are treated as nested lists based on their internal abstract syntax trees. As such, all functionality described in `vignette("when-to-use-rrapply")` extends directly to call objects and expression vectors. 
+Starting from version 1.2.0 `rrapply()` also supports recursion of call objects and expression vectors, which are treated as nested lists based on their internal abstract syntax trees. As such, all functionality described in `vignette("1-when-to-use-rrapply")` extends directly to call objects and expression vectors. 
 
 ## Structuring the result
 
@@ -278,7 +278,7 @@ findGlobals2(boot::boot)
 
 To conclude, let us consider plotting abstract syntax trees as dendrograms. Base R includes a `plot()` method for dendrogram objects, therefore it suffices to write a function that allows to convert expression objects to dendrogram objects. It turns out that a dendrogram object is defined as a nested list with specific attributes for each list component to turn it into a dendrogram. As seen previously, we can convert the abstract syntax tree of an expression object to a nested list with `rrapply()` by setting `how = "list"`. In addition, we need to recurse through the nested list to add the dendrogram specific attributes. To achieve this for a single node, we define a separate helper function `add_dend_attrs()` that distinguishes between branch (i.e. list) nodes and leaf nodes in the abstract syntax tree. 
 
-The `height` attribute in `add_dend_attrs()` is calculated as a function of the depth of the node under evaluation and the overall maximum depth of the abstract syntax tree. The first can be obtained via the special argument `.xpos`, the second is evaluated by recursing once through the abstract syntax tree with a call to `rrapply()`. To apply `add_dend_attrs()` to each node of the nested list, we set `feverywhere = "recurse"` in a second call to `rrapply()` as explained in `vignette("when-to-use-rrapply")`. 
+The `height` attribute in `add_dend_attrs()` is calculated as a function of the depth of the node under evaluation and the overall maximum depth of the abstract syntax tree. The first can be obtained via the special argument `.xpos`, the second is evaluated by recursing once through the abstract syntax tree with a call to `rrapply()`. To apply `add_dend_attrs()` to each node of the nested list, we set `feverywhere = "recurse"` in a second call to `rrapply()` as explained in `vignette("1-when-to-use-rrapply")`. 
 
 ```{r}
 ## helper function to add dendrogram attributes

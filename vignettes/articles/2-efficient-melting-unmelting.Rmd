@@ -20,13 +20,13 @@ knitr::opts_chunk$set(
   
 # Efficient list melting
   
-The tutorial `vignette("when-to-use-rrapply")` describes the use of `rrapply()` when applied directly to data formatted as a nested list. If there is no specific reason to keep the data in the form of a nested list, it is often more practical to transform the nested list into a more manageable rectangular format and execute any further data processing steps on the unnested object (e.g. a data.frame). 
+The tutorial `vignette("1-when-to-use-rrapply")` describes the use of `rrapply()` when applied directly to data formatted as a nested list. If there is no specific reason to keep the data in the form of a nested list, it is often more practical to transform the nested list into a more manageable rectangular format and execute any further data processing steps on the unnested object (e.g. a data.frame). 
   
-For this purpose, `rrapply()` includes the option `how = "melt"`, which returns a *melted* data.frame of the nested list similar in format to `reshape2::melt()` applied to a nested list. The rows of the melted data.frame contain the individual node paths of the elements in the nested list after pruning (based on the `condition` or `classes` arguments). The `"value"` column is a list-column with the values of the terminal nodes analogous to the flattened list returned by `how = "flatten"`, see also `vignette("when-to-use-rrapply")`.
+For this purpose, `rrapply()` includes the option `how = "melt"`, which returns a *melted* data.frame of the nested list similar in format to `reshape2::melt()` applied to a nested list. The rows of the melted data.frame contain the individual node paths of the elements in the nested list after pruning (based on the `condition` or `classes` arguments). The `"value"` column is a list-column with the values of the terminal nodes analogous to the flattened list returned by `how = "flatten"`, see also `vignette("1-when-to-use-rrapply")`.
   
 In comparison to `reshape2::melt()`, `rrapply()` provides additional flexibility to filter or transform specific list elements before melting a nested list using e.g. the `f`, `classes`  or `condition` arguments. More importantly, `rrapply()` is optimized specifically for nested lists, whereas `reshape2::melt()` was mainly aimed at melting data.frames before it was superseded by `tidyr::gather()` and the more recent `tidyr::pivot_longer()`. For this reason, `reshape2::melt()` tends to be quite slow when applied to larger nested lists. 
   
-For illustration purposes, we use the same dataset `renewable_energy_by_country` as in `vignette("when-to-use-rrapply")`, a nested list containing the per country shares of renewable energy as a percentage in the total energy consumption in 2016.
+For illustration purposes, we use the same dataset `renewable_energy_by_country` as in `vignette("1-when-to-use-rrapply")`, a nested list containing the per country shares of renewable energy as a percentage in the total energy consumption in 2016.
   
 ```{r}
 library(rrapply)
