@@ -1,3 +1,8 @@
+# rrapply 1.2.0
+
+* Added support for call objects and expression vectors
+* Added special argument .xsiblings evaluating to sibling list in 'f' and 'condition'
+
 # rrapply 1.1.1
 
 * Added new option 'how = "unmelt"' to restore nested list from melted data.frame

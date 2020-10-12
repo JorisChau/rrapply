@@ -11,10 +11,10 @@ version](http://www.r-pkg.org/badges/version/rrapply)](https://cran.r-project.or
 Status](https://travis-ci.org/JorisChau/rrapply.svg?branch=master)](https://travis-ci.org/JorisChau/rrapply)
 <!-- badges: end -->
 
-The rrapply-package contains a single function `rrapply`, providing an
-extended implementation of R-base’s `rapply` function, which applies a
+The rrapply-package contains a single function `rrapply()`, providing an
+extended implementation of R-base’s `rapply()` function, which applies a
 function `f` to all elements of a nested list recursively and provides
-control in structuring the returned result. `rrapply` is implemented
+control in structuring the returned result. `rrapply()` is implemented
 using R’s native C API and for this reason requires no external
 R-package dependencies.
 
@@ -33,10 +33,10 @@ devtools::install_github("JorisChau/rrapply")
 
 ### List pruning and unnesting
 
-With base `rapply`, there is no convenient way to prune or filter list
-elements from the input list. The `rrapply` function adds an option `how
-= "prune"` to prune all list elements not subject to application of `f`
-from a nested list,
+With base `rapply()`, there is no convenient way to prune or filter list
+elements from the input list. The `rrapply()` function adds an option
+`how = "prune"` to prune all list elements not subject to application of
+`f` from a nested list,
 
 ``` r
 library(rrapply)
@@ -118,7 +118,7 @@ str(na_drop_oceania2, list.len = 10, give.attr = FALSE)
 ```
 
 Or, use `how = "melt"` to return a melted data.frame of the pruned list
-similar in format to `reshape2::melt` applied to a nested list.
+similar in format to `reshape2::melt()` applied to a nested list.
 
 ``` r
 ## Drop all logical NA's and return melted data.frame
@@ -168,11 +168,11 @@ str(na_drop_oceania4, list.len = 3, give.attr = FALSE)
 
 ### Condition function
 
-Base `rapply` allows to apply a function `f` to list elements of certain
-types or classes via the `classes` argument. `rrapply` generalizes this
-option via an additional `condition` argument, which accepts any
-function to use as a condition or predicate to apply `f` to a subset of
-list elements.
+Base `rapply()` allows to apply a function `f` to list elements of
+certain types or classes via the `classes` argument. `rrapply()`
+generalizes this option via an additional `condition` argument, which
+accepts any function to use as a condition or predicate to apply `f` to
+a subset of list elements.
 
 ``` r
 ## Drop all NA elements using condition function
@@ -226,17 +226,20 @@ str(renewable_energy_above_85, give.attr = FALSE)
 #>   .. .. .. ..$ Guinea-Bissau: num 86.5
 ```
 
-### Special arguments `.xname`, `.xpos` and `.xparents`
+### Special arguments `.xname`, `.xpos`, `.xparents` and `.xsiblings`
 
-In base `rapply`, the `f` function only has access to the content of the
-list element under evaluation, and there is no convenient way to access
-its name or location in the nested list from inside the `f` function.
-`rrapply` allows the use of the special arguments `.xname`, `.xpos` and
-`.xparents` inside the `f` and `condition` functions (in addition to the
-principal function argument). `.xname` evaluates to the name of the list
-element, `.xpos` evaluates to the position of the element in the nested
-list structured as an integer vector, and `.xparents` evaluates to a
-vector of parent node names in the path to the current list element.
+In base `rapply()`, the `f` function only has access to the content of
+the list element under evaluation, and there is no convenient way to
+access its name or location in the nested list from inside the `f`
+function. `rrapply()` allows the use of the special arguments `.xname`,
+`.xpos`,`.xparents` and `.xsiblings` inside the `f` and `condition`
+functions (in addition to the principal function argument). `.xname`
+evaluates to the name of the list element, `.xpos` evaluates to the
+position of the element in the nested list structured as an integer
+vector, `.xparents` evaluates to a vector of parent node names in the
+path to the current list element, and `.xsiblings` evaluates to the
+parent list containing the current list element and all of its direct
+siblings.
 
 ``` r
 ## Apply a function using the name of the node
@@ -312,17 +315,37 @@ renewable_energy_by_country[[xpos_sweden$Sweden]]
 #> [1] 51.35
 #> attr(,"M49-code")
 #> [1] "752"
+
+## Return siblings of Sweden in list
+siblings_sweden <- rrapply(
+  renewable_energy_by_country,
+  condition = function(x, .xsiblings) "Sweden" %in% names(.xsiblings),
+  how = "flatten"
+)
+str(siblings_sweden, list.len = 10, give.attr = FALSE)
+#> List of 14
+#>  $ Aland Islands                                       : logi NA
+#>  $ Denmark                                             : num 33.1
+#>  $ Estonia                                             : num 26.6
+#>  $ Faroe Islands                                       : num 4.24
+#>  $ Finland                                             : num 42
+#>  $ Iceland                                             : num 78.1
+#>  $ Ireland                                             : num 8.65
+#>  $ Isle of Man                                         : num 4.3
+#>  $ Latvia                                              : num 38.5
+#>  $ Lithuania                                           : num 31.4
+#>   [list output truncated]
 ```
 
 ### List node aggregation
 
-By default, both base `rapply` and `rrapply` recurse into any list-like
-element. Use `feverywhere = "break"` to override this behavior and apply
-`f` to any list element (e.g. a sublist) that satisfies the `condition`
-and `classes` arguments. This is useful to collapse sublists or
-calculate summary statistics of sublists of a nested list. Together with
-the `.xname` and `.xpos` arguments, we have a flexible way in deciding
-which sublists to summarize through the `condition` function.
+By default, both base `rapply()` and `rrapply()` recurse into any
+list-like element. Use `feverywhere = "break"` to override this behavior
+and apply `f` to any list element (e.g. a sublist) that satisfies the
+`condition` and `classes` arguments. This is useful to collapse sublists
+or calculate summary statistics of sublists of a nested list. Together
+with the `.xname` and `.xpos` arguments, we have a flexible way in
+deciding which sublists to summarize through the `condition` function.
 
 ``` r
 ## Calculate mean value of Europe
@@ -358,12 +381,12 @@ str(renewable_continent_summary, give.attr = FALSE)
 
 ### List node updating
 
-If `feverywhere = "recurse"`, `rrapply` applies the `f` function to any
-element (e.g. a sublist) that satisfies the `condition` and `classes`
-arguments similar to `feverywhere = "break"`, but recurses further into
-any *updated* list-like element after application of the `f` function.
-Using `feverywhere = "recurse"`, we can for instance recursively update
-all node names in a nested list:
+If `feverywhere = "recurse"`, `rrapply()` applies the `f` function to
+any element (e.g. a sublist) that satisfies the `condition` and
+`classes` arguments similar to `feverywhere = "break"`, but recurses
+further into any *updated* list-like element after application of the
+`f` function. Using `feverywhere = "recurse"`, we can for instance
+recursively update all node names in a nested list:
 
 ``` r
 ## Replace country names by M-49 attributes
@@ -390,20 +413,20 @@ str(renewable_M49[[1]], max.level = 3, list.len = 3, give.attr = FALSE)
 #>   .. [list output truncated]
 ```
 
-### Using `rrapply` on data.frames
+### Using `rrapply()` on data.frames
 
-Since base `rapply` recurses into all list-like objects, and data.frames
-are list-like objects, `rapply` always descends into the individual
-columns of a data.frame. For convenience, `rrapply` includes an
-additional `dfaslist` argument, which if `FALSE` does not treat a
-data.frame as a list and applies the `f` function to the data.frame as a
-whole instead of its individual columns.
+Since base `rapply()` recurses into all list-like objects, and
+data.frames are list-like objects, `rapply()` always descends into the
+individual columns of a data.frame. For convenience, `rrapply()`
+includes an additional `dfaslist` argument, which if `FALSE` does not
+treat a data.frame as a list and applies the `f` function to the
+data.frame as a whole instead of its individual columns.
 
 However, it can also be useful to exploit the property that a data.frame
-is a list-like object and use base `rapply` to apply a function `f` to
+is a list-like object and use base `rapply()` to apply a function `f` to
 data.frame columns of certain classes via the `classes` argument. Using
-the `condition` argument in `rrapply`, we can apply a function `f` to a
-subset of data.frame columns using a general predicate function,
+the `condition` argument in `rrapply()`, we can apply a function `f` to
+a subset of data.frame columns using a general predicate function,
 
 ``` r
 ## Scale only Sepal columns in iris dataset
@@ -462,6 +485,126 @@ iris_standard_summarize
 #>   0.100   0.300   1.300   1.199   1.800   2.500
 ```
 
-For more details and examples on how to use the `rrapply` function see
+### Using `rrapply()` on expressions
+
+In contrast to base `rapply()`, `rrapply()` also supports recursion of
+call objects and expression vectors, which are treated as nested lists
+based on their internal abstract syntax trees. As such, all
+functionality that applies to nested lists extends directly to call
+objects and expression vectors.
+
+To update the abstract syntax tree of a call object, use `how =
+"replace"`:
+
+``` r
+call_old <- quote(y <- x <- 1 + TRUE)
+str(call_old)
+#>  language y <- x <- 1 + TRUE
+
+## Replace logicals by integers 
+call_new <- rrapply(call_old, classes = "logical", f = as.numeric, how = "replace")
+str(call_new)
+#>  language y <- x <- 1 + 1
+```
+
+To update the abstract syntax tree and return it as a nested list, use
+`how = "list"`:
+
+``` r
+## Update and decompose call object
+call_ast <- rrapply(call_old, f = function(x) ifelse(is.logical(x), as.numeric(x), x), how = "list")
+str(call_ast)
+#> List of 3
+#>  $ : symbol <-
+#>  $ : symbol y
+#>  $ :List of 3
+#>   ..$ : symbol <-
+#>   ..$ : symbol x
+#>   ..$ :List of 3
+#>   .. ..$ : symbol +
+#>   .. ..$ : num 1
+#>   .. ..$ : num 1
+```
+
+The choices `how = "prune"`, `how = "flatten"` and `how = "melt"` return
+the pruned abstract syntax tree as: a nested list, a flattened list and
+a melted data.frame respectively. This is identical to application of
+`rrapply()` to the abstract syntax tree formatted as a nested list. To
+illustrate, we return all names (i.e. symbols) in the abstract syntax
+tree that are not part of base R:
+
+``` r
+expr <- expression(y <- x <- 1, f(g(2 * pi)))
+is_new_name <- function(x) !exists(as.character(x), envir = baseenv())
+
+## Prune and decompose expression
+expr_prune <- rrapply(expr, classes = "name", condition = is_new_name, how = "prune")
+str(expr_prune)
+#> List of 2
+#>  $ :List of 2
+#>   ..$ : symbol y
+#>   ..$ :List of 1
+#>   .. ..$ : symbol x
+#>  $ :List of 2
+#>   ..$ : symbol f
+#>   ..$ :List of 1
+#>   .. ..$ : symbol g
+
+## Prune and flatten expression
+expr_flatten <- rrapply(expr, classes = "name", condition = is_new_name, how = "flatten")
+str(expr_flatten)
+#> List of 4
+#>  $ : symbol y
+#>  $ : symbol x
+#>  $ : symbol f
+#>  $ : symbol g
+
+## Prune and melt expression
+expr_melt <- rrapply(expr, classes = "name", condition = is_new_name, f = as.character, how = "melt")
+expr_melt
+#>    L1  L2   L3 value
+#> 1 ..1 ..2 <NA>     y
+#> 2 ..1 ..3  ..2     x
+#> 3 ..2 ..1 <NA>     f
+#> 4 ..2 ..2  ..1     g
+```
+
+Additional demonstrating examples from
+<https://jorischau.github.io/rrapply/articles/articles/3-calls-and-expressions.html>
+include replacing any logical abbreviations in an expression by their
+non-abbreviated counterparts:
+
+``` r
+## Expand logical abbreviation
+logical_abbr_expand <- function(x) {
+  if(identical(x, quote(T))) {
+    TRUE
+  } else if(identical(x, quote(F))) {
+    FALSE
+  } else {
+    x
+  }
+}
+
+rrapply(expression(f(x = c(T, F)), any(T, FALSE)), f = logical_abbr_expand, how = "replace")
+#> expression(f(x = c(TRUE, FALSE)), any(TRUE, FALSE))
+```
+
+Or, collecting all names created by assignment and returning them as a
+character vector:
+
+``` r
+## Check if variable is created by assignment
+is_assign <- function(x, .xpos, .xsiblings) {
+    identical(.xpos[length(.xpos)], 2L) &&
+    as.character(.xsiblings[[1]]) %in% c("<-", "=", "for", "assign", "delayedAssign")
+}
+
+unique(rrapply(body(lm), condition = is_assign, f = as.character, how = "unlist"))
+#>  [1] "ret.x"  "ret.y"  "cl"     "mf"     "m"      "mt"     "y"      "w"     
+#>  [9] "offset" "mlm"    "ny"     "x"      "z"
+```
+
+For more details and examples on how to use the `rrapply()` function see
 the accompanying package vignette in the vignettes folder or the
 ‘Articles’ section at <https://jorischau.github.io/rrapply/>.

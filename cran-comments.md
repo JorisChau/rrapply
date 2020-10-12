@@ -1,4 +1,4 @@
-## CRAN package version 1.1.1
+## CRAN package version 1.2.0
 
 ### Test environments
 
@@ -19,7 +19,4 @@
 
 ### Notes
 
-N  checking for future file timestamps (701ms)
-   unable to verify current time
-
-* http://worldclockapi.com/ is currently offline (https://stackoverflow.com/questions/63613301/r-cmd-check-note-unable-to-verify-current-time)
+* None

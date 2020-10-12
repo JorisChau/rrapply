@@ -30,7 +30,7 @@ and/or \code{.xsiblings} (see \sQuote{Details}), passing further arguments via \
 
 \item{deflt}{the default result (only used if \code{how = "list"} or \code{how = "unlist"}).}
 
-\item{how}{character string partially matching the six possibilities given: see \sQuote{Details}.}
+\item{how}{character string partially matching the seven possibilities given: see \sQuote{Details}.}
 
 \item{feverywhere}{character options \code{"break"} or \code{"recurse"} to override default behavior of \code{f}: see \sQuote{Details}.
 By default \code{NULL}, which applies \code{f} only to non \dQuote{list-like} elements.}
@@ -134,6 +134,15 @@ In \code{\link{rapply}} intermediate list attributes (not located at the leafs) 
 \code{how = "list"}. To avoid unexpected behavior, \code{rrapply} always preserves intermediate list attributes when using \code{how = "replace"}, 
 \code{how = "list"} or \code{how = "prune"}. If \code{how = "flatten"} or \code{how = "unlist"} intermediate list attributes cannot be preserved as 
 the result is no longer a nested list.
+}
+
+\section{Expressions}{
+
+Call objects and expression vectors are also accepted as \code{object} argument, which are treated as nested lists based on their internal abstract
+syntax trees. As such, all functionality that applies to nested lists extends directly to call objects and expression vectors. If \code{object} is a 
+call object or expression vector, \code{how = "replace"} always maintains the type of \code{object}, whereas \code{how = "list"} returns the result 
+structured as a nested list. \code{how = "prune"}, \code{how = "flatten"} and \code{how = "melt"} return the pruned abstract syntax tree as: a nested list, 
+a flattened list and a melted data.frame respectively. This is identical to application of \code{rrapply} to the abstract syntax tree formatted as a nested list.
 }
 
 \examples{
@@ -257,6 +266,14 @@ str(renewable_europe_above_50, give.attr = FALSE)
 ))
 renewable_energy_by_country[[xpos_sweden$Sweden]]
 
+## Return siblings of Sweden in list
+siblings_sweden <- rrapply(
+  renewable_energy_by_country,
+  condition = function(x, .xsiblings) "Sweden" \%in\% names(.xsiblings),
+  how = "flatten"
+)
+str(siblings_sweden, list.len = 10, give.attr = FALSE)
+
 # List node aggregation
 
 ## Calculate mean value of Europe
@@ -312,34 +329,50 @@ na_drop_oceania_attr2 <- rrapply(
 )
 str(na_drop_oceania_attr2, max.level = 2)
 
-# Applying functions to data.frames
+# Expressions
 
-## Scale only Sepal columns in iris dataset
-head(
-  rrapply(
-    iris,
-    condition = function(x, .xname) grepl("Sepal", .xname),
-    f = scale
-  )
+## Replace logicals by integers
+call_old <- quote(y <- x <- 1 + TRUE)
+call_new <- rrapply(call_old, 
+  classes = "logical", 
+  f = as.numeric, 
+  how = "replace"
 )
+str(call_new)
 
-## Scale and keep only numeric columns
-head(
-  rrapply(
-    iris,
-    f = scale,
-    classes = "numeric",
-    how = "prune"
-  )
+## Update and decompose call object
+call_ast <- rrapply(call_old, 
+  f = function(x) ifelse(is.logical(x), as.numeric(x), x), 
+  how = "list"
 )
+str(call_ast)
 
-## Summarize only numeric columns with how = "flatten"
-rrapply(
-  iris,
-  f = summary,
-  classes = "numeric",
+## Prune and decompose expression
+expr <- expression(y <- x <- 1, f(g(2 * pi)))
+is_new_name <- function(x) !exists(as.character(x), envir = baseenv())
+expr_prune <- rrapply(expr, 
+  classes = "name", 
+  condition = is_new_name, 
+  how = "prune"
+)
+str(expr_prune)
+
+## Prune and flatten expression
+expr_flatten <- rrapply(expr, 
+  classes = "name", 
+  condition = is_new_name, 
   how = "flatten"
 )
+str(expr_flatten)
+
+## Prune and melt expression
+expr_melt <- rrapply(expr, 
+  classes = "name", 
+  condition = is_new_name, 
+  f = as.character,
+  how = "melt"
+)
+expr_melt
 
 }
 \seealso{

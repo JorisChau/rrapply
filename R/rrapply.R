@@ -66,7 +66,14 @@
 #' \code{how = "list"}. To avoid unexpected behavior, \code{rrapply} always preserves intermediate list attributes when using \code{how = "replace"}, 
 #' \code{how = "list"} or \code{how = "prune"}. If \code{how = "flatten"} or \code{how = "unlist"} intermediate list attributes cannot be preserved as 
 #' the result is no longer a nested list. 
-#'
+#' 
+#' @section Expressions:
+#' Call objects and expression vectors are also accepted as \code{object} argument, which are treated as nested lists based on their internal abstract
+#' syntax trees. As such, all functionality that applies to nested lists extends directly to call objects and expression vectors. If \code{object} is a 
+#' call object or expression vector, \code{how = "replace"} always maintains the type of \code{object}, whereas \code{how = "list"} returns the result 
+#' structured as a nested list. \code{how = "prune"}, \code{how = "flatten"} and \code{how = "melt"} return the pruned abstract syntax tree as: a nested list, 
+#' a flattened list and a melted data.frame respectively. This is identical to application of \code{rrapply} to the abstract syntax tree formatted as a nested list.
+#' 
 #' @return If \code{how = "unlist"}, a vector as in \code{\link{rapply}}. If \code{how = "list"} or \code{how = "replace"}, \dQuote{list-like} of similar 
 #' structure as \code{object} as in \code{\link{rapply}}. If \code{how = "prune"}, a pruned \dQuote{list-like} object of similar structure as \code{object}
 #' with pruned list elements based on \code{classes} and \code{condition}. If \code{how = "flatten"}, an unnested pruned list with pruned list elements 
@@ -199,6 +206,14 @@
 #' ))
 #' renewable_energy_by_country[[xpos_sweden$Sweden]]
 #' 
+#' ## Return siblings of Sweden in list
+#' siblings_sweden <- rrapply(
+#'   renewable_energy_by_country,
+#'   condition = function(x, .xsiblings) "Sweden" %in% names(.xsiblings),
+#'   how = "flatten"
+#' )
+#' str(siblings_sweden, list.len = 10, give.attr = FALSE)
+#' 
 #' # List node aggregation
 #' 
 #' ## Calculate mean value of Europe
@@ -254,34 +269,50 @@
 #' )
 #' str(na_drop_oceania_attr2, max.level = 2)
 #' 
-#' # Applying functions to data.frames
-#' 
-#' ## Scale only Sepal columns in iris dataset
-#' head(
-#'   rrapply(
-#'     iris,
-#'     condition = function(x, .xname) grepl("Sepal", .xname),
-#'     f = scale
-#'   )
+#' # Expressions
+#'
+#' ## Replace logicals by integers
+#' call_old <- quote(y <- x <- 1 + TRUE)
+#' call_new <- rrapply(call_old, 
+#'   classes = "logical", 
+#'   f = as.numeric, 
+#'   how = "replace"
 #' )
+#' str(call_new)
 #' 
-#' ## Scale and keep only numeric columns
-#' head(
-#'   rrapply(
-#'     iris,
-#'     f = scale,
-#'     classes = "numeric",
-#'     how = "prune"
-#'   )
+#' ## Update and decompose call object
+#' call_ast <- rrapply(call_old, 
+#'   f = function(x) ifelse(is.logical(x), as.numeric(x), x), 
+#'   how = "list"
 #' )
+#' str(call_ast)
 #' 
-#' ## Summarize only numeric columns with how = "flatten"
-#' rrapply(
-#'   iris,
-#'   f = summary,
-#'   classes = "numeric",
+#' ## Prune and decompose expression
+#' expr <- expression(y <- x <- 1, f(g(2 * pi)))
+#' is_new_name <- function(x) !exists(as.character(x), envir = baseenv())
+#' expr_prune <- rrapply(expr, 
+#'   classes = "name", 
+#'   condition = is_new_name, 
+#'   how = "prune"
+#' )
+#' str(expr_prune)
+#' 
+#' ## Prune and flatten expression
+#' expr_flatten <- rrapply(expr, 
+#'   classes = "name", 
+#'   condition = is_new_name, 
 #'   how = "flatten"
 #' )
+#' str(expr_flatten)
+#' 
+#' ## Prune and melt expression
+#' expr_melt <- rrapply(expr, 
+#'   classes = "name", 
+#'   condition = is_new_name, 
+#'   f = as.character,
+#'   how = "melt"
+#' )
+#' expr_melt
 #' 
 #' @inheritParams base::rapply
 #' @param object a \code{\link{list}}, \code{\link{expression}} vector, or \code{\link{call}} object, i.e., \dQuote{list-like}.
@@ -289,7 +320,7 @@
 #' and/or \code{.xsiblings} (see \sQuote{Details}), passing further arguments via \code{\dots}.
 #' @param condition a condition \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname}, \code{.xpos}, 
 #' \code{.xparents} and/or \code{.xsiblings} (see \sQuote{Details}), passing further arguments via \code{\dots}.
-#' @param how character string partially matching the six possibilities given: see \sQuote{Details}.
+#' @param how character string partially matching the seven possibilities given: see \sQuote{Details}.
 #' @param deflt the default result (only used if \code{how = "list"} or \code{how = "unlist"}).
 #' @param dfaslist logical value to treat data.frames as \dQuote{list-like} object.
 #' @param feverywhere character options \code{"break"} or \code{"recurse"} to override default behavior of \code{f}: see \sQuote{Details}.
@@ -303,13 +334,13 @@
 #' @useDynLib rrapply, .registration = TRUE
 #' @export 
 rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL, 
-                    how = c("replace", "list", "unlist", "prune", "flatten", "melt", "unmelt"),
-                    feverywhere = NULL, dfaslist = TRUE, ...)
+    how = c("replace", "list", "unlist", "prune", "flatten", "melt", "unmelt"),
+    feverywhere = NULL, dfaslist = TRUE, ...)
 {
   ## non-function arguments
   if(!(is.list(object) || is.call(object) || is.expression(object)) || length(object) < 1) 
     stop("'object' argument should be list-like and of length greater than zero")
-    
+  
   how <- match.arg(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "unmelt"))
   howInt <- match(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "unmelt"))
   dfaslist <- isTRUE(dfaslist)
@@ -338,7 +369,7 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
   if(missing(condition)) condition <- NULL else condition <- match.fun(condition)
   
   if(is.null(f) && (is.null(condition) || identical(how, "replace")) && identical(feverywhereInt, 1L) && 
-     ((is.list(object) && howInt < 5L) || (!is.list(object) && howInt < 2L)))
+      ((is.list(object) && howInt < 5L) || (!is.list(object) && howInt < 2L)))
   {  
     ## nothing to be done
     res <- object  
@@ -362,20 +393,25 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
     ## convert list to data.frame
     if(length(res) > 1)
     {
-      res <- structure(
-        res,
-        names =  c(paste0("L", seq_len(length(res) - 1L)), "value"),
-        row.names = seq_len(length(res[[1L]])),
-        class = "data.frame"
-      )
+      if(getRversion() >= "4.0.0" || !any(vapply(res[[length(res)]], is.symbol, logical(1L)))) {
+        res <- structure(
+            res,
+            names =  c(paste0("L", seq_len(length(res) - 1L)), "value"),
+            row.names = seq_len(length(res[[1L]])),
+            class = "data.frame"
+        )
+      } else {
+        ## no format method for names in R < 4.0.0 
+        names(res) <- c(paste0("L", seq_len(length(res) - 1L)), "value")
+      }
     }
     else
     {
       res <- structure(
-        res,
-        names = "value",
-        row.names = integer(0L),
-        class = "data.frame"
+          res,
+          names = "value",
+          row.names = integer(0L),
+          class = "data.frame"
       )
     }
   }
