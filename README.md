@@ -9,6 +9,7 @@
 version](http://www.r-pkg.org/badges/version/rrapply)](https://cran.r-project.org/package=rrapply)
 [![Build
 Status](https://travis-ci.org/JorisChau/rrapply.svg?branch=master)](https://travis-ci.org/JorisChau/rrapply)
+[![codecov](https://codecov.io/gh/JorisChau/rrapply/branch/master/graph/badge.svg)](https://codecov.io/gh/JorisChau/rrapply)
 <!-- badges: end -->
 
 The rrapply-package contains a single function `rrapply()`, providing an
