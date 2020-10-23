@@ -262,6 +262,7 @@ xin1 <- list(a = 1L, b = list(b1 = list(b11 = 2L), b2 = 3L), c = 4L)
 xin2 <- list(a = 1L, b = list(b1 = 2L, b2 = 3L), c = 4L)
 xin3 <- quote(f1(a = 1L, b = f2(b1 = 2L, b2 = 3L), c = 4L))
 xin4 <- expression(a <- 1L, expression(b))
+xin5 <- list(1L, 2L, 3L)
   
 xout6.1 <- list(a = "a", b = "b", c = "c")
 xout6.2 <- list(a = 1L, b = "b", c = 4L)
@@ -308,6 +309,15 @@ xout6.33 <- list(a = structure(1:4, .Names = c("a", "b.b1.b11", "b.b2", "c")),
 xout6.34 <- list(a = 1L, b = list(b1 = c(b11 = 2L), b2 = 3L), c = 4L)
 xout6.35 <- list(a = list(b = 1L), b = list(b = list(b1 = 2L, b2 = 3L)), c = list(b = 4L))
 
+xout6.36 <- structure(list(L1 = c("..1", "..2", "..3"), 
+                           L2 = c("..1", "..1", "..1"), 
+                           value = list(list(1L), list(2L), list(3L))), 
+                           row.names = c(NA, 3L), class = "data.frame")
+xout6.37 <- xout6.36
+xout6.37[["value"]] <- xin5
+xout6.38 <- list(list(1L), list(2L), list(3L))
+xout6.39 <- xin5
+
 dotest("6.1", rrapply(xin1, f = function(x, .xname) .xname, feverywhere = "break"), xout6.1)
 dotest("6.2", rrapply(xin1, f = function(x, .xname) .xname, condition = function(x, .xname) .xname == "b", feverywhere = "break"), xout6.2)
 dotest("6.3", rrapply(xin1, f = function(x, .xname) .xname, condition = function(x, .xpos) length(.xpos) == 2, feverywhere = "break"), xout6.3)
@@ -350,6 +360,11 @@ dotest("6.32", rrapply(xin4, f = function(x) { x[[1L]] <- quote(f); x }, classes
 dotest("6.33", rrapply(xin1, f = function(x, .xsiblings) unlist(.xsiblings), feverywhere = "break"), xout6.33)
 dotest("6.34", rrapply(xin1, f = unlist, condition = function(x, .xsiblings) "b2" %in% names(.xsiblings), feverywhere = "break"), xout6.34)
 dotest("6.35", rrapply(xin2, f = function(x) list(b = x), condition = function(x, .xsiblings, .xpos) length(.xpos) < 2 & "b" %in% names(.xsiblings), feverywhere = "recurse"), xout6.35)
+
+dotest("6.36", rrapply(xin5, condition = function(x, .xpos) length(.xpos) < 3, f = list, how = "melt", feverywhere = "recurse"), xout6.36)
+dotest("6.37", rrapply(xin5, f = function(x, .xpos) if(length(.xpos) < 2) list(x) else x, how = "melt", feverywhere = "recurse"), xout6.37)
+dotest("6.38", rrapply(xin5, condition = function(x, .xpos) length(.xpos) < 3, f = list, how = "flatten", feverywhere = "recurse"), xout6.38)
+dotest("6.39", rrapply(xin5, f = function(x, .xpos) if(length(.xpos) < 2) list(x) else x, how = "flatten", feverywhere = "recurse"), xout6.39)
 
 ## infinite recursion
 tools::assertError(rrapply(list(1), f = function(x) list(1), feverywhere = "recurse"))
@@ -590,5 +605,16 @@ dotest("12.17", rrapply(xin1, f = function(x, .xparents) .xparents, how = "repla
 dotest("12.18", rrapply(xin2, f = function(x, .xparents) .xparents, how = "replace"), xout12.18)
 dotest("12.19", rrapply(xin1, f = function(x, .xsiblings) length(.xsiblings), how = "replace"), xout12.19)
 dotest("12.20", rrapply(xin2, f = function(x, .xsiblings) length(.xsiblings), how = "replace"), xout12.20)
+
+## miscellaneous
+
+if(getRversion() < "4.0.0") {
+  
+  xin <- quote(f1(a = 1L, b = f2(b1 = 2L, b2 = 3L), c = 4L))
+  xout13.1 <- list(L1 = c("b", "b", "b"), L2 = c("", "b1", "b2"), value = list(quote(f2), 2L, 3L))
+  
+  dotest("13.1", rrapply(xin, condition = function(x, .xpos) length(.xpos) > 1, how = "melt"), xout13.1)
+  
+}
 
 cat("Completed rrapply unit tests\n")
