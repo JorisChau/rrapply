@@ -304,6 +304,16 @@ renewbale_europe_above_50 <- rrapply(
   condition = function(x, .xparents) "Europe" %in% .xparents & x > 50,
   how = "prune"
 )
+str(renewable_europe_above_50, give.attr = FALSE)
+#> List of 1
+#>  $ World:List of 1
+#>   ..$ Europe:List of 2
+#>   .. ..$ Northern Europe:List of 3
+#>   .. .. ..$ Iceland: num 78.1
+#>   .. .. ..$ Norway : num 59.5
+#>   .. .. ..$ Sweden : num 51.4
+#>   .. ..$ Western Europe :List of 1
+#>   .. .. ..$ Liechtenstein: num 62.9
 
 ## Return position of Sweden in list
 (xpos_sweden <- rrapply(

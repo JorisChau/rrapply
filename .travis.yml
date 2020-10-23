@@ -11,8 +11,13 @@ r_packages:
 after_success:
   - Rscript -e 'covr::codecov()'
 warnings_are_errors: true
-sudo: false
 cache: packages
 os:
   - linux
   - osx
+matrix:
+  exclude:
+    - r: 
+      - devel
+      - oldrel
+    - os: osx
