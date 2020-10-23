@@ -8,7 +8,7 @@ Description: The 'rrapply'-package contains a single function rrapply(), providi
 BugReports: https://github.com/JorisChau/rrapply/issues
 URL: https://jorischau.github.io/rrapply/, https://github.com/JorisChau/rrapply
 Depends: 
-    R (>= 3.2)
+    R (>= 3.5)
 Encoding: UTF-8
 License: GPL-3
 LazyData: true

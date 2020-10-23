@@ -15,5 +15,4 @@ sudo: false
 cache: packages
 os:
   - linux
-notifications:
-  email: true
+  - osx
