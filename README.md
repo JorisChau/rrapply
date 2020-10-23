@@ -10,6 +10,8 @@ version](http://www.r-pkg.org/badges/version/rrapply)](https://cran.r-project.or
 [![Build
 Status](https://travis-ci.org/JorisChau/rrapply.svg?branch=master)](https://travis-ci.org/JorisChau/rrapply)
 [![codecov](https://codecov.io/gh/JorisChau/rrapply/branch/master/graph/badge.svg)](https://codecov.io/gh/JorisChau/rrapply)
+[![AppVeyor build
+status](https://ci.appveyor.com/api/projects/status/github/JorisChau/rrapply?branch=master&svg=true)](https://ci.appveyor.com/project/JorisChau/rrapply)
 <!-- badges: end -->
 
 The rrapply-package contains a single function `rrapply()`, providing an
