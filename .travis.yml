@@ -14,11 +14,4 @@ warnings_are_errors: true
 cache: packages
 os:
   - linux
-  - osx
-matrix:
-  exclude:
-    - r: devel
-      os: osx
-    - r: oldrel
-      os: osx
  
