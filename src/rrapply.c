@@ -59,9 +59,9 @@ static int C_matchClass(SEXP obj, SEXP classes);
 static void C_traverse(SEXP X, CountGlobal *count, int depth);
 static SEXP C_eval_list(SEXP env, SEXP Xi, SEXP fcall, SEXP pcall, SEXP classes, SEXP deflt, SEXP xsym, SEXP *xparents, SEXP xsiblings, PROTECT_INDEX ipx, Args args, CountGlobal *countglobal, CountLocal countlocal, R_len_t (**xinfo)[3], R_len_t **xloc, R_len_t **xdepth);
 static SEXP C_fill_list(SEXP Xi, R_len_t (*xinfo)[3], R_len_t *buf, R_len_t node, R_len_t maxnodes, R_len_t ibuf);
-static void C_fill_flat(SEXP ansNew, SEXP Xi, R_len_t (*xinfo)[3], R_len_t *ix, R_len_t *ians);
-static void C_fill_flat_names(SEXP ansNew, SEXP newNames, SEXP Xi, SEXP name, R_len_t (*xinfo)[3], R_len_t *ix, R_len_t *ians);
-static void C_fill_melt(SEXP ansFlat, SEXP ansNames, SEXP Xi, SEXP name, R_len_t (*xinfo)[3], R_len_t *ix, R_len_t *ians);
+static void C_fill_flat(SEXP ansNew, SEXP Xi, R_len_t (*xinfo)[3], R_len_t *ix, R_len_t *ians, R_len_t maxnodes, int feverywhere);
+static void C_fill_flat_names(SEXP ansNew, SEXP newNames, SEXP Xi, SEXP name, R_len_t (*xinfo)[3], R_len_t *ix, R_len_t *ians, R_len_t maxnodes, int feverywhere);
+static void C_fill_melt(SEXP ansFlat, SEXP ansNames, SEXP Xi, SEXP name, R_len_t (*xinfo)[3], R_len_t *ix, R_len_t *ians, R_len_t maxnodes, int feverywhere);
 SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPred, SEXP classes, SEXP how, SEXP deflt, SEXP R_dfaslist, SEXP R_feverywhere);
 /* ---------------------- */
 
@@ -88,7 +88,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 	R_args.pxparents = INTEGER_ELT(argsPred, 2) > 0;
 	R_args.pxsiblings = INTEGER_ELT(argsPred, 3) > 0;
 	R_args.dfaslist = LOGICAL_ELT(R_dfaslist, 0);
-	R_args.feverywhere = INTEGER_ELT(R_feverywhere, 0) - 1;
+	R_args.feverywhere = INTEGER_ELT(R_feverywhere, 0);
 
 	/* traverse list once for max nodes and max depth
 	   for more accurate initialization, computational 
@@ -165,7 +165,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		if (R_args.fxparents)
 		{
 			fCDR = CDR(fCDR);
-			SET_TAG(CDR(fCDR), xparents);
+			SET_TAG(fCDR, xparents);
 		}
 		if (R_args.fxsiblings)
 		{
@@ -219,7 +219,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		if (R_args.pxparents)
 		{
 			pCDR = CDR(pCDR);
-			SET_TAG(CDR(pCDR), xparents);
+			SET_TAG(pCDR, xparents);
 		}
 		if (R_args.pxsiblings)
 		{
@@ -273,8 +273,8 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 			if (R_args.feverywhere == 2 && (initGlobal.node + 1) >= initGlobal.maxnodes)
 			{
 				xinfo = (R_len_t(*)[3])S_realloc((char *)xinfo, 2 * initGlobal.maxnodes, initGlobal.maxnodes, sizeof(*xinfo));
-				if (R_args.how_C == 5)
-					xdepth = (R_len_t *)S_realloc((char *)xinfo, 2 * initGlobal.maxnodes, initGlobal.maxnodes, sizeof(R_len_t));
+				// if (R_args.how_C == 5)
+				// 	xdepth = (R_len_t *)S_realloc((char *)xdepth, 2 * initGlobal.maxnodes, initGlobal.maxnodes, sizeof(R_len_t));
 				initGlobal.maxnodes *= 2;
 			}
 
@@ -361,19 +361,14 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 			if (!initGlobal.anynames)
 			{
 				for (R_len_t i = 0; i < Rf_length(ans); i++)
-				{
-					C_fill_flat(ansNew, VECTOR_ELT(ans, i), xinfo, &ix, &ians);
-					ix++;
-				}
+					C_fill_flat(ansNew, VECTOR_ELT(ans, i), xinfo, &ix, &ians, initGlobal.maxnodes, R_args.feverywhere);
 			}
 			else
 			{
 				SEXP newNames = PROTECT(Rf_allocVector(STRSXP, m));
 				for (R_len_t i = 0; i < Rf_length(ans); i++)
-				{
-					C_fill_flat_names(ansNew, newNames, VECTOR_ELT(ans, i), Rf_isNull(names) ? NA_STRING : STRING_ELT(names, i), xinfo, &ix, &ians);
-					ix++;
-				}
+					C_fill_flat_names(ansNew, newNames, VECTOR_ELT(ans, i), Rf_isNull(names) ? NA_STRING : STRING_ELT(names, i), xinfo, &ix, &ians, initGlobal.maxnodes, R_args.feverywhere);
+
 				Rf_setAttrib(ansNew, R_NamesSymbol, newNames);
 				UNPROTECT(1);
 			}
@@ -401,8 +396,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 				if (noNames)
 					SET_STRING_ELT(namesNew, i, C_int2char(i + 1));
 
-				C_fill_melt(ansFlat, ansNames, VECTOR_ELT(ans, i), STRING_ELT(namesNew, i), xinfo, &ix, &ians);
-				ix++;
+				C_fill_melt(ansFlat, ansNames, VECTOR_ELT(ans, i), STRING_ELT(namesNew, i), xinfo, &ix, &ians, initGlobal.maxnodes, R_args.feverywhere);
 			}
 
 			/* add flat list to data.frame */
@@ -491,7 +485,7 @@ static int C_matchClass(SEXP obj, SEXP classes)
 		for (R_len_t i = 0; i < n; i++)
 			for (R_len_t j = 0; j < Rf_length(classes); j++)
 				if (strcmp(CHAR(STRING_ELT(klass, i)), CHAR(STRING_ELT(classes, j))) == 0)
-					matched = 1;
+					matched = TRUE;
 	}
 	else
 	{
@@ -518,7 +512,6 @@ static int C_matchClass(SEXP obj, SEXP classes)
 		{
 			SEXPTYPE type = (SEXPTYPE)TYPEOF(obj);
 			const char *typename;
-			/* excluded LANGSXP type */
 			switch (type)
 			{
 			case CLOSXP:
@@ -531,6 +524,15 @@ static int C_matchClass(SEXP obj, SEXP classes)
 				break;
 			case SYMSXP:
 				typename = "name";
+				break;
+			case EXPRSXP:
+				typename = "expression";
+				break;
+			case LISTSXP:
+				typename = "pairlist";
+				break;
+			case LANGSXP:
+				typename = "language";
 				break;
 			default:
 				typename = CHAR(Rf_type2str(type));
@@ -659,7 +661,7 @@ static SEXP C_eval_list(
 		/* update current .xsiblings value */
 		if (args.fxsiblings || args.pxsiblings)
 		{
-			if(Rf_isPairList(xsiblings))
+			if (Rf_isPairList(xsiblings))
 			{
 				R_len_t n = Rf_length(xsiblings);
 				xsiblings_val = PROTECT(Rf_allocVector(VECSXP, n));
@@ -673,7 +675,7 @@ static SEXP C_eval_list(
 				Rf_setAttrib(xsiblings_val, R_NamesSymbol, PROTECT(Rf_getAttrib(xsiblings, R_NamesSymbol)));
 				UNPROTECT(1);
 			}
-			else 
+			else
 			{
 				xsiblings_val = PROTECT(Rf_duplicate(xsiblings));
 			}
@@ -753,7 +755,7 @@ static SEXP C_eval_list(
 		else
 			matched = C_matchClass(Xi, classes);
 
-		if (args.pArgs > 0 && !skip)
+		if (matched && !skip && args.pArgs > 0)
 		{
 			/* set default to FALSE */
 			doEval = FALSE;
@@ -773,7 +775,7 @@ static SEXP C_eval_list(
 		}
 
 		/* evaluate f and decide what to return or recurse further */
-		if (doEval && matched && !skip)
+		if (matched && !skip && doEval)
 		{
 			/* update current node info only for pruning and melting */
 			if (args.how_C > 2)
@@ -787,7 +789,7 @@ static SEXP C_eval_list(
 					if (i2 > -1)
 					{
 						i1 = i2;
-						(*xinfo)[i1][0] = 2;
+						(*xinfo)[i1][0] = 2; // non-terminal node
 						i2 = (*xinfo)[i1][1];
 					}
 					else
@@ -907,8 +909,8 @@ static SEXP C_eval_list(
 					if ((countglobal->node + 1) >= countglobal->maxnodes)
 					{
 						*xinfo = (R_len_t(*)[3])S_realloc((char *)*xinfo, 2 * countglobal->maxnodes, countglobal->maxnodes, sizeof(**xinfo));
-						if (args.how_C == 5)
-							*xdepth = (R_len_t *)S_realloc((char *)*xdepth, 2 * countglobal->maxnodes, countglobal->maxnodes, sizeof(R_len_t));
+						// if (args.how_C == 5)
+						// 	*xdepth = (R_len_t *)S_realloc((char *)*xdepth, 2 * countglobal->maxnodes, countglobal->maxnodes, sizeof(R_len_t));
 						countglobal->maxnodes *= 2;
 					}
 				}
@@ -978,7 +980,7 @@ static SEXP C_fill_list(SEXP Xi, R_len_t (*xinfo)[3], R_len_t *buf, R_len_t node
 			if (xinfo[inode][1] < node || xinfo[inode][1] > maxparent)
 				break;
 			/* update maximum allowed parent node */
-			maxparent += 1;
+			maxparent++;
 		}
 
 		/* descend one level */
@@ -1023,54 +1025,79 @@ static SEXP C_fill_list(SEXP Xi, R_len_t (*xinfo)[3], R_len_t *buf, R_len_t node
 }
 
 /* fill flat list without names */
-static void C_fill_flat(SEXP ansNew, SEXP Xi, R_len_t (*xinfo)[3], R_len_t *ix, R_len_t *ians)
+static void C_fill_flat(SEXP ansNew, SEXP Xi, R_len_t (*xinfo)[3], R_len_t *ix, R_len_t *ians, R_len_t maxnodes, int feverywhere)
 {
-	if (xinfo[*ix][0] == 1)
+	(*ix)++;					// increment counter
+	if (xinfo[*ix - 1][0] == 1) // terminal node
 	{
 		SET_VECTOR_ELT(ansNew, *ians, Xi);
 		(*ians)++;
+
+		/* stop incrementing if no longer an (indirect) child node */
+		if (feverywhere == 2 && Rf_isVectorList(Xi))
+		{
+			R_len_t ixstart = *ix - 1;
+			while ((*ix) < maxnodes && xinfo[*ix][1] >= ixstart && xinfo[*ix][1] <= (*ix))
+				(*ix)++;
+		}
 	}
 	else if (Rf_isVectorList(Xi))
 	{
 		for (R_len_t i = 0; i < Rf_length(Xi); i++)
-		{
-			(*ix)++;
-			C_fill_flat(ansNew, VECTOR_ELT(Xi, i), xinfo, ix, ians);
-		}
+			C_fill_flat(ansNew, VECTOR_ELT(Xi, i), xinfo, ix, ians, maxnodes, feverywhere);
 	}
 }
 
 /* fill flat list with names */
-static void C_fill_flat_names(SEXP ansNew, SEXP newNames, SEXP Xi, SEXP name, R_len_t (*xinfo)[3], R_len_t *ix, R_len_t *ians)
+static void C_fill_flat_names(SEXP ansNew, SEXP newNames, SEXP Xi, SEXP name, R_len_t (*xinfo)[3], R_len_t *ix, R_len_t *ians, R_len_t maxnodes, int feverywhere)
 {
-	if (xinfo[*ix][0] == 1)
+	(*ix)++;					// increment counter
+	if (xinfo[*ix - 1][0] == 1) // terminal node
 	{
 		SET_VECTOR_ELT(ansNew, *ians, Xi);
 		SET_STRING_ELT(newNames, *ians, name);
 		(*ians)++;
+
+		/* stop incrementing if no longer an (indirect) child node */
+		if (feverywhere == 2 && Rf_isVectorList(Xi))
+		{
+			R_len_t ixstart = *ix - 1;
+			while ((*ix) < maxnodes && xinfo[*ix][1] >= ixstart && xinfo[*ix][1] <= (*ix))
+				(*ix)++;
+		}
 	}
 	else if (Rf_isVectorList(Xi))
 	{
 		SEXP names = PROTECT(Rf_getAttrib(Xi, R_NamesSymbol));
 		for (R_len_t i = 0; i < Rf_length(Xi); i++)
-		{
-			(*ix)++;
-			C_fill_flat_names(ansNew, newNames, VECTOR_ELT(Xi, i), Rf_isNull(names) ? NA_STRING : STRING_ELT(names, i), xinfo, ix, ians);
-		}
+			C_fill_flat_names(ansNew, newNames, VECTOR_ELT(Xi, i), Rf_isNull(names) ? NA_STRING : STRING_ELT(names, i), xinfo, ix, ians, maxnodes, feverywhere);
+
 		UNPROTECT(1);
 	}
 }
 
 /* fill melted data.frame */
-static void C_fill_melt(SEXP ansFlat, SEXP ansNames, SEXP Xi, SEXP name, R_len_t (*xinfo)[3], R_len_t *ix, R_len_t *ians)
+static void C_fill_melt(SEXP ansFlat, SEXP ansNames, SEXP Xi, SEXP name, R_len_t (*xinfo)[3], R_len_t *ix, R_len_t *ians, R_len_t maxnodes, int feverywhere)
 {
 	// add name to vector
 	SET_STRING_ELT(ansNames, *ix, name);
+	(*ix)++; // increment counter
 
-	if (xinfo[*ix][0] == 1) // terminal nodes only
+	if (xinfo[*ix - 1][0] == 1) // terminal nodes only
 	{
 		SET_VECTOR_ELT(ansFlat, *ians, Xi);
 		(*ians)++;
+
+		/* stop incrementing if no longer an (indirect) child node */
+		if (feverywhere == 2 && Rf_isVectorList(Xi))
+		{
+			R_len_t ixstart = *ix - 1;
+			while ((*ix) < maxnodes && xinfo[*ix][1] >= ixstart && xinfo[*ix][1] <= (*ix))
+			{
+				SET_STRING_ELT(ansNames, *ix, NA_STRING);
+				(*ix)++;
+			}
+		}
 	}
 	else if (Rf_isVectorList(Xi))
 	{
@@ -1085,13 +1112,12 @@ static void C_fill_melt(SEXP ansFlat, SEXP ansNames, SEXP Xi, SEXP name, R_len_t
 
 		for (R_len_t i = 0; i < m; i++)
 		{
-			(*ix)++;
 			// use counter for missing names
 			if (noNames)
 				SET_STRING_ELT(names, i, C_int2char(i + 1));
 
 			// recurse further
-			C_fill_melt(ansFlat, ansNames, VECTOR_ELT(Xi, i), STRING_ELT(names, i), xinfo, ix, ians);
+			C_fill_melt(ansFlat, ansNames, VECTOR_ELT(Xi, i), STRING_ELT(names, i), xinfo, ix, ians, maxnodes, feverywhere);
 		}
 		UNPROTECT(1);
 	}

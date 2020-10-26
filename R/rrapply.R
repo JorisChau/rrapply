@@ -6,7 +6,7 @@
 #' 
 #' @section How to structure result:
 #' In addition to \code{\link{rapply}}'s modes to set \code{how} equal to \code{"replace"}, \code{"list"} or \code{"unlist"}, 
-#' four choices \code{"prune"}, \code{"flatten"}, \code{"melt"} and \code{"unmelt"} are available. \code{how = "prune"} filters 
+#' five choices \code{"prune"}, \code{"flatten"}, \code{"melt"}, \code{"unmelt"} and \code{how = "recurse"} are available. \code{how = "prune"} filters 
 #' all list elements not subject to application of \code{f} from the list \code{object}. The original list structure is retained, 
 #' similar to the non-pruned options \code{how = "replace"} or \code{how = "list"}. \code{how = "flatten"} is an efficient way to 
 #' return a flattened unnested version of the pruned list. \code{how = "melt"} returns a melted data.frame of the pruned list, 
@@ -15,7 +15,9 @@
 #' If no list names are present, the node names in the data.frame default to the indices of the list elements \code{"..1"}, \code{"..2"}, etc.
 #' \code{how = "unmelt"} is a special case that reconstructs a nested list from a melted data.frame. For this reason, \code{how = "unmelt"} 
 #' only applies to data.frames in the same format as returned by \code{how = "melt"}. Internally, \code{how = "unmelt"} first reconstructs 
-#' a nested list from the melted data.frame and second uses the same framework as \code{how = "replace"}.
+#' a nested list from the melted data.frame and second uses the same framework as \code{how = "replace"}. \code{how = "recurse"} is a specialized
+#' option that is only useful in combination with e.g. \code{how = "list"} to recurse further into updated \dQuote{list-like} elements. 
+#' This is explained in more detail below.
 #' 
 #' @section Condition function:
 #' Both \code{\link{rapply}} and \code{rrapply} allow to apply \code{f} to list elements of certain classes via the \code{classes} argument. 
@@ -42,24 +44,25 @@
 #' The names \code{.xname}, \code{.xpos}, \code{.xparents} or \code{.xsiblings} need to be explicitly included as function arguments in \code{f} and 
 #' \code{condition} (in addition to the principal argument). See the package vignette for example uses of these special variables.
 #' 
-#' @section List node aggregation:
-#' By default, \code{rrapply} recurses into any \dQuote{list-like} element. If \code{feverywhere = "break"}, this behavior is overridden and the 
-#' \code{f} function is applied to any element of \code{object} (e.g. a sublist) that satisfies \code{condition} and \code{classes}. 
-#' If the \code{condition} or \code{classes} arguments are not satisfied for a \dQuote{list-like} element, \code{rrapply} will recurse further into the sublist, 
-#' apply the \code{f} function to the nodes that satisfy \code{condition} and \code{classes}, and so on. The primary use of \code{feverywhere = "break"} is 
-#' to aggregate list nodes or summarize sublists of \code{object}. Additional examples can be found in the package vignette.
+#' @section Avoid recursing into list nodes:
+#' By default, \code{rrapply} recurses into any \dQuote{list-like} element. If \code{classes = "list"}, this behavior is overridden and the 
+#' \code{f} function is also applied to any list element of \code{object} that satisfies \code{condition}. For expression objects, use 
+#' \code{classes = "language"}, \code{classes = "expression"} or \code{classes = "pairlist"} to avoid recursing into branches of the abstract 
+#' syntax tree of \code{object}. If the \code{condition} or \code{classes} arguments are not satisfied for a \dQuote{list-like} element, 
+#' \code{rrapply} will recurse further into the sublist, apply the \code{f} function to the nodes that satisfy \code{condition} and \code{classes}, 
+#' and so on. Note that this behavior can only be triggered using the \code{classes} argument and not the \code{condition} argument.
 #' 
-#' @section List node updating:
-#' If \code{feverywhere = "recurse"}, \code{rrapply} applies the \code{f} function to any element of \code{object} (e.g. a sublist) that satisfies 
-#' \code{condition} and \code{classes} similar to \code{feverywhere = "break"}, but recurses further into the \emph{updated} list-like element 
-#' after application of the \code{f} function. The primary use of \code{feverywhere = "recurse"} is to recursively update for instance the names of 
-#' all nodes in a nested list. Additional examples are found in the package vignette.
+#' @section Recursive list node updating:
+#' If \code{classes = "list"} and \code{how = "recurse"}, \code{rrapply} applies the \code{f} function to any list element of \code{object} that satisfies 
+#' \code{condition} similar to the previous section using \code{how = "replace"}, but recurses further into the \emph{updated} list-like element 
+#' after application of the \code{f} function. The primary use of \code{how = "recurse"} in combination with \code{classes = "list"} is to 
+#' recursively update for instance the names of all nodes in a nested list. Additional examples are found in the package vignette.
 #' 
-#' @section Data.frames as lists:
-#' If \code{feverywhere = NULL} (default), \code{rrapply} recurses into all \dQuote{list-like} objects equivalent to \code{\link{rapply}}. 
+#' @section Avoid recursing into data.frames:
+#' If \code{classes = "ANY"} (default), \code{rrapply} recurses into all \dQuote{list-like} objects equivalent to \code{\link{rapply}}. 
 #' Since data.frames are \dQuote{list-like} objects, the \code{f} function will descend into the individual columns of a data.frame. 
-#' If \code{dfaslist = FALSE}, data.frames are no longer viewed as lists and the \code{f} and \code{condition} functions are 
-#' applied directly to the data.frame itself and not its columns.
+#' To avoid this behavior, set \code{classes = "data.frame"}, in which case the \code{f} and \code{condition} functions are applied directly to 
+#' the data.frame and not its columns. Note that this behavior can only be triggered using the \code{classes} argument and not the \code{condition} argument.
 #' 
 #' @section List attributes:
 #' In \code{\link{rapply}} intermediate list attributes (not located at the leafs) are kept when \code{how = "replace"}, but are dropped when 
@@ -74,11 +77,13 @@
 #' structured as a nested list. \code{how = "prune"}, \code{how = "flatten"} and \code{how = "melt"} return the pruned abstract syntax tree as: a nested list, 
 #' a flattened list and a melted data.frame respectively. This is identical to application of \code{rrapply} to the abstract syntax tree formatted as a nested list.
 #' 
-#' @return If \code{how = "unlist"}, a vector as in \code{\link{rapply}}. If \code{how = "list"} or \code{how = "replace"}, \dQuote{list-like} of similar 
-#' structure as \code{object} as in \code{\link{rapply}}. If \code{how = "prune"}, a pruned \dQuote{list-like} object of similar structure as \code{object}
-#' with pruned list elements based on \code{classes} and \code{condition}. If \code{how = "flatten"}, an unnested pruned list with pruned list elements 
-#' based on \code{classes} and \code{condition}. If \code{how = "melt"}, a melted data.frame containing the node paths and values of the pruned list 
-#' elements based on \code{classes} and \code{condition}. If \code{how = "unmelt"}, a nested list with list names and values defined in the data.frame \code{object}.
+#' @return If \code{how = "unlist"}, a vector as in \code{\link{rapply}}. If \code{how = "list"}, \code{how = "replace"} or \code{how = "recurse"}, 
+#' \dQuote{list-like} of similar structure as \code{object} as in \code{\link{rapply}}. If \code{how = "prune"}, a pruned \dQuote{list-like} object 
+#' of similar structure as \code{object} with pruned list elements based on \code{classes} and \code{condition}. If \code{how = "flatten"}, an unnested 
+#' pruned list with pruned list elements based on \code{classes} and \code{condition}. If \code{how = "melt"}, a melted data.frame containing the node 
+#' paths and values of the pruned list elements based on \code{classes} and \code{condition}. If \code{how = "unmelt"}, a nested list with list names 
+#' and values defined in the data.frame \code{object}.
+#' 
 #'  
 #' @note \code{rrapply} allows the \code{f} function argument to be missing, in which case no function is applied to the list 
 #' elements.
@@ -162,7 +167,7 @@
 #' )
 #' str(renewable_energy_above_85, give.attr = FALSE)
 #' 
-#' # Special arguments .xname, .xpos and .xparents
+#' # Special arguments .xname, .xpos, .xparents and .xsiblings
 #' 
 #' ## Apply a function using the name of the node
 #' renewable_oceania_text <- rrapply(
@@ -214,23 +219,23 @@
 #' )
 #' str(siblings_sweden, list.len = 10, give.attr = FALSE)
 #' 
-#' # List node aggregation
+#' # Avoid skipping list nodes
 #' 
 #' ## Calculate mean value of Europe
 #' rrapply(
 #'   renewable_energy_by_country,  
+#'   classes = "list",
 #'   condition = function(x, .xname) .xname == "Europe",
 #'   f = function(x) mean(unlist(x), na.rm = TRUE),
-#'   how = "flatten",
-#'   feverywhere = "break"
+#'   how = "flatten"
 #' )
 #'
 #' ## Calculate mean value for each continent
 #' renewable_continent_summary <- rrapply(
 #'   renewable_energy_by_country,  
+#'   classes = "list",
 #'   condition = function(x, .xpos) length(.xpos) == 2,
-#'   f = function(x) mean(unlist(x), na.rm = TRUE),
-#'   feverywhere = "break"
+#'   f = function(x) mean(unlist(x), na.rm = TRUE)
 #' )
 #'
 #' ## Antarctica's value is missing
@@ -241,12 +246,12 @@
 #' ## replace country names by M-49 codes
 #' renewable_M49 <- rrapply(
 #'   list(renewable_energy_by_country), 
-#'   condition = is.list,
+#'   classes = "list",
 #'   f = function(x) {
 #'     names(x) <- vapply(x, attr, character(1L), which = "M49-code")
 #'     return(x)
 #'   },
-#'   feverywhere = "recurse"
+#'   how = "recurse"
 #' )
 #' 
 #' str(renewable_M49[[1]], max.level = 3, list.len = 3, give.attr = FALSE)
@@ -320,12 +325,13 @@
 #' and/or \code{.xsiblings} (see \sQuote{Details}), passing further arguments via \code{\dots}.
 #' @param condition a condition \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname}, \code{.xpos}, 
 #' \code{.xparents} and/or \code{.xsiblings} (see \sQuote{Details}), passing further arguments via \code{\dots}.
-#' @param how character string partially matching the seven possibilities given: see \sQuote{Details}.
+#' @param classes character vector of \code{\link{class}} names, or \code{"ANY"} to match the class of any terminal node. Include \code{"list"} or \code{"data.frame"}
+#' to match the class of non-terminal nodes as well.
+#' @param how character string partially matching the eight possibilities given: see \sQuote{Details}.
 #' @param deflt the default result (only used if \code{how = "list"} or \code{how = "unlist"}).
-#' @param dfaslist logical value to treat data.frames as \dQuote{list-like} object.
-#' @param feverywhere character options \code{"break"} or \code{"recurse"} to override default behavior of \code{f}: see \sQuote{Details}.
-#' By default \code{NULL}, which applies \code{f} only to non \dQuote{list-like} elements.
-#' @param ... additional arguments passed to the call to \code{f} and \code{condition}
+#' @param feverywhere deprecated use \code{classes = "list"}, \code{classes = "language"} or \code{classes = "expression"} and optionally \code{how = "recurse"} instead.
+#' @param dfaslist deprecated use \code{classes = "data.frame"} instead.
+#' @param ... additional arguments passed to the call to \code{f} and \code{condition}.
 #' 
 #' @aliases rrapply
 #' 
@@ -334,19 +340,35 @@
 #' @useDynLib rrapply, .registration = TRUE
 #' @export 
 rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL, 
-    how = c("replace", "list", "unlist", "prune", "flatten", "melt", "unmelt"),
-    feverywhere = NULL, dfaslist = TRUE, ...)
+    how = c("replace", "list", "unlist", "prune", "flatten", "melt", "recurse", "unmelt"),
+    feverywhere, dfaslist, ...)
 {
   ## non-function arguments
   if(!(is.list(object) || is.call(object) || is.expression(object)) || length(object) < 1) 
     stop("'object' argument should be list-like and of length greater than zero")
   
-  how <- match.arg(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "unmelt"))
-  howInt <- match(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "unmelt"))
-  dfaslist <- isTRUE(dfaslist)
-  feverywhere <- match.arg(feverywhere, c("no", "break", "recurse"))
-  feverywhereInt <- match(feverywhere, c("no", "break", "recurse"))
+  how <- match.arg(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "recurse", "unmelt"))
+  howInt <- match(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "recurse", "unmelt"))
+  if(identical(how, "recurse")) howInt <- 1L
   
+  if(!missing(feverywhere))
+  {
+	  warning("'feverywhere' is deprecated, use e.g. classes = 'list' or classes = 'call' instead")
+    feverywhere <- match.arg(feverywhere, c("no", "break", "recurse"))
+    feverywhere <- match(feverywhere, c("no", "break", "recurse")) - 1L
+  }
+  else 
+    feverywhere <- ifelse(isTRUE(any(classes %in% c("list", "language", "pairlist", "expression"))), 1L + identical(how, "recurse"), 0L)
+
+  if(!missing(dfaslist))
+  {
+    warning("'dfaslist' is deprecated, use classes = 'data.frame' instead")
+    dfaslist <- isTRUE(dfaslist)
+  }
+  else 
+    dfaslist <- isFALSE("data.frame" %in% classes)
+  if(length(classes) > 1 && isTRUE("ANY" %in% classes)) classes <- "ANY"
+
   ## unmelt data.frame to nested list
   if(identical(how, "unmelt"))
   {
@@ -368,7 +390,7 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
   if(missing(f)) f <- NULL else f <- match.fun(f)
   if(missing(condition)) condition <- NULL else condition <- match.fun(condition)
   
-  if(is.null(f) && (is.null(condition) || identical(how, "replace")) && identical(feverywhereInt, 1L) && 
+  if(is.null(f) && (is.null(condition) || identical(howInt, 1L)) && identical(feverywhere, 0L) && 
       ((is.list(object) && howInt < 5L) || (!is.list(object) && howInt < 2L)))
   {  
     ## nothing to be done
@@ -376,14 +398,14 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
   } else 
   { 
     ## check for special args
-    fArgs <- conditionArgs <- c(0L, 0L, 0L, 0L)
+    fArgs <- conditionArgs <- rep(0L, 4L)
     if(identical(typeof(f), "closure"))
       fArgs <- match(c(".xname", ".xpos", ".xparents", ".xsiblings"), names(formals(f)), nomatch = 0L) 
     if(identical(typeof(condition), "closure"))
       conditionArgs <- match(c(".xname", ".xpos", ".xparents", ".xsiblings"), names(formals(condition)), nomatch = 0L)
     
     ## call main C function
-    res <- .Call(C_rrapply, environment(), object, f, fArgs, condition, conditionArgs, classes, howInt, deflt, dfaslist, feverywhereInt)  
+    res <- .Call(C_rrapply, environment(), object, f, fArgs, condition, conditionArgs, classes, howInt, deflt, dfaslist, feverywhere)  
   }
   
   if(identical(how, "melt"))

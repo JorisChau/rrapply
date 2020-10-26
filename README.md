@@ -9,14 +9,17 @@
 version](http://www.r-pkg.org/badges/version/rrapply)](https://cran.r-project.org/package=rrapply)
 [![Build
 Status](https://travis-ci.org/JorisChau/rrapply.svg?branch=master)](https://travis-ci.org/JorisChau/rrapply)
+[![codecov](https://codecov.io/gh/JorisChau/rrapply/branch/master/graph/badge.svg)](https://codecov.io/gh/JorisChau/rrapply)
+[![AppVeyor build
+status](https://ci.appveyor.com/api/projects/status/github/JorisChau/rrapply?branch=master&svg=true)](https://ci.appveyor.com/project/JorisChau/rrapply)
 <!-- badges: end -->
 
-The rrapply-package contains a single function `rrapply()`, providing an
-extended implementation of R-base’s `rapply()` function, which applies a
-function `f` to all elements of a nested list recursively and provides
-control in structuring the returned result. `rrapply()` is implemented
-using R’s native C API and for this reason requires no external
-R-package dependencies.
+The minimal rrapply-package contains a single function `rrapply()`,
+providing an extended implementation of R-base’s `rapply()` function,
+which applies a function `f` to all elements of a nested list
+recursively and provides control in structuring the returned result.
+`rrapply()` builds upon `rapply()`’s native C implementation and for
+this reason requires no external R-package dependencies.
 
 ## Installation
 
@@ -301,6 +304,16 @@ renewbale_europe_above_50 <- rrapply(
   condition = function(x, .xparents) "Europe" %in% .xparents & x > 50,
   how = "prune"
 )
+str(renewable_europe_above_50, give.attr = FALSE)
+#> List of 1
+#>  $ World:List of 1
+#>   ..$ Europe:List of 2
+#>   .. ..$ Northern Europe:List of 3
+#>   .. .. ..$ Iceland: num 78.1
+#>   .. .. ..$ Norway : num 59.5
+#>   .. .. ..$ Sweden : num 51.4
+#>   .. ..$ Western Europe :List of 1
+#>   .. .. ..$ Liechtenstein: num 62.9
 
 ## Return position of Sweden in list
 (xpos_sweden <- rrapply(
@@ -337,34 +350,35 @@ str(siblings_sweden, list.len = 10, give.attr = FALSE)
 #>   [list output truncated]
 ```
 
-### List node aggregation
+### Modifying list elements
 
 By default, both base `rapply()` and `rrapply()` recurse into any
-list-like element. Use `feverywhere = "break"` to override this behavior
-and apply `f` to any list element (e.g. a sublist) that satisfies the
-`condition` and `classes` arguments. This is useful to collapse sublists
-or calculate summary statistics of sublists of a nested list. Together
-with the `.xname` and `.xpos` arguments, we have a flexible way in
-deciding which sublists to summarize through the `condition` function.
+list-like element. Using `rrapply()`, we can set `classes = "list"` to
+override this behavior and apply `f` to any list element (i.e. a
+sublist) that satisfies the `condition` argument. This is useful to
+collapse sublists or calculate summary statistics of sublists of a
+nested list. Together with e.g. the `.xname` and `.xpos` arguments, we
+have a flexible way in deciding which sublists to summarize through the
+`condition` function.
 
 ``` r
 ## Calculate mean value of Europe
 rrapply(
   renewable_energy_by_country,  
+  classes = "list",
   condition = function(x, .xname) .xname == "Europe",
   f = function(x) mean(unlist(x), na.rm = TRUE),
-  how = "flatten",
-  feverywhere = "break"
+  how = "flatten"
 )
 #> $Europe
 #> [1] 22.36565
 
 ## Calculate mean value for each continent
 renewable_continent_summary <- rrapply(
-  renewable_energy_by_country,  
+  renewable_energy_by_country, 
+  classes = "list",
   condition = function(x, .xpos) length(.xpos) == 2,
-  f = function(x) mean(unlist(x), na.rm = TRUE),
-  feverywhere = "break"
+  f = function(x) mean(unlist(x), na.rm = TRUE)
 )
 
 ## Antarctica's value is missing
@@ -373,31 +387,31 @@ str(renewable_continent_summary, give.attr = FALSE)
 #>  $ World:List of 6
 #>   ..$ Africa    : num 54.3
 #>   ..$ Americas  : num 18.2
-#>   ..$ Antarctica: num NaN
+#>   ..$ Antarctica: logi NA
 #>   ..$ Asia      : num 17.9
 #>   ..$ Europe    : num 22.4
 #>   ..$ Oceania   : num 17.8
 ```
 
-### List node updating
+### Recursive list updating
 
-If `feverywhere = "recurse"`, `rrapply()` applies the `f` function to
-any element (e.g. a sublist) that satisfies the `condition` and
-`classes` arguments similar to `feverywhere = "break"`, but recurses
-further into any *updated* list-like element after application of the
-`f` function. Using `feverywhere = "recurse"`, we can for instance
-recursively update all node names in a nested list:
+If `classes = "list"` and `how = "recurse"`, `rrapply()` applies the `f`
+function to any list element that satisfies the `condition` argument
+similar to the previous section, but recurses further into any *updated*
+list-like element after application of the `f` function. Using `how =
+"recurse"`, we can for instance recursively update all node names in a
+nested list:
 
 ``` r
 ## Replace country names by M-49 attributes
 renewable_M49 <- rrapply(
   list(renewable_energy_by_country), 
-  condition = is.list,
+  classes = "list",
   f = function(x) {
     names(x) <- vapply(x, attr, character(1L), which = "M49-code")
     return(x)
   },
-  feverywhere = "recurse"
+  how = "recurse"
 )
 
 str(renewable_M49[[1]], max.level = 3, list.len = 3, give.attr = FALSE)
@@ -417,10 +431,10 @@ str(renewable_M49[[1]], max.level = 3, list.len = 3, give.attr = FALSE)
 
 Since base `rapply()` recurses into all list-like objects, and
 data.frames are list-like objects, `rapply()` always descends into the
-individual columns of a data.frame. For convenience, `rrapply()`
-includes an additional `dfaslist` argument, which if `FALSE` does not
-treat a data.frame as a list and applies the `f` function to the
-data.frame as a whole instead of its individual columns.
+individual columns of a data.frame. To avoid this behavior using
+`rrapply()`, set `classes = "data.frame"`, in which case the `f` and
+`condition` functions are applied to any data.frame object instead of
+its individual columns.
 
 However, it can also be useful to exploit the property that a data.frame
 is a list-like object and use base `rapply()` to apply a function `f` to
@@ -487,11 +501,11 @@ iris_standard_summarize
 
 ### Using `rrapply()` on expressions
 
-In contrast to base `rapply()`, `rrapply()` also supports recursion of
-call objects and expression vectors, which are treated as nested lists
-based on their internal abstract syntax trees. As such, all
-functionality that applies to nested lists extends directly to call
-objects and expression vectors.
+In contrast to base `rapply()`, `rrapply()` supports recursion of call
+objects and expression vectors, which are treated as nested lists based
+on their internal abstract syntax trees. As such, all functionality that
+applies to nested lists extends directly to call objects and expression
+vectors.
 
 To update the abstract syntax tree of a call object, use `how =
 "replace"`:
