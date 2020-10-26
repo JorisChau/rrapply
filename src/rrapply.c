@@ -88,7 +88,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 	R_args.pxparents = INTEGER_ELT(argsPred, 2) > 0;
 	R_args.pxsiblings = INTEGER_ELT(argsPred, 3) > 0;
 	R_args.dfaslist = LOGICAL_ELT(R_dfaslist, 0);
-	R_args.feverywhere = INTEGER_ELT(R_feverywhere, 0) - 1;
+	R_args.feverywhere = INTEGER_ELT(R_feverywhere, 0);
 
 	/* traverse list once for max nodes and max depth
 	   for more accurate initialization, computational 
@@ -165,7 +165,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		if (R_args.fxparents)
 		{
 			fCDR = CDR(fCDR);
-			SET_TAG(CDR(fCDR), xparents);
+			SET_TAG(fCDR, xparents);
 		}
 		if (R_args.fxsiblings)
 		{
@@ -219,7 +219,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		if (R_args.pxparents)
 		{
 			pCDR = CDR(pCDR);
-			SET_TAG(CDR(pCDR), xparents);
+			SET_TAG(pCDR, xparents);
 		}
 		if (R_args.pxsiblings)
 		{
@@ -273,8 +273,8 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 			if (R_args.feverywhere == 2 && (initGlobal.node + 1) >= initGlobal.maxnodes)
 			{
 				xinfo = (R_len_t(*)[3])S_realloc((char *)xinfo, 2 * initGlobal.maxnodes, initGlobal.maxnodes, sizeof(*xinfo));
-				if (R_args.how_C == 5)
-					xdepth = (R_len_t *)S_realloc((char *)xdepth, 2 * initGlobal.maxnodes, initGlobal.maxnodes, sizeof(R_len_t));
+				// if (R_args.how_C == 5)
+				// 	xdepth = (R_len_t *)S_realloc((char *)xdepth, 2 * initGlobal.maxnodes, initGlobal.maxnodes, sizeof(R_len_t));
 				initGlobal.maxnodes *= 2;
 			}
 
@@ -485,7 +485,7 @@ static int C_matchClass(SEXP obj, SEXP classes)
 		for (R_len_t i = 0; i < n; i++)
 			for (R_len_t j = 0; j < Rf_length(classes); j++)
 				if (strcmp(CHAR(STRING_ELT(klass, i)), CHAR(STRING_ELT(classes, j))) == 0)
-					matched = 1;
+					matched = TRUE;
 	}
 	else
 	{
@@ -512,7 +512,6 @@ static int C_matchClass(SEXP obj, SEXP classes)
 		{
 			SEXPTYPE type = (SEXPTYPE)TYPEOF(obj);
 			const char *typename;
-			/* excluded LANGSXP type */
 			switch (type)
 			{
 			case CLOSXP:
@@ -525,6 +524,15 @@ static int C_matchClass(SEXP obj, SEXP classes)
 				break;
 			case SYMSXP:
 				typename = "name";
+				break;
+			case EXPRSXP:
+				typename = "expression";
+				break;
+			case LISTSXP:
+				typename = "pairlist";
+				break;
+			case LANGSXP:
+				typename = "language";
 				break;
 			default:
 				typename = CHAR(Rf_type2str(type));
@@ -747,7 +755,7 @@ static SEXP C_eval_list(
 		else
 			matched = C_matchClass(Xi, classes);
 
-		if (args.pArgs > 0 && !skip)
+		if (matched && !skip && args.pArgs > 0)
 		{
 			/* set default to FALSE */
 			doEval = FALSE;
@@ -767,7 +775,7 @@ static SEXP C_eval_list(
 		}
 
 		/* evaluate f and decide what to return or recurse further */
-		if (doEval && matched && !skip)
+		if (matched && !skip && doEval)
 		{
 			/* update current node info only for pruning and melting */
 			if (args.how_C > 2)
@@ -901,8 +909,8 @@ static SEXP C_eval_list(
 					if ((countglobal->node + 1) >= countglobal->maxnodes)
 					{
 						*xinfo = (R_len_t(*)[3])S_realloc((char *)*xinfo, 2 * countglobal->maxnodes, countglobal->maxnodes, sizeof(**xinfo));
-						if (args.how_C == 5)
-							*xdepth = (R_len_t *)S_realloc((char *)*xdepth, 2 * countglobal->maxnodes, countglobal->maxnodes, sizeof(R_len_t));
+						// if (args.how_C == 5)
+						// 	*xdepth = (R_len_t *)S_realloc((char *)*xdepth, 2 * countglobal->maxnodes, countglobal->maxnodes, sizeof(R_len_t));
 						countglobal->maxnodes *= 2;
 					}
 				}

@@ -1,3 +1,9 @@
+# rrapply 1.2.1
+
+* Arguments 'feverywhere' and 'dfaslist' are deprecated in favor of 'classes' (instead use 'classes = "list" or 'classes = "data.frame"')
+* Added the option 'how = "recurse"' to replace the deprecated 'feverywhere = "recurse"'
+* Cleaned up C-code and fixed several minor issues
+
 # rrapply 1.2.0
 
 * Added support for call objects and expression vectors
