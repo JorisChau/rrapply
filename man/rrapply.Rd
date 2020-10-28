@@ -25,7 +25,7 @@ rrapply(
 \item{f}{a \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname}, \code{.xpos}, \code{.xparents} 
 and/or \code{.xsiblings} (see \sQuote{Details}), passing further arguments via \code{\dots}.}
 
-\item{classes}{character vector of \code{\link{class}} names, or \code{"ANY"} to match the class of any terminal node. Add \code{"list"} or \code{"data.frame"}
+\item{classes}{character vector of \code{\link{class}} names, or \code{"ANY"} to match the class of any terminal node. Include \code{"list"} or \code{"data.frame"}
 to match the class of non-terminal nodes as well.}
 
 \item{deflt}{the default result (only used if \code{how = "list"} or \code{how = "unlist"}).}
@@ -115,7 +115,7 @@ syntax tree of \code{object}. If the \code{condition} or \code{classes} argument
 and so on. Note that this behavior can only be triggered using the \code{classes} argument and not the \code{condition} argument.
 }
 
-\section{List node updating}{
+\section{Recursive list node updating}{
 
 If \code{classes = "list"} and \code{how = "recurse"}, \code{rrapply} applies the \code{f} function to any list element of \code{object} that satisfies 
 \code{condition} similar to the previous section using \code{how = "replace"}, but recurses further into the \emph{updated} list-like element 
@@ -127,7 +127,7 @@ recursively update for instance the names of all nodes in a nested list. Additio
 
 If \code{classes = "ANY"} (default), \code{rrapply} recurses into all \dQuote{list-like} objects equivalent to \code{\link{rapply}}. 
 Since data.frames are \dQuote{list-like} objects, the \code{f} function will descend into the individual columns of a data.frame. 
-To avoid this behavior, set \code{classes = "data.frame"}, in which case the \code{f} and \code{condition} are applied directly to 
+To avoid this behavior, set \code{classes = "data.frame"}, in which case the \code{f} and \code{condition} functions are applied directly to 
 the data.frame and not its columns. Note that this behavior can only be triggered using the \code{classes} argument and not the \code{condition} argument.
 }
 

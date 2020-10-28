@@ -101,7 +101,7 @@ renewable_oceania <- renewable_energy_by_country[["World"]]["Oceania"]
 str(renewable_oceania, list.len = 3, give.attr = FALSE)
 ```
 
-## List pruning
+## List pruning and unnesting
 
 With base `rapply()`, there is no convenient way to prune or filter elements from the input list. The `rrapply()` function adds an option `how = "prune"` to prune all list elements not subject to application of the function `f` from a nested list. The original list structure is retained, similar to the non-pruned versions `how = "replace"` and `how = "list"`. 
 Using `how = "prune"`, we can for instance drop all `NA` elements from the list while preserving the original list structure:
