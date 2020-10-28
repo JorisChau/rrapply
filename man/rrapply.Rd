@@ -60,7 +60,7 @@ and a final list-column containing the values of the nested list elements.
 \section{How to structure result}{
 
 In addition to \code{\link{rapply}}'s modes to set \code{how} equal to \code{"replace"}, \code{"list"} or \code{"unlist"}, 
-five choices \code{"prune"}, \code{"flatten"}, \code{"melt"}, \code{"unmelt"} and \code{how = "recurse"} are available. \code{how = "prune"} filters 
+five choices \code{"prune"}, \code{"flatten"}, \code{"melt"}, \code{"unmelt"} and \code{"recurse"} are available. \code{how = "prune"} filters 
 all list elements not subject to application of \code{f} from the list \code{object}. The original list structure is retained, 
 similar to the non-pruned options \code{how = "replace"} or \code{how = "list"}. \code{how = "flatten"} is an efficient way to 
 return a flattened unnested version of the pruned list. \code{how = "melt"} returns a melted data.frame of the pruned list, 
@@ -133,7 +133,7 @@ the data.frame and not its columns. Note that this behavior can only be triggere
 
 \section{List attributes}{
 
-In \code{\link{rapply}} intermediate list attributes (not located at the leafs) are kept when \code{how = "replace"}, but are dropped when 
+In \code{\link{rapply}} intermediate list attributes (not located at terminal nodes) are kept when \code{how = "replace"}, but are dropped when 
 \code{how = "list"}. To avoid unexpected behavior, \code{rrapply} always preserves intermediate list attributes when using \code{how = "replace"}, 
 \code{how = "list"} or \code{how = "prune"}. If \code{how = "flatten"} or \code{how = "unlist"} intermediate list attributes cannot be preserved as 
 the result is no longer a nested list.
