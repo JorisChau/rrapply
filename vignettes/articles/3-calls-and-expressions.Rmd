@@ -10,7 +10,7 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-
+  
 ```{r, echo = FALSE}
 knitr::opts_chunk$set(
 collapse = TRUE,
@@ -105,6 +105,21 @@ str(expr_flatten)
 ## prune and melt expression
 expr_melt <- rrapply(expr, classes = "name", condition = is_new_name, how = "melt")
 expr_melt
+```
+
+## Avoid recursing into expression nodes
+
+If `classes = "ANY"` (the default), `rrapply()` recurses into any list-like element, which for expression objects are: call objects, expression vectors and pairlists. To avoid recursing into list elements of a nested list, we can use `classes = "list"`. Analogously, to avoid recursing into list-like elements of the abstract syntax tree, we should use `classes = "language"`, `classes = "expression"`, `classes = "pairlist"` or any combination thereof. If the `condition` and `classes` arguments are not satisfied for a given list-like element, `rrapply()` will recurse further into the object, apply the `f` function to the nodes that satisfy `condition` and `classes` and so on. Note that this behavior can only be triggered with the `classes` argument and *not* through the use of e.g. `condition = is.call`. 
+
+To illustrate, we extract all most deeply nested call objects of the example expression above and return these as a flat list:
+```{r}
+## extract all terminal call nodes of AST
+rrapply(
+  expr, 
+  classes = "language", 
+  condition = function(x) !any(sapply(x, is.call)),
+  how = "flatten"
+)
 ```
 
 ## Additional code examples
@@ -278,7 +293,7 @@ findGlobals2(boot::boot)
 
 To conclude, let us consider plotting abstract syntax trees as dendrograms. Base R includes a `plot()` method for dendrogram objects, therefore it suffices to write a function that allows to convert expression objects to dendrogram objects. It turns out that a dendrogram object is defined as a nested list with specific attributes for each list component to turn it into a dendrogram. As seen previously, we can convert the abstract syntax tree of an expression object to a nested list with `rrapply()` by setting `how = "list"`. In addition, we need to recurse through the nested list to add the dendrogram specific attributes. To achieve this for a single node, we define a separate helper function `add_dend_attrs()` that distinguishes between branch (i.e. list) nodes and leaf nodes in the abstract syntax tree. 
 
-The `height` attribute in `add_dend_attrs()` is calculated as a function of the depth of the node under evaluation and the overall maximum depth of the abstract syntax tree. The first can be obtained via the special argument `.xpos`, the second is evaluated by recursing once through the abstract syntax tree with a call to `rrapply()`. To apply `add_dend_attrs()` to each node of the nested list, we set `feverywhere = "recurse"` in a second call to `rrapply()` as explained in `vignette("1-when-to-use-rrapply")`. 
+The `height` attribute in `add_dend_attrs()` is calculated as a function of the depth of the node under evaluation and the overall maximum depth of the abstract syntax tree. The first can be obtained via the special argument `.xpos`, the second is evaluated by recursing once through the abstract syntax tree with a call to `rrapply()`. To apply `add_dend_attrs()` to each (terminal and non-terminal) node of the nested list, we set `classes = c("list", "ANY")` and `how = "recurse"` in a second call to `rrapply()` as explained in `vignette("1-when-to-use-rrapply")`. 
 
 ```{r}
 ## helper function to add dendrogram attributes
@@ -306,7 +321,7 @@ add_dend_attrs <- function(x, .xpos, maxdepth) {
 expr_to_dend <- function(expr) {
   maxdepth <- integer(1)
   dend1 <- rrapply(expr, f = function(x, .xpos) { if(length(.xpos) > maxdepth) maxdepth <<- length(.xpos); x }, how = "list")
-  dend2 <- rrapply(list(dend1), f = add_dend_attrs, maxdepth = maxdepth, feverywhere = "recurse")[[1]]
+  dend2 <- rrapply(list(dend1), classes = c("list", "ANY"), f = add_dend_attrs, maxdepth = maxdepth, how = "recurse")[[1]]
   class(dend2) <- "dendrogram"
   return(dend2)
 }

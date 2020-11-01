@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../../index.html">rrapply</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.1</span>
       </span>
     </div>
 
@@ -92,7 +92,7 @@
       <h1 data-toc-skip>Efficient list melting and unmelting with rrapply</h1>
                         <h4 class="author">Joris Chau</h4>
             
-            <h4 class="date">Latest date: 2020-10-12</h4>
+            <h4 class="date">Latest date: 2020-11-01</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/JorisChau/rrapply/blob/master/vignettes/articles/2-efficient-melting-unmelting.Rmd"><code>vignettes/articles/2-efficient-melting-unmelting.Rmd</code></a></small>
       <div class="hidden name"><code>2-efficient-melting-unmelting.Rmd</code></div>
@@ -176,7 +176,7 @@
   <span class="no">renewable_energy_melted_reshape2</span> <span class="kw">&lt;-</span> <span class="kw pkg">reshape2</span><span class="kw ns">::</span><span class="fu"><a href="https://rdrr.io/pkg/reshape2/man/melt.html">melt</a></span>(<span class="no">renewable_energy_by_country</span>)
 )
 <span class="co">#&gt;    user  system elapsed </span>
-<span class="co">#&gt;   0.122   0.008   0.130</span></pre></body></html></div>
+<span class="co">#&gt;   0.128   0.004   0.132</span></pre></body></html></div>
 <div class="sourceCode" id="cb6"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(<span class="no">renewable_energy_melted_reshape2</span>, <span class="fl">10</span>)
 <span class="co">#&gt;    value             L4                             L5                 L3</span>
 <span class="co">#&gt; 1   0.08        Algeria                           &lt;NA&gt;    Northern Africa</span>
@@ -201,19 +201,53 @@
 <span class="co">#&gt; 9  Africa World</span>
 <span class="co">#&gt; 10 Africa World</span></pre></body></html></div>
 <p><code><a href="../../reference/rrapply.html">rrapply()</a></code> orders the columns differently by default and produces a <code>"value"</code> list-column instead of <code>reshape2:melt()</code>’s numeric <code>"value"</code> column, but other than that the data contained in the melted data.frame is identical. For a medium-sized list as used here, the computational speed of <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html">reshape2::melt()</a></code> is acceptable for practical usage. However, its computational efficiency quickly decreases when melting larger or more deeply nested lists:</p>
-<div class="sourceCode" id="cb7"><html><body><pre class="r"><span class="co">## generate a large shallow list with 3 layers and a total of 10^6 elements</span>
-<span class="no">ls_shallow</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../../reference/rrapply.html">rrapply</a></span>(
-  <span class="fu"><a href="https://rdrr.io/r/stats/setNames.html">setNames</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/lapply.html">replicate</a></span>(<span class="fl">100L</span>, <span class="fl">NA</span>, <span class="kw">simplify</span> <span class="kw">=</span> <span class="fl">FALSE</span>), <span class="fu"><a href="https://rdrr.io/r/base/character.html">as.character</a></span>(<span class="fl">1</span>:<span class="fl">100</span>)),
-  <span class="kw">condition</span> <span class="kw">=</span> <span class="kw">function</span>(<span class="no">x</span>, <span class="no">.xpos</span>) <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span>(<span class="no">.xpos</span>) <span class="kw">&lt;</span> <span class="fl">3</span>,
-  <span class="kw">f</span> <span class="kw">=</span> <span class="kw">function</span>(<span class="no">x</span>, <span class="no">.xpos</span>) <span class="fu"><a href="https://rdrr.io/r/stats/setNames.html">setNames</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/lapply.html">replicate</a></span>(<span class="fl">100L</span>, <span class="fl">1L</span>, <span class="kw">simplify</span> <span class="kw">=</span> <span class="fl">FALSE</span>),
-                                  <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste</a></span>(<span class="no">.xpos</span>, <span class="kw">collapse</span> <span class="kw">=</span> <span class="st">"."</span>), <span class="fu"><a href="https://rdrr.io/r/base/character.html">as.character</a></span>(<span class="fl">1</span>:<span class="fl">100</span>), <span class="kw">sep</span> <span class="kw">=</span> <span class="st">"."</span>)),
-  <span class="kw">feverywhere</span> <span class="kw">=</span> <span class="st">"recurse"</span>
-)
+<div class="sourceCode" id="cb7"><html><body><pre class="r"><span class="co">## helper function to populate named nested list</span>
+<span class="no">generate_ls</span> <span class="kw">&lt;-</span> <span class="kw">function</span>(<span class="no">n</span>, <span class="no">depth_max</span>) {
+
+  <span class="no">ls_new</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/setNames.html">setNames</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/lapply.html">replicate</a></span>(<span class="no">n</span>, <span class="fl">1L</span>, <span class="kw">simplify</span> <span class="kw">=</span> <span class="fl">FALSE</span>), <span class="fu"><a href="https://rdrr.io/r/base/seq.html">seq_len</a></span>(<span class="no">n</span>))
+
+  <span class="fu"><a href="../../reference/rrapply.html">rrapply</a></span>(
+    <span class="no">ls_new</span>,
+    <span class="kw">classes</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"list"</span>, <span class="st">"integer"</span>),
+    <span class="kw">condition</span> <span class="kw">=</span> <span class="kw">function</span>(<span class="no">x</span>, <span class="no">.xpos</span>) <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span>(<span class="no">.xpos</span>) <span class="kw">&lt;</span> <span class="no">depth_max</span>,
+    <span class="kw">f</span> <span class="kw">=</span> <span class="kw">function</span>(<span class="no">x</span>, <span class="no">.xpos</span>) {
+      <span class="co">## add names based on element position</span>
+      <span class="fu"><a href="https://rdrr.io/r/stats/setNames.html">setNames</a></span>(<span class="no">ls_new</span>, <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html">sprintf</a></span>(<span class="st">"%s.%d"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste</a></span>(<span class="no">.xpos</span>, <span class="kw">collapse</span> <span class="kw">=</span> <span class="st">"."</span>), <span class="fu"><a href="https://rdrr.io/r/base/seq.html">seq_len</a></span>(<span class="no">n</span>)))
+    },
+    <span class="kw">how</span> <span class="kw">=</span> <span class="st">"recurse"</span>
+  )
+}
+
+<span class="co">## generate a large shallow list with 3 layers and a total of 10^6 elements</span>
+<span class="no">ls_shallow</span> <span class="kw">&lt;-</span> <span class="fu">generate_ls</span>(<span class="kw">n</span> <span class="kw">=</span> <span class="fl">5</span>, <span class="kw">depth_max</span> <span class="kw">=</span> <span class="fl">3</span>)
+<span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span>(<span class="no">ls_shallow</span>, <span class="kw">list.len</span> <span class="kw">=</span> <span class="fl">2</span>)
+<span class="co">#&gt; List of 5</span>
+<span class="co">#&gt;  $ 1:List of 5</span>
+<span class="co">#&gt;   ..$ 1.1:List of 5</span>
+<span class="co">#&gt;   .. ..$ 1.1.1: int 1</span>
+<span class="co">#&gt;   .. ..$ 1.1.2: int 1</span>
+<span class="co">#&gt;   .. .. [list output truncated]</span>
+<span class="co">#&gt;   ..$ 1.2:List of 5</span>
+<span class="co">#&gt;   .. ..$ 1.2.1: int 1</span>
+<span class="co">#&gt;   .. ..$ 1.2.2: int 1</span>
+<span class="co">#&gt;   .. .. [list output truncated]</span>
+<span class="co">#&gt;   .. [list output truncated]</span>
+<span class="co">#&gt;  $ 2:List of 5</span>
+<span class="co">#&gt;   ..$ 2.1:List of 5</span>
+<span class="co">#&gt;   .. ..$ 2.1.1: int 1</span>
+<span class="co">#&gt;   .. ..$ 2.1.2: int 1</span>
+<span class="co">#&gt;   .. .. [list output truncated]</span>
+<span class="co">#&gt;   ..$ 2.2:List of 5</span>
+<span class="co">#&gt;   .. ..$ 2.2.1: int 1</span>
+<span class="co">#&gt;   .. ..$ 2.2.2: int 1</span>
+<span class="co">#&gt;   .. .. [list output truncated]</span>
+<span class="co">#&gt;   .. [list output truncated]</span>
+<span class="co">#&gt;   [list output truncated]</span>
 
 <span class="co">## benchmark timing with rrapply</span>
 <span class="fu"><a href="https://rdrr.io/r/base/system.time.html">system.time</a></span>(<span class="no">ls_shallow_melted</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../../reference/rrapply.html">rrapply</a></span>(<span class="no">ls_shallow</span>, <span class="kw">how</span> <span class="kw">=</span> <span class="st">"melt"</span>))
 <span class="co">#&gt;    user  system elapsed </span>
-<span class="co">#&gt;   0.458   0.024   0.482</span>
+<span class="co">#&gt;   0.000   0.000   0.001</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(<span class="no">ls_shallow_melted</span>)
 <span class="co">#&gt;   L1  L2    L3 value</span>
 <span class="co">#&gt; 1  1 1.1 1.1.1     1</span>
@@ -221,12 +255,12 @@
 <span class="co">#&gt; 3  1 1.1 1.1.3     1</span>
 <span class="co">#&gt; 4  1 1.1 1.1.4     1</span>
 <span class="co">#&gt; 5  1 1.1 1.1.5     1</span>
-<span class="co">#&gt; 6  1 1.1 1.1.6     1</span>
+<span class="co">#&gt; 6  1 1.2 1.2.1     1</span>
 
 <span class="co">## benchmark timing with reshape2::melt</span>
 <span class="fu"><a href="https://rdrr.io/r/base/system.time.html">system.time</a></span>(<span class="no">ls_shallow_melted_reshape2</span> <span class="kw">&lt;-</span> <span class="kw pkg">reshape2</span><span class="kw ns">::</span><span class="fu"><a href="https://rdrr.io/pkg/reshape2/man/melt.html">melt</a></span>(<span class="no">ls_shallow</span>))
 <span class="co">#&gt;    user  system elapsed </span>
-<span class="co">#&gt; 185.027   0.020 185.051</span>
+<span class="co">#&gt;   0.034   0.000   0.034</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(<span class="no">ls_shallow_melted_reshape2</span>)
 <span class="co">#&gt;   value    L3  L2 L1</span>
 <span class="co">#&gt; 1     1 1.1.1 1.1  1</span>
@@ -234,25 +268,35 @@
 <span class="co">#&gt; 3     1 1.1.3 1.1  1</span>
 <span class="co">#&gt; 4     1 1.1.4 1.1  1</span>
 <span class="co">#&gt; 5     1 1.1.5 1.1  1</span>
-<span class="co">#&gt; 6     1 1.1.6 1.1  1</span></pre></body></html></div>
+<span class="co">#&gt; 6     1 1.2.1 1.2  1</span></pre></body></html></div>
 <div class="sourceCode" id="cb8"><html><body><pre class="r"><span class="co">## generate a deeply nested list with 18 layers and a total of 2^18 elements</span>
-<span class="no">ls_deep</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../../reference/rrapply.html">rrapply</a></span>(
-  <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="st">"1"</span> <span class="kw">=</span> <span class="fl">NA</span>, <span class="st">"2"</span> <span class="kw">=</span> <span class="fl">NA</span>),
-  <span class="kw">condition</span> <span class="kw">=</span> <span class="kw">function</span>(<span class="no">x</span>, <span class="no">.xpos</span>) <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span>(<span class="no">.xpos</span>) <span class="kw">&lt;</span> <span class="fl">18</span>,
-  <span class="kw">f</span> <span class="kw">=</span> <span class="kw">function</span>(<span class="no">x</span>, <span class="no">.xpos</span>) <span class="fu"><a href="https://rdrr.io/r/stats/setNames.html">setNames</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="fl">1L</span>, <span class="fl">2L</span>),
-                                  <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste</a></span>(<span class="no">.xpos</span>, <span class="kw">collapse</span> <span class="kw">=</span> <span class="st">"."</span>), <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"1"</span>, <span class="st">"2"</span>), <span class="kw">sep</span> <span class="kw">=</span> <span class="st">"."</span>)),
-  <span class="kw">feverywhere</span> <span class="kw">=</span> <span class="st">"recurse"</span>
-)
+<span class="no">ls_deep</span> <span class="kw">&lt;-</span> <span class="fu">generate_ls</span>(<span class="kw">n</span> <span class="kw">=</span> <span class="fl">2</span>, <span class="kw">depth_max</span> <span class="kw">=</span> <span class="fl">5</span>)
+<span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span>(<span class="no">ls_deep</span>, <span class="kw">max.level</span> <span class="kw">=</span> <span class="fl">3</span>)
+<span class="co">#&gt; List of 2</span>
+<span class="co">#&gt;  $ 1:List of 2</span>
+<span class="co">#&gt;   ..$ 1.1:List of 2</span>
+<span class="co">#&gt;   .. ..$ 1.1.1:List of 2</span>
+<span class="co">#&gt;   .. ..$ 1.1.2:List of 2</span>
+<span class="co">#&gt;   ..$ 1.2:List of 2</span>
+<span class="co">#&gt;   .. ..$ 1.2.1:List of 2</span>
+<span class="co">#&gt;   .. ..$ 1.2.2:List of 2</span>
+<span class="co">#&gt;  $ 2:List of 2</span>
+<span class="co">#&gt;   ..$ 2.1:List of 2</span>
+<span class="co">#&gt;   .. ..$ 2.1.1:List of 2</span>
+<span class="co">#&gt;   .. ..$ 2.1.2:List of 2</span>
+<span class="co">#&gt;   ..$ 2.2:List of 2</span>
+<span class="co">#&gt;   .. ..$ 2.2.1:List of 2</span>
+<span class="co">#&gt;   .. ..$ 2.2.2:List of 2</span>
 
 <span class="co">## benchmark timing with rrapply</span>
 <span class="fu"><a href="https://rdrr.io/r/base/system.time.html">system.time</a></span>(<span class="no">ls_deep_melted</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../../reference/rrapply.html">rrapply</a></span>(<span class="no">ls_deep</span>, <span class="kw">how</span> <span class="kw">=</span> <span class="st">"melt"</span>))
 <span class="co">#&gt;    user  system elapsed </span>
-<span class="co">#&gt;   0.336   0.028   0.364</span>
+<span class="co">#&gt;   0.000   0.000   0.001</span>
 
 <span class="co">## benchmark timing with reshape2::melt</span>
 <span class="fu"><a href="https://rdrr.io/r/base/system.time.html">system.time</a></span>(<span class="no">ls_deep_melted_reshape2</span> <span class="kw">&lt;-</span> <span class="kw pkg">reshape2</span><span class="kw ns">::</span><span class="fu"><a href="https://rdrr.io/pkg/reshape2/man/melt.html">melt</a></span>(<span class="no">ls_deep</span>))
 <span class="co">#&gt;    user  system elapsed </span>
-<span class="co">#&gt; 154.470   0.040 154.511</span></pre></body></html></div>
+<span class="co">#&gt;   0.018   0.000   0.019</span></pre></body></html></div>
 <p>Although unlikely to encounter such large or deeply nested lists in practice, these artificial examples serve to illustrate that <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html">reshape2::melt()</a></code> is not very well-suited to convert large nested lists to melted data.frames.</p>
 </div>
 <div id="efficient-unmelting-of-melted-data-frames" class="section level1">
@@ -300,29 +344,29 @@
 <span class="co">## benchmark timing with rrapply how = "unmelt"</span>
 <span class="fu"><a href="https://rdrr.io/r/base/system.time.html">system.time</a></span>(<span class="no">ls_deep_unmelted</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../../reference/rrapply.html">rrapply</a></span>(<span class="no">ls_deep_melted</span>, <span class="kw">how</span> <span class="kw">=</span> <span class="st">"unmelt"</span>))
 <span class="co">#&gt;    user  system elapsed </span>
-<span class="co">#&gt;   0.156   0.000   0.156</span>
-<span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span>(<span class="no">ls_deep_unmelted</span>, <span class="no">ls_deep</span>)
+<span class="co">#&gt;   0.000   0.000   0.001</span>
+<span class="fu"><a href="https://rdrr.io/r/base/identical.html">identical</a></span>(<span class="no">ls_deep_unmelted</span>, <span class="no">ls_deep</span>)
 <span class="co">#&gt; [1] TRUE</span>
 
 <span class="co">## benchmark timing with relist</span>
 <span class="no">ls_deep_unlist</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html">unlist</a></span>(<span class="fu"><a href="https://rdrr.io/r/utils/relist.html">as.relistable</a></span>(<span class="no">ls_deep</span>))
 <span class="fu"><a href="https://rdrr.io/r/base/system.time.html">system.time</a></span>(<span class="no">ls_deep_relist</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/relist.html">relist</a></span>(<span class="no">ls_deep_unlist</span>))
 <span class="co">#&gt;    user  system elapsed </span>
-<span class="co">#&gt;  21.181   0.020  21.200</span>
+<span class="co">#&gt;   0.001   0.000   0.001</span>
 
 <span class="co">## large shallow list with 3 layers and a total of 10^6 elements</span>
 <span class="co">## benchmark timing with rrapply how = "unmelt"</span>
 <span class="fu"><a href="https://rdrr.io/r/base/system.time.html">system.time</a></span>(<span class="no">ls_shallow_unmelted</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../../reference/rrapply.html">rrapply</a></span>(<span class="no">ls_shallow_melted</span>, <span class="kw">how</span> <span class="kw">=</span> <span class="st">"unmelt"</span>))
 <span class="co">#&gt;    user  system elapsed </span>
-<span class="co">#&gt;   0.094   0.000   0.093</span>
-<span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span>(<span class="no">ls_shallow_unmelted</span>, <span class="no">ls_shallow</span>)
+<span class="co">#&gt;   0.001   0.000   0.000</span>
+<span class="fu"><a href="https://rdrr.io/r/base/identical.html">identical</a></span>(<span class="no">ls_shallow_unmelted</span>, <span class="no">ls_shallow</span>)
 <span class="co">#&gt; [1] TRUE</span>
 
 <span class="co">## benchmark timing with relist</span>
 <span class="no">ls_shallow_unlist</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html">unlist</a></span>(<span class="fu"><a href="https://rdrr.io/r/utils/relist.html">as.relistable</a></span>(<span class="no">ls_shallow</span>))
 <span class="fu"><a href="https://rdrr.io/r/base/system.time.html">system.time</a></span>(<span class="no">ls_shallow_relist</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/relist.html">relist</a></span>(<span class="no">ls_shallow_unlist</span>))
 <span class="co">#&gt;    user  system elapsed </span>
-<span class="co">#&gt;   7.567   0.060   7.628</span></pre></body></html></div>
+<span class="co">#&gt;   0.001   0.000   0.001</span></pre></body></html></div>
 </div>
   </div>
 

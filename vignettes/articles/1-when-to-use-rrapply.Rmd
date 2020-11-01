@@ -79,7 +79,7 @@ str(prune_replace_Euler(students), give.attr = FALSE)
 
 This works, but is hardly the kind of code we would like to write for such a seemingly simple data exploration question. Moreover, this code is not very easy to follow or reason about, which makes it time-consuming to update or modify for future tasks.
 
-Another approach would be to unnest the list in a more manageable (e.g. rectangular) format or use specialized packages such as [igraph](https://igraph.org/r/) or [data.tree](https://CRAN.R-project.org/package=data.tree) to make pruning or modifying node entries more straightforward. Note that attention must be payed to correctly include the node attributes in the transformed object as the node names themselves are not unique in the given example. This is a sensible approach for more complex data analysis or statistical modeling tasks, but ideally we would like to keep the list in its original format for simple data exploration to reduce the number of processing steps and minimize the possibility of introducing mistakes in the code.
+Another approach would be to unnest the list in a more manageable (e.g. rectangular) format or use specialized packages such as [igraph](https://igraph.org/r/) or [data.tree](https://CRAN.R-project.org/package=data.tree) to make pruning or modifying node entries more straightforward. Note that attention must be paid to correctly include the node attributes in the transformed object as the node names themselves are not unique in the given example. This is a sensible approach for more complex data analysis or statistical modeling tasks, but ideally we would like to keep the list in its original format for simple data exploration to reduce the number of processing steps and minimize the possibility of introducing mistakes in the code.
 
 The recursive function above makes use of `rapply()`, a member of the base-R **apply**-family of functions, that allows to apply a function recursively to the elements of a nested list and decide how the returned result is structured. If you are not familiar with the `rapply()` function it might be useful to first read the function documentation `help("rapply")` or check out the first section of the `rrapply`-package vignette (`browseVignettes(package = "rrapply")`).
 
@@ -149,9 +149,9 @@ If no names are present in a sublist of the input list, `how = "melt"` replaces 
 ## (skip this for now, these arguments are explained in the following sections)
 oceania_unnamed <- rrapply(
   renewable_oceania,
-  condition = function(x, .xpos) length(.xpos) < 2,
-  f = unname,
-  feverywhere = "break"
+  classes = "list",
+  condition = function(x, .xname) .xname == "Oceania",
+  f = unname
 )
 
 ## Drop all logical NA's and return melted data.frame
@@ -223,7 +223,7 @@ To be consistent with base `rapply()`, the `deflt` argument can still only be us
 
 ### Using the `...` argument
 
-The first argument to `f` always evaluates to the content of the leaf element to which `f` is applied. Any further arguments (besides the special arguments `.xname` and `.xpos` discussed below) that are independent of the node content can be supplied via the `...` argument. Since `rrapply()` accepts a function in two of its arguments `f` and `condition`, any further arguments defined via the `...` also need to be defined as function arguments in **both** the `f` and `condition` function (if existing), even if they are not used in the function itself.
+The first argument to `f` always evaluates to the content of the leaf element to which `f` is applied. Any further arguments (besides the special arguments `.xname`, `.xpos`, `.xparents` and `.xsiblings` discussed below) that are independent of the node content can be supplied via the `...` argument. Since `rrapply()` accepts a function in two of its arguments `f` and `condition`, any further arguments defined via the `...` also need to be defined as function arguments in **both** the `f` and `condition` function (if existing), even if they are not used in the function itself.
 
 To clarify, consider the following example where we replace all `NA` elements by a value defined in a separate argument `newvalue`:
 
@@ -342,27 +342,27 @@ sublist_count <- rrapply(
 max(sublist_count)
 ```
 
-## List node aggregation
+## Avoid recursing into list nodes
 
-By default, both base `rapply()` and `rrapply()` recurse into any list-like element. To override this behavior, we can set `feverywhere = "break"` to apply `f` to *any* element of the nested list (e.g. a sublist) that satisfies the `condition` and `classes` arguments. If the `condition` or `classes` arguments are not satisfied for a list-like element, `rrapply()` will recurse deeper into the sublist, apply the `f` function to the nodes that satisfy `condition` and `classes`, and so on.
+By default, if `classes = "ANY"` both base `rapply()` and `rrapply()` recurse into any list-like element. Using `classes = "list"` in base `rapply()` has no effect as the function descends into any list node before evaluating the `classes` argument. In contrast, `rrapply()` does detect `classes = "list"`, in which case the `f` function is applied to list elements that satisfy the `condition` function. If the `condition` is not satisfied for a list element, `rrapply()` will recurse further into the sublist, apply the `f` function to the nodes that satisfy `condition` and so on. The use of `classes = "list"` tells `rrapply()` to not descend into list objects by default. For this reason this behavior can only be triggered with the `classes` argument and *not* through the use of e.g. `condition = is.list`. 
 
-This option is useful to calculate summary statistics across nodes or to look up the position of intermediate nodes in the nested list. To illustrate, we can return the mean and standard deviation of the renewable energy share in Europe as follows:
+The choice `classes = "list"` is useful to calculate summary statistics across nodes or to look up the position of intermediate nodes in a nested list. To illustrate, we can return the mean and standard deviation of the renewable energy share in Europe as follows:
 
 ```{r}
 ## compute mean value of Europe
 rrapply(
   renewable_energy_by_country,  
+  classes = "list",
   condition = function(x, .xname) .xname == "Europe",
   f = function(x) list(
     mean = mean(unlist(x), na.rm = TRUE), 
     sd = sd(unlist(x), na.rm = TRUE)
   ),
-  how = "flatten",
-  feverywhere = "break"
+  how = "flatten"
 )
 ```
 
-**Remark**: Note that the principal `x` argument in the `f` function can evaluate to an entire sublist for the node satisfying the `condition`. For this reason, we first `unlist` the sublist before passing it to `mean` and `sd`.
+**Remark**: Note that the principal `x` argument in the `f` function now evaluates to a list for the node satisfying the `condition`. For this reason, we first `unlist` the sublist before passing it to `mean` and `sd`.
 
 We can use the `.xpos` argument to apply the `f` function only at specific locations or depths in the nested list. For instance, we could return the mean renewable energy shares for each continent by making use of the fact that the `.xpos` vector of each continent has length (i.e. depth) 2:
 
@@ -370,31 +370,42 @@ We can use the `.xpos` argument to apply the `f` function only at specific locat
 ## compute mean value of each continent
 renewable_continent_summary <- rrapply(
   renewable_energy_by_country,  
+  classes = "list",
   condition = function(x, .xpos) length(.xpos) == 2,
-  f = function(x) mean(unlist(x), na.rm = TRUE),
-  feverywhere = "break"
+  f = function(x) mean(unlist(x), na.rm = TRUE)
 )
 
 ## Antarctica has a missing value
 str(renewable_continent_summary, give.attr = FALSE)
 ```
+If `classes = "list"`, the `f` function is only applied to the (non-terminal) list nodes. If `classes = "ANY"`, the `f` function is only applied to any (terminal) non-list node. To apply `f` to any terminal *and* non-terminal node of the nested list, we should combine `classes = c("list", "ANY")`. This is illustrated by searching both terminal and non-terminal nodes for the country or region with M49-code `"155"` (Western Europe):
 
-## List node updating
+```{r}
+## Filter country or region by M49-code
+rrapply(
+  renewable_energy_by_country,
+  classes = c("list", "ANY"), 
+  condition = function(x) attr(x, "M49-code") == "155",
+  f = function(x, .xname) .xname,
+  how = "unlist"
+)
+```
+## Recursive list node modification
 
-If `feverywhere = "break"`, `rrapply()` will not recurse further into list-like elements after application of the `f` function. This makes it for instance impossible to recursively update the name of each element in the nested list, as `rrapply()` stops recursing after updating the first list layer. For this purpose, we can set `feverywhere = "recurse"` in which case `rrapply()` recurses further into any *updated* list-like element after application of the `f` function. In this context, the `condition` function should be interpreted as a passing criterion (i.e. the opposite of a stopping criterion). As long as the `condition` and `classes` arguments are satisfied, `rrapply()` will try to recurse further into any list-like elements.
+If `classes = "list"`, `rrapply()` applies the `f` function to any list element that satisfies the `condition` function, but will not recurse further into these list elements. This make it for instance impossible to recursively update the name of each list element in a nested list, as `rrapply()` stops recursing after updating the first list layer. For this purpose, set `classes = "list"` combined with `how = "recurse"`, in which case `rrapply()` recurses further into any *updated* list element after application of the `f` function (using `how = "replace"`). In this context, the `condition` argument is interpreted as a passing criterion: as long as the `condition` and `classes` arguments are satisfied, `rrapply()` will try to recurse further into any list-like element. 
 
-Using `feverywhere = "recurse"`, we can recursively replace all names in the nested list by their M49-codes:
+Using `how = "recurse"`, we can recursively replace all names in the nested list by their M49-codes:
 
 ```{r}
 ## replace country names by M-49 codes
 renewable_M49 <- rrapply(
   list(renewable_energy_by_country), 
-  condition = is.list,
+  classes = "list",
   f = function(x) {
     names(x) <- vapply(x, attr, character(1L), which = "M49-code")
     return(x)
   },
-  feverywhere = "recurse"
+  how = "recurse"
 )
 
 str(renewable_M49[[1]], max.level = 3, list.len = 3, give.attr = FALSE)
@@ -403,9 +414,10 @@ str(renewable_M49[[1]], max.level = 3, list.len = 3, give.attr = FALSE)
 
 ## Miscellaneous
 
-### Data.frames as lists
+### Avoid recursing into data.frames
 
-By default, `rrapply()` and `rapply()` recurse into all list-like objects. Since data.frames are list-like objects, the `f` function is applied to the individual columns instead of the data.frame object as a whole. To change this behavior, `rrapply()` includes a convenience argument `dfaslist`. If `dfaslist = TRUE`, `rrapply()` behaves the same as `rapply()` by recursing into the individual columns of a data.frame. If `dfaslist = FALSE`, the `f` and `condition` functions are applied directly to the data.frame object itself and not its columns. 
+If `classes = "ANY"`, `rrapply()` recurses into any list-like object equivalent to base `rapply()`. Since data.frames are list-like objects, the `f` function is applied to the individual columns instead of the data.frame object as a whole. To avoid this behavior, set `classes = "data.frame"`, in which case the `f` and `condition` functions are applied directly to the data.frame object itself and not its columns. Note that with base `rapply()` using `classes = "data.frame"` has no effect as `rapply()` descends into the columns of any data.frame object before evaluating the `classes` argument.
+
 ```{r}
 ## create a list of data.frames
 oceania_df <- list(
@@ -424,33 +436,30 @@ tryCatch({
   rrapply(
     oceania_df,
     f = function(x) subset(x, !is.na(value)), ## filter NA-rows of data.frame
-    how = "replace",
-    dfaslist = TRUE
+    how = "replace"
   )
 }, error = function(error) error$message)
 
 ## this does work
 rrapply(
   oceania_df,
+  classes = "data.frame",
   f = function(x) subset(x, !is.na(value)),
-  how = "replace",
-  dfaslist = FALSE
+  how = "replace"
 )
 ```
 
-**Remark**: Note that the same result can also be obtained using `feverywhere = "break"` and checking that the list element under evaluation is a data.frame:
+**Remark**: Note that the same result can also be obtained using `classes = "list"` and checking that the list element under evaluation is a data.frame:
 
 ```{r, eval=FALSE}
 rrapply(
   oceania_df,
-  condition = function(x) class(x) == "data.frame",
+  classes = "list",
+  condition = is.data.frame,
   f = function(x) subset(x, !is.na(value)),
-  how = "replace",
-  feverywhere = "break"
+  how = "replace"
 )
 ```
-
-Using the `dfaslist` argument better reflects our purpose and is also slightly more efficient as the class of the list element is checked directly analogous to the `classes` argument. 
 
 #### List attributes
 
@@ -477,9 +486,7 @@ str(na_drop_oceania_attr, max.level = 2)
 
 ### Using `rrapply()` on data.frames
 
-The `dfaslist` argument can be used to avoid recursing into the individual columns of a data.frame object. However, it can also be useful to exploit exactly this property of `rapply()`. A convenient way to apply a function to columns of a data.frame of a certain class is through the use of the `classes` argument in base `rapply()`.
-
-For instance, suppose we wish to standardize all `numeric` columns in the `iris`
+The previous sections explained how to avoid recursing into list-like elements using `rrapply()`. However, it can also be useful to exploit the property that a data.frame is a list-like object and use base `rapply()` to apply a function `f` to data.frame columns of certain classes. For instance, it is straightforward to standardize all `numeric` columns in the `iris`
 dataset by their sample mean and standard deviation:
 
 ```{r}
@@ -531,9 +538,9 @@ To conclude, let us return to the list recursion exercise in the first section. 
 ## look up the position of Euler (Leonhard)
 xpos_Euler <- rrapply(
   students, 
+  classes = "list",
   condition = function(x, .xname) .xname == "Euler" && attr(x, "given") == "Leonhard",
   f = function(x, .xpos) .xpos,
-  feverywhere = "break",
   how = "flatten"
 )[[1]]
 
@@ -565,5 +572,3 @@ str(students_Euler, give.attr = FALSE)
 ```
 
 For additional information and details check out the package vignette (`browseVignettes(package = "rapply")`). The package vignette also includes additional examples that might serve as useful inspiration for list recursion tasks in practice. 
-
-

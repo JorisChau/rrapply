@@ -377,6 +377,14 @@ expr_melt <- rrapply(expr,
 )
 expr_melt
 
+## Avoid recursing into call objects
+rrapply(
+  expr, 
+  classes = "language", 
+  condition = function(x) !any(sapply(x, is.call)),
+  how = "flatten"
+)
+
 }
 \seealso{
 \code{\link{rapply}}

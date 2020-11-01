@@ -76,14 +76,26 @@ head(renewable_energy_melted_reshape2, 10)
 `rrapply()` orders the columns differently by default and produces a `"value"` list-column instead of `reshape2:melt()`'s numeric `"value"` column, but other than that the data contained in the melted data.frame is identical. For a medium-sized list as used here, the computational speed of `reshape2::melt()` is acceptable for practical usage. However, its computational efficiency quickly decreases when melting larger or more deeply nested lists:
 
 ```{r}
+## helper function to populate named nested list
+generate_ls <- function(n, depth_max) {
+  
+  ls_new <- setNames(replicate(n, 1L, simplify = FALSE), seq_len(n))
+  
+  rrapply(
+    ls_new, 
+    classes = c("list", "integer"),
+    condition = function(x, .xpos) length(.xpos) < depth_max,
+    f = function(x, .xpos) {
+      ## add names based on element position
+      setNames(ls_new, sprintf("%s.%d", paste(.xpos, collapse = "."), seq_len(n)))
+    },
+    how = "recurse"
+  )
+}
+
 ## generate a large shallow list with 3 layers and a total of 10^6 elements
-ls_shallow <- rrapply(
-  setNames(replicate(100L, NA, simplify = FALSE), as.character(1:100)),
-  condition = function(x, .xpos) length(.xpos) < 3, 
-  f = function(x, .xpos) setNames(replicate(100L, 1L, simplify = FALSE), 
-                                  paste(paste(.xpos, collapse = "."), as.character(1:100), sep = ".")),
-  feverywhere = "recurse"
-)
+ls_shallow <- generate_ls(n = 5, depth_max = 3)  
+str(ls_shallow, list.len = 2)
 
 ## benchmark timing with rrapply
 system.time(ls_shallow_melted <- rrapply(ls_shallow, how = "melt")) 
@@ -96,13 +108,8 @@ head(ls_shallow_melted_reshape2)
 
 ```{r}
 ## generate a deeply nested list with 18 layers and a total of 2^18 elements
-ls_deep <- rrapply(
-  list("1" = NA, "2" = NA), 
-  condition = function(x, .xpos) length(.xpos) < 18, 
-  f = function(x, .xpos) setNames(list(1L, 2L), 
-                                  paste(paste(.xpos, collapse = "."), c("1", "2"), sep = ".")),
-  feverywhere = "recurse"
-)
+ls_deep <- generate_ls(n = 2, depth_max = 5)
+str(ls_deep, max.level = 3)
 
 ## benchmark timing with rrapply
 system.time(ls_deep_melted <- rrapply(ls_deep, how = "melt")) 
@@ -149,7 +156,7 @@ In terms of computational effort, `rrapply()`'s `how = "unmelt"` can be equally 
 ## deeply nested list with 18 layers and a total of 2^18 elements
 ## benchmark timing with rrapply how = "unmelt"
 system.time(ls_deep_unmelted <- rrapply(ls_deep_melted, how = "unmelt")) 
-all.equal(ls_deep_unmelted, ls_deep)
+identical(ls_deep_unmelted, ls_deep)
 
 ## benchmark timing with relist
 ls_deep_unlist <- unlist(as.relistable(ls_deep))
@@ -158,7 +165,7 @@ system.time(ls_deep_relist <- relist(ls_deep_unlist))
 ## large shallow list with 3 layers and a total of 10^6 elements
 ## benchmark timing with rrapply how = "unmelt"
 system.time(ls_shallow_unmelted <- rrapply(ls_shallow_melted, how = "unmelt")) 
-all.equal(ls_shallow_unmelted, ls_shallow)
+identical(ls_shallow_unmelted, ls_shallow)
 
 ## benchmark timing with relist
 ls_shallow_unlist <- unlist(as.relistable(ls_shallow))

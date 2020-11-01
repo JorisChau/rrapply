@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../../index.html">rrapply</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.1</span>
       </span>
     </div>
 
@@ -92,7 +92,7 @@
       <h1 data-toc-skip>Recursive apply for call and expression objects</h1>
                         <h4 class="author">Joris Chau</h4>
             
-            <h4 class="date">Latest date: 2020-10-12</h4>
+            <h4 class="date">Latest date: 2020-11-01</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/JorisChau/rrapply/blob/master/vignettes/articles/3-calls-and-expressions.Rmd"><code>vignettes/articles/3-calls-and-expressions.Rmd</code></a></small>
       <div class="hidden name"><code>3-calls-and-expressions.Rmd</code></div>
@@ -224,6 +224,24 @@
 <span class="co">#&gt; 3 ..2 ..1 &lt;NA&gt;     f</span>
 <span class="co">#&gt; 4 ..2 ..2  ..1     g</span></pre></body></html></div>
 </div>
+<div id="avoid-recursing-into-expression-nodes" class="section level2">
+<h2 class="hasAnchor">
+<a href="#avoid-recursing-into-expression-nodes" class="anchor"></a>Avoid recursing into expression nodes</h2>
+<p>If <code>classes = "ANY"</code> (the default), <code><a href="../../reference/rrapply.html">rrapply()</a></code> recurses into any list-like element, which for expression objects are: call objects, expression vectors and pairlists. To avoid recursing into list elements of a nested list, we can use <code>classes = "list"</code>. Analogously, to avoid recursing into list-like elements of the abstract syntax tree, we should use <code>classes = "language"</code>, <code>classes = "expression"</code>, <code>classes = "pairlist"</code> or any combination thereof. If the <code>condition</code> and <code>classes</code> arguments are not satisfied for a given list-like element, <code><a href="../../reference/rrapply.html">rrapply()</a></code> will recurse further into the object, apply the <code>f</code> function to the nodes that satisfy <code>condition</code> and <code>classes</code> and so on. Note that this behavior can only be triggered with the <code>classes</code> argument and <em>not</em> through the use of e.g. <code>condition = is.call</code>.</p>
+<p>To illustrate, we extract all most deeply nested call objects of the example expression above and return these as a flat list:</p>
+<div class="sourceCode" id="cb6"><html><body><pre class="r"><span class="co">## extract all terminal call nodes of AST</span>
+<span class="fu"><a href="../../reference/rrapply.html">rrapply</a></span>(
+  <span class="no">expr</span>,
+  <span class="kw">classes</span> <span class="kw">=</span> <span class="st">"language"</span>,
+  <span class="kw">condition</span> <span class="kw">=</span> <span class="kw">function</span>(<span class="no">x</span>) !<span class="fu"><a href="https://rdrr.io/r/base/any.html">any</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/lapply.html">sapply</a></span>(<span class="no">x</span>, <span class="no">is.call</span>)),
+  <span class="kw">how</span> <span class="kw">=</span> <span class="st">"flatten"</span>
+)
+<span class="co">#&gt; [[1]]</span>
+<span class="co">#&gt; x &lt;- 1</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; [[2]]</span>
+<span class="co">#&gt; 2 * pi</span></pre></body></html></div>
+</div>
 <div id="additional-code-examples" class="section level2">
 <h2 class="hasAnchor">
 <a href="#additional-code-examples" class="anchor"></a>Additional code examples</h2>
@@ -233,7 +251,7 @@
 <a href="#example-1-replacing-t-and-f" class="anchor"></a>Example 1: Replacing <code>T</code> and <code>F</code>
 </h3>
 <p>In <a href="https://adv-r.hadley.nz/expressions.html#ast-funs" class="uri">https://adv-r.hadley.nz/expressions.html#ast-funs</a>, to demonstrate recursion of the abstract syntax tree of an expression, a recursive function <code>logical_abbr()</code> is defined to check for the presence of the logical abbreviations <code>T</code> and <code>F</code> in an expression object:</p>
-<div class="sourceCode" id="cb6"><html><body><pre class="r"><span class="co">## recursive function to check for T or F</span>
+<div class="sourceCode" id="cb7"><html><body><pre class="r"><span class="co">## recursive function to check for T or F</span>
 <span class="no">logical_abbr</span> <span class="kw">&lt;-</span> <span class="kw">function</span>(<span class="no">x</span>) {
   <span class="kw">if</span> (<span class="fu"><a href="https://rdrr.io/r/base/is.recursive.html">is.atomic</a></span>(<span class="no">x</span>)) {
     <span class="fl">FALSE</span>
@@ -260,7 +278,7 @@
 <span class="fu">logical_abbr</span>(<span class="no">call2</span>)
 <span class="co">#&gt; [1] FALSE</span></pre></body></html></div>
 <p>Let us revisit this example to not only find, but also replace any logical abbreviations by their non-abbreviated counterparts. Using <code><a href="../../reference/rrapply.html">rrapply()</a></code>, we should set <code>how = "replace"</code> in order to maintain the original object type after updating the abstract syntax tree:</p>
-<div class="sourceCode" id="cb7"><html><body><pre class="r"><span class="co">## expand logical abbreviation</span>
+<div class="sourceCode" id="cb8"><html><body><pre class="r"><span class="co">## expand logical abbreviation</span>
 <span class="no">logical_abbr_expand</span> <span class="kw">&lt;-</span> <span class="kw">function</span>(<span class="no">x</span>) {
   <span class="kw">if</span>(<span class="fu"><a href="https://rdrr.io/r/base/identical.html">identical</a></span>(<span class="no">x</span>, <span class="fu"><a href="https://rdrr.io/r/base/substitute.html">quote</a></span>(<span class="no">T</span>))) {
     <span class="fl">TRUE</span>
@@ -282,7 +300,7 @@
 <h3 class="hasAnchor">
 <a href="#example-2-finding-local-variables" class="anchor"></a>Example 2: Finding local variables</h3>
 <p>A second demonstrating example of abstract syntax tree recursion in <a href="https://adv-r.hadley.nz/expressions.html#ast-funs" class="uri">https://adv-r.hadley.nz/expressions.html#ast-funs</a> deals with finding all variables in an expression created by assignment. The recursive function <code>find_assign()</code> finds all variables created by assignment with <code>&lt;-</code> and returns them as a character vector:</p>
-<div class="sourceCode" id="cb8"><html><body><pre class="r"><span class="no">find_assign</span> <span class="kw">&lt;-</span> <span class="kw">function</span>(<span class="no">x</span>) {
+<div class="sourceCode" id="cb9"><html><body><pre class="r"><span class="no">find_assign</span> <span class="kw">&lt;-</span> <span class="kw">function</span>(<span class="no">x</span>) {
   <span class="kw">if</span> (<span class="fu"><a href="https://rdrr.io/r/base/is.recursive.html">is.atomic</a></span>(<span class="no">x</span>) <span class="kw">||</span> <span class="fu"><a href="https://rdrr.io/r/base/name.html">is.name</a></span>(<span class="no">x</span>)) {
     <span class="fu"><a href="https://rdrr.io/r/base/character.html">character</a></span>()
   } <span class="kw">else</span> <span class="kw">if</span> (<span class="fu"><a href="https://rdrr.io/r/base/call.html">is.call</a></span>(<span class="no">x</span>)) {
@@ -308,7 +326,7 @@
 <span class="fu">find_assign</span>(<span class="no">call4</span>)
 <span class="co">#&gt; [1] "l"</span></pre></body></html></div>
 <p>Revisiting this example using <code><a href="../../reference/rrapply.html">rrapply()</a></code>, we essentially need to filter any name (i.e. symbol) that is the second element of a call to <code>&lt;-</code>. Checking the position of the element in the call can be done with the special <code>.xpos</code> argument. To verify that the first element of the call is an actual assignment, we can make use of the special <code>.xsiblings</code> argument. We slightly generalize the <code>find_assign()</code> function to also return variables created by <code>=</code>, <code>for</code>, <code>assign</code> or <code>delayedAssign</code>.</p>
-<div class="sourceCode" id="cb9"><html><body><pre class="r"><span class="co">## helper function to check if variable is created by assignment</span>
+<div class="sourceCode" id="cb10"><html><body><pre class="r"><span class="co">## helper function to check if variable is created by assignment</span>
 <span class="no">is_assign</span> <span class="kw">&lt;-</span> <span class="kw">function</span>(<span class="no">x</span>, <span class="no">.xpos</span>, <span class="no">.xsiblings</span>) {
   <span class="co">## element is second in call</span>
   <span class="fu"><a href="https://rdrr.io/r/base/identical.html">identical</a></span>(<span class="no">.xpos</span>[<span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span>(<span class="no">.xpos</span>)], <span class="fl">2L</span>) <span class="kw">&amp;&amp;</span>
@@ -328,7 +346,7 @@
 <li><p>We recurse through the abstract syntax tree similar to the previous example by discarding all variable names that are elements of <code>exclude</code> or part of the base environment (i.e. <code><a href="https://rdrr.io/r/base/environment.html">baseenv()</a></code>). The remaining <em>global</em> variables are returned as a character vector.</p></li>
 </ol>
 <p><strong>Remark</strong>: For the sake of simplicity, we have not been completely rigorous in this example. For instance, function arguments of inline functions are not excluded from the set of global variables. Also, variable names created by <code><a href="https://rdrr.io/r/base/assign.html">assign()</a></code> or <code><a href="https://rdrr.io/r/base/delayedAssign.html">delayedAssign()</a></code> could be assigned to e.g. <code>.GlobalEnv</code>, in which case they should arguably be recognized as global variables.</p>
-<div class="sourceCode" id="cb10"><html><body><pre class="r"><span class="co">## helper function to check for non-global variables</span>
+<div class="sourceCode" id="cb11"><html><body><pre class="r"><span class="co">## helper function to check for non-global variables</span>
 <span class="no">is_exclude</span> <span class="kw">&lt;-</span><span class="kw">function</span>(<span class="no">x</span>, <span class="no">.xpos</span>, <span class="no">.xsiblings</span>) {
   (<span class="fu"><a href="https://rdrr.io/r/base/identical.html">identical</a></span>(<span class="no">.xpos</span>[<span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span>(<span class="no">.xpos</span>)], <span class="fl">2L</span>) <span class="kw">&amp;&amp;</span>
      <span class="fu"><a href="https://rdrr.io/r/base/character.html">as.character</a></span>(<span class="no">.xsiblings</span><span class="kw">[[</span><span class="fl">1</span>]]) <span class="kw">%in%</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"&lt;-"</span>, <span class="st">"="</span>, <span class="st">"for"</span>, <span class="st">"assign"</span>, <span class="st">"delayedAssign"</span>, <span class="st">"::"</span>, <span class="st">":::"</span>)) <span class="kw">||</span>
@@ -353,10 +371,10 @@
   <span class="fu"><a href="https://rdrr.io/r/base/function.html">return</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/unique.html">unique</a></span>(<span class="no">globals</span>))
 }</pre></body></html></div>
 <p>To illustrate our newly defined function <code>find_globals()</code>, let us apply it to the <code><a href="../../reference/rrapply.html">rrapply()</a></code> function itself:</p>
-<div class="sourceCode" id="cb11"><html><body><pre class="r"><span class="fu">find_globals</span>(<span class="no">rrapply</span>)
+<div class="sourceCode" id="cb12"><html><body><pre class="r"><span class="fu">find_globals</span>(<span class="no">rrapply</span>)
 <span class="co">#&gt; [1] "C_unmelt"  "C_rrapply"</span></pre></body></html></div>
 <p><code>C_unmelt()</code> and <code>C_rrapply()</code> are the internal workhorses of <code><a href="../../reference/rrapply.html">rrapply()</a></code> and are part of the <code>rrapply</code>-package. By default, the codetools <code>findGlobals()</code> function also returns variable names in the base package. Discarding all names present in the base package <code>findGlobals()</code> produces the same result as <code>find_globals()</code>:</p>
-<div class="sourceCode" id="cb12"><html><body><pre class="r"><span class="co">## update existing findGlobals function</span>
+<div class="sourceCode" id="cb13"><html><body><pre class="r"><span class="co">## update existing findGlobals function</span>
 <span class="no">findGlobals2</span> <span class="kw">&lt;-</span> <span class="kw">function</span>(<span class="no">fun</span>, <span class="no">merge</span> <span class="kw">=</span> <span class="fl">TRUE</span>) {
   <span class="no">globals</span> <span class="kw">&lt;-</span> <span class="kw pkg">codetools</span><span class="kw ns">::</span><span class="fu"><a href="https://rdrr.io/pkg/codetools/man/findGlobals.html">findGlobals</a></span>(<span class="no">fun</span>, <span class="kw">merge</span> <span class="kw">=</span> <span class="no">merge</span>)
   <span class="no">globals</span>[<span class="fu"><a href="https://rdrr.io/r/base/lapply.html">sapply</a></span>(<span class="no">globals</span>, <span class="fu"><a href="https://rdrr.io/r/base/funprog.html">Negate</a></span>(<span class="no">exists</span>), <span class="kw">envir</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html">baseenv</a></span>())]
@@ -365,7 +383,7 @@
 <span class="fu">findGlobals2</span>(<span class="no">rrapply</span>)
 <span class="co">#&gt; [1] "C_rrapply" "C_unmelt"</span></pre></body></html></div>
 <p>Several additional comparisons of <code>find_globals()</code> and <code>findGlobals2()</code> applied to some common R functions:</p>
-<div class="sourceCode" id="cb13"><html><body><pre class="r"><span class="co">## par is part of formals(plot.default)</span>
+<div class="sourceCode" id="cb14"><html><body><pre class="r"><span class="co">## par is part of formals(plot.default)</span>
 <span class="fu">find_globals</span>(<span class="no">plot.default</span>)
 <span class="co">#&gt; [1] "Axis"        "box"         "plot.window" "title"       "xy.coords"  </span>
 <span class="co">#&gt; [6] "dev.hold"    "dev.flush"   "plot.new"    "plot.xy"</span>
@@ -396,8 +414,8 @@
 <h3 class="hasAnchor">
 <a href="#example-4-plot-abstract-syntax-tree-as-dendrogram" class="anchor"></a>Example 4: Plot abstract syntax tree as dendrogram</h3>
 <p>To conclude, let us consider plotting abstract syntax trees as dendrograms. Base R includes a <code><a href="https://rdrr.io/r/base/plot.html">plot()</a></code> method for dendrogram objects, therefore it suffices to write a function that allows to convert expression objects to dendrogram objects. It turns out that a dendrogram object is defined as a nested list with specific attributes for each list component to turn it into a dendrogram. As seen previously, we can convert the abstract syntax tree of an expression object to a nested list with <code><a href="../../reference/rrapply.html">rrapply()</a></code> by setting <code>how = "list"</code>. In addition, we need to recurse through the nested list to add the dendrogram specific attributes. To achieve this for a single node, we define a separate helper function <code>add_dend_attrs()</code> that distinguishes between branch (i.e. list) nodes and leaf nodes in the abstract syntax tree.</p>
-<p>The <code>height</code> attribute in <code>add_dend_attrs()</code> is calculated as a function of the depth of the node under evaluation and the overall maximum depth of the abstract syntax tree. The first can be obtained via the special argument <code>.xpos</code>, the second is evaluated by recursing once through the abstract syntax tree with a call to <code><a href="../../reference/rrapply.html">rrapply()</a></code>. To apply <code>add_dend_attrs()</code> to each node of the nested list, we set <code>feverywhere = "recurse"</code> in a second call to <code><a href="../../reference/rrapply.html">rrapply()</a></code> as explained in <code><a href="../../articles/articles/1-when-to-use-rrapply.html">vignette("1-when-to-use-rrapply")</a></code>.</p>
-<div class="sourceCode" id="cb14"><html><body><pre class="r"><span class="co">## helper function to add dendrogram attributes</span>
+<p>The <code>height</code> attribute in <code>add_dend_attrs()</code> is calculated as a function of the depth of the node under evaluation and the overall maximum depth of the abstract syntax tree. The first can be obtained via the special argument <code>.xpos</code>, the second is evaluated by recursing once through the abstract syntax tree with a call to <code><a href="../../reference/rrapply.html">rrapply()</a></code>. To apply <code>add_dend_attrs()</code> to each (terminal and non-terminal) node of the nested list, we set <code>classes = c("list", "ANY")</code> and <code>how = "recurse"</code> in a second call to <code><a href="../../reference/rrapply.html">rrapply()</a></code> as explained in <code><a href="../../articles/articles/1-when-to-use-rrapply.html">vignette("1-when-to-use-rrapply")</a></code>.</p>
+<div class="sourceCode" id="cb15"><html><body><pre class="r"><span class="co">## helper function to add dendrogram attributes</span>
 <span class="no">add_dend_attrs</span> <span class="kw">&lt;-</span> <span class="kw">function</span>(<span class="no">x</span>, <span class="no">.xpos</span>, <span class="no">maxdepth</span>) {
   <span class="kw">if</span>(<span class="fu"><a href="https://rdrr.io/r/base/list.html">is.list</a></span>(<span class="no">x</span>)) {
     <span class="no">x</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rev.html">rev</a></span>(<span class="no">x</span>)
@@ -422,16 +440,16 @@
 <span class="no">expr_to_dend</span> <span class="kw">&lt;-</span> <span class="kw">function</span>(<span class="no">expr</span>) {
   <span class="no">maxdepth</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html">integer</a></span>(<span class="fl">1</span>)
   <span class="no">dend1</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../../reference/rrapply.html">rrapply</a></span>(<span class="no">expr</span>, <span class="kw">f</span> <span class="kw">=</span> <span class="kw">function</span>(<span class="no">x</span>, <span class="no">.xpos</span>) { <span class="kw">if</span>(<span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span>(<span class="no">.xpos</span>) <span class="kw">&gt;</span> <span class="no">maxdepth</span>) <span class="no">maxdepth</span> <span class="kw">&lt;&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span>(<span class="no">.xpos</span>); <span class="no">x</span> }, <span class="kw">how</span> <span class="kw">=</span> <span class="st">"list"</span>)
-  <span class="no">dend2</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../../reference/rrapply.html">rrapply</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="no">dend1</span>), <span class="kw">f</span> <span class="kw">=</span> <span class="no">add_dend_attrs</span>, <span class="kw">maxdepth</span> <span class="kw">=</span> <span class="no">maxdepth</span>, <span class="kw">feverywhere</span> <span class="kw">=</span> <span class="st">"recurse"</span>)<span class="kw">[[</span><span class="fl">1</span>]]
+  <span class="no">dend2</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../../reference/rrapply.html">rrapply</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="no">dend1</span>), <span class="kw">classes</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"list"</span>, <span class="st">"ANY"</span>), <span class="kw">f</span> <span class="kw">=</span> <span class="no">add_dend_attrs</span>, <span class="kw">maxdepth</span> <span class="kw">=</span> <span class="no">maxdepth</span>, <span class="kw">how</span> <span class="kw">=</span> <span class="st">"recurse"</span>)<span class="kw">[[</span><span class="fl">1</span>]]
   <span class="fu"><a href="https://rdrr.io/r/base/class.html">class</a></span>(<span class="no">dend2</span>) <span class="kw">&lt;-</span> <span class="st">"dendrogram"</span>
   <span class="fu"><a href="https://rdrr.io/r/base/function.html">return</a></span>(<span class="no">dend2</span>)
 }</pre></body></html></div>
 <p>To test the defined function, we provide as call object the body of the <code><a href="../../reference/rrapply.html">rrapply()</a></code> function itself and pass it to <code>expr_to_dend()</code> to convert it to a dendrogram:</p>
-<div class="sourceCode" id="cb15"><html><body><pre class="r"><span class="co">## plot abstract syntax tree as dendrogram </span>
+<div class="sourceCode" id="cb16"><html><body><pre class="r"><span class="co">## plot abstract syntax tree as dendrogram </span>
 (<span class="no">rrapply_dend</span> <span class="kw">&lt;-</span> <span class="fu">expr_to_dend</span>(<span class="fu"><a href="https://rdrr.io/r/base/body.html">body</a></span>(<span class="no">rrapply</span>)))
-<span class="co">#&gt; 'dendrogram' with 14 branches and 318 members total, at height 1</span>
+<span class="co">#&gt; 'dendrogram' with 15 branches and 378 members total, at height 1</span>
 <span class="fu"><a href="https://rdrr.io/r/base/plot.html">plot</a></span>(<span class="no">rrapply_dend</span>, <span class="kw">horiz</span> <span class="kw">=</span> <span class="fl">TRUE</span>, <span class="kw">type</span> <span class="kw">=</span> <span class="st">"triangle"</span>, <span class="kw">yaxt</span> <span class="kw">=</span> <span class="st">"n"</span>)</pre></body></html></div>
-<p><img src="3-calls-and-expressions_files/figure-html/unnamed-chunk-16-1.png" width="100%"></p>
+<p><img src="3-calls-and-expressions_files/figure-html/unnamed-chunk-17-1.png" width="100%"></p>
 </div>
 </div>
 </div>

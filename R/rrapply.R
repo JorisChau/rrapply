@@ -319,6 +319,14 @@
 #' )
 #' expr_melt
 #' 
+#' ## Avoid recursing into call objects
+#' rrapply(
+#'   expr, 
+#'   classes = "language", 
+#'   condition = function(x) !any(sapply(x, is.call)),
+#'   how = "flatten"
+#' )
+#' 
 #' @param object a \code{\link{list}}, \code{\link{expression}} vector, or \code{\link{call}} object, i.e., \dQuote{list-like}.
 #' @param f a \code{\link{function}} of one \dQuote{principal} argument and optional special arguments \code{.xname}, \code{.xpos}, \code{.xparents} 
 #' and/or \code{.xsiblings} (see \sQuote{Details}), passing further arguments via \code{\dots}.
