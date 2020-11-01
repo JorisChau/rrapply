@@ -94,7 +94,7 @@ generate_ls <- function(n, depth_max) {
 }
 
 ## generate a large shallow list with 3 layers and a total of 10^6 elements
-ls_shallow <- generate_ls(n = 5, depth_max = 3)  
+ls_shallow <- generate_ls(n = 100, depth_max = 3)  
 str(ls_shallow, list.len = 2)
 
 ## benchmark timing with rrapply
@@ -108,7 +108,7 @@ head(ls_shallow_melted_reshape2)
 
 ```{r}
 ## generate a deeply nested list with 18 layers and a total of 2^18 elements
-ls_deep <- generate_ls(n = 2, depth_max = 5)
+ls_deep <- generate_ls(n = 2, depth_max = 18)
 str(ls_deep, max.level = 3)
 
 ## benchmark timing with rrapply
