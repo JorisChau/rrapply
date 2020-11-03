@@ -188,10 +188,13 @@ xout3.11[[1]][[3]] <- as.matrix(xout3.11[[1]][[3]])
 xout3.12 <- xout3.10
 class(xout3.12[[1]][[3]]) <- "user-class"
 xout3.13 <- list(a = quote(x), b = list(b1 = 2L, b2 = 3L), c = 4L)
-xout3.14 <- list(a = "a", b = list(b1 = 2L, b2 = 3L), c = 4L)
+xout3.14 <- list(a = list(a1 = "a1"), b = list(b1 = 2L, b2 = 3L), c = 4L)
 xout3.15 <- xout3.14
-xout3.16 <- quote(f1(a = 1L, b = f2(b1 = 2L, b2 = 3L), c = 4L))
-xout3.17 <- expression(a <- 1L, expression(b))
+xout3.16 <- list(b1 = "b1", b2 = "b2", c = "c")
+xout3.17 <- list(quote(b))
+xout3.18 <- structure(list(L1 = "..2", L2 = "..2", value = list(quote(b))), row.names = 1L, class = "data.frame")
+xout3.19 <- quote(f1(a = 1L, b = f2(b1 = 2L, b2 = 3L), c = 4L))
+xout3.20 <- expression(a <- 1L, expression(b))
 
 xin[[1]] <- as.matrix(xin[[1]])
 dotest("3.1", rrapply(xin, f = `-`, classes = "matrix"), xout3.1)
@@ -216,13 +219,19 @@ class(xin2[[1]][[3]]) <- "user-class"
 dotest("3.12", rrapply(xin2, f = `-`, classes = "user-class"), xout3.12)
 xin[[1]] <- function(x) x
 dotest("3.13", rrapply(xin, f = body, classes = "function"), xout3.13)
-xin[[1]] <- data.frame(x = 1L, y = 2L)
+xin[[1]] <- list(a1 = data.frame(x = 1L, y = 2L))
 xin1[[2]] <- data.frame(x = 1L, y = 2L)
 xin2[[1]][[3]] <- data.frame(x = 1L, y = 2L)
 dotest("3.14", rrapply(xin, f = function(x, .xname) .xname, classes = "data.frame"), xout3.14)
 dotest("3.15", rrapply(xin, f = function(x, .xname) .xname, condition = function(x, .xpos) .xpos[1] == 1L, classes = "data.frame"), xout3.15)
-dotest("3.16", rrapply(xin1, f = function(x) 1L, classes = "data.frame"), xout3.16)
-dotest("3.17", rrapply(xin2, f = function(x) 1L, classes = "data.frame"), xout3.17)
+dotest("3.16", rrapply(xin, condition = Negate(is.data.frame), f = function(x, .xname) .xname, classes = c("data.frame", "ANY"), how = "flatten"), xout3.16)
+dotest("3.17", rrapply(xin2, condition = function(x, .xpos) all(.xpos > 1) , classes = c("data.frame", "ANY"), how = "flatten"), xout3.17)
+dotest("3.18", rrapply(xin2, condition = function(x, .xpos) all(.xpos > 1), classes = c("data.frame", "ANY"), how = "melt"), xout3.18)
+dotest("3.19", rrapply(xin1, f = function(x) 1L, classes = "data.frame"), xout3.19)
+dotest("3.20", rrapply(xin2, f = function(x) 1L, classes = "data.frame"), xout3.20)
+
+## warnings
+tools::assertWarning(rrapply(xin, f = identity, dfaslist = FALSE))
 
 ## deflt argument
 xin <- list(a = 1L, b = list(b1 = 2L, b2 = 3L), c = 4L)
@@ -251,7 +260,8 @@ xin2 <- list(a = 1L, b = list(b1 = 2L, b2 = 3L), c = 4L)
 xin3 <- quote(f1(a = 1L, b = f2(b1 = 2L, b2 = 3L), c = 4L))
 xin4 <- list(expression(a <- 1L), expression(...))
 xin5 <- list(par = pairlist(a = 1L, b = 2L))
-  
+xin6 <- list(1L, 2L, 3L)
+
 xout6.1 <- list(a = 1L, b = "b", c = 4L)
 xout6.2 <- list(a = "a", b = "b", c = "c")
 xout6.3 <- xout6.1
@@ -282,6 +292,9 @@ xout6.22 <- list(par = list(a = list(1L), b = list(2L)))
 xout6.23 <- list(a = 1L, b = structure(1:4, .Names = c("a", "b.b1.b11", "b.b2", "c")), c = 4L)
 xout6.24 <- list(a = 1L, b = list(b1 = c(b11 = 2L), b2 = 3L), c = 4L)
 xout6.25 <- list(a = list(b = 1L), b = list(b = list(b1 = 2L, b2 = 3L)), c = list(b = 4L))
+
+xout6.26 <- list(list(1L), list(2L), list(3L))
+xout6.27 <- xout6.26
 
 dotest("6.1", rrapply(xin1, f = function(x, .xname) .xname, classes = "list"), xout6.1)
 dotest("6.2", rrapply(xin1, f = function(x, .xname) .xname, classes = c("list", "ANY")), xout6.2)
@@ -315,8 +328,12 @@ dotest("6.24", rrapply(xin1, f = unlist, condition = function(x, .xsiblings) "b2
 dotest("6.25", rrapply(xin2, f = function(x) list(b = x), condition = function(x, .xsiblings, .xpos) length(.xpos) < 2 & "b" %in% names(.xsiblings), 
                        classes = c("list", "ANY"), how = "recurse"), xout6.25)
 
-## infinite recursion
+dotest("6.26", rrapply(xin6, classes = c("list", "integer"), condition = function(x, .xpos) length(.xpos) < 2, f = list, how = "recurse"), xout6.26)
+dotest("6.27", rrapply(xin6, classes = c("list", "integer"), f = function(x, .xpos) if(length(.xpos) < 2) list(x) else x, how = "recurse"), xout6.27)
+
+## warnings/errors
 tools::assertError(rrapply(list(list(1)), f = list, classes = "list", how = "recurse"))
+tools::assertWarning(rrapply(list(list(1)), f = identity, feverywhere = "recurse"))
 
 ## named flat list
 xin1 <- list(a = 1L, b = 2L, c = 3L)
