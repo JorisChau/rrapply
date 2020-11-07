@@ -621,4 +621,4 @@ unique(rrapply(body(lm), condition = is_assign, f = as.character, how = "unlist"
 
 For more details and examples on how to use the `rrapply()` function see
 the accompanying package vignette in the vignettes folder or the
-‘Articles’ section at <https://jorischau.github.io/rrapply/>.
+Articles section at <https://jorischau.github.io/rrapply/>.
