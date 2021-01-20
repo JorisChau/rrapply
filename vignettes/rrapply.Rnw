@@ -174,7 +174,7 @@ na_drop_oceania_flat <- rrapply(
   classes = "numeric", 
   how = "flatten"
 )
-str(na_drop_oceania_flat, list.len = 10, give.attr = FALSE)
+head(na_drop_oceania_flat, n = 10)
 @
 Another option is to set \code{how = "melt"} to return a melted data.frame of the pruned list similar in format to \code{reshape2::melt()} applied to a nested list. The rows of the melted data.frame contain the node paths of the elements in the pruned list. The \code{"value"} column is a list-column with the values of the terminal nodes analogous to the flattened list returned by \code{how = "flatten"}. 
 <<>>=
@@ -186,7 +186,7 @@ na_drop_melt <- rrapply(
 )
 head(na_drop_melt)
 @
-If no names are present in a sublist of the input list, \code{how = "melt"} replaces the names in the melted data.frame by the list element indices \code{"..1"}, \code{"..2"}, and so on:
+If no names are present in a sublist of the input list, \code{how = "melt"} replaces the names in the melted data.frame by the list element indices \code{"1"}, \code{"2"}, and so on:
 <<>>=
 ## Remove all names at L2 (these arguments are explained in the following sections)
 oceania_unnamed <- rrapply(
@@ -204,6 +204,24 @@ na_drop_melt2 <- rrapply(
 )
 head(na_drop_melt2)
 @
+The dataset \code{pokedex} also included in the \texttt{rrapply}-package is a nested list containing 151 sublists with property values of each Pok\'emon in Pok\'emon GO. The \code{pokedex} dataset differs from \code{renewable\_energy\_by\_country} in the sense that \code{pokedex} contains 151 \emph{repeated} observations represented as individual sublists. \code{how = "bind"} unnests nested lists containing repeated observations and returns a wide data.frame, where each individual observation (i.e. repeated sublist) is expanded as a single row in the data.frame. Identical names between different sublists are aligned as individual data.frame columns:
+<<>>=
+## Nested list of Pokemon properties in Pokemon GO
+data("pokedex")
+
+str(pokedex, list.len = 3)
+
+## Unnest list as a wide data.frame
+pokedex_wide <- rrapply(
+  pokedex,
+  how = "bind"
+)
+
+head(pokedex_wide[, c(1:3, 5:7)])
+@
+\begin{remark}
+Repeated observations (i.e. sublists) are recognized as several sublists on the same nested level that are either unnamed or have the same name for each sublist. Conceptually, each repeated observation is unnested into a flat list and appended as an individual row to the wide data.frame.
+\end{remark}
 
 \subsection{Condition function}
 
@@ -308,7 +326,7 @@ renewable_oceania_flat <- rrapply(
   condition = Negate(is.na), 
   how = "flatten"
 )
-str(renewable_oceania_flat, list.len = 10, give.attr = FALSE)
+head(renewable_oceania_flat)
 @
 Suppose that we wish to apply a function to each list element that relies on the name of the node. A possible way to achieve this using \code{mapply()} would be:
 <<>>=
@@ -318,7 +336,7 @@ renewable_oceania_flat_text <- mapply(
   value = renewable_oceania_flat,
   SIMPLIFY = FALSE
 )
-str(renewable_oceania_flat_text, list.len = 10)
+str(renewable_oceania_flat_text, list.len = 6)
 @
 \begin{remark}
 Note that the \texttt{purrr}-package also contains the convenience function \code{imap} for exactly this purpose.
@@ -339,7 +357,7 @@ renewable_oceania_flat_text <- rrapply(
   condition = Negate(is.na),
   how = "flatten"
 )
-str(renewable_oceania_flat_text, list.len = 10)
+head(renewable_oceania_flat_text, n = 6)
 @
 Since these special arguments can also be used in the \code{condition} 
 function, it is now possible to filter elements or apply a function only to a part of the list based on the node names or their positions.\\[3mm]
@@ -410,7 +428,20 @@ siblings_sweden <- rrapply(
   condition = function(x, .xsiblings) "Sweden" %in% names(.xsiblings),
   how = "flatten"
 )
-str(siblings_sweden, give.attr = FALSE)
+head(siblings_sweden, n = 6)
+@
+When unnesting nested lists containing repeated observations with \code{how = "bind"}, the \code{.xname}, \code{.xpos} or \code{.xparents} arguments can be useful to parse only a particular set of data.frame columns:
+<<>>=
+## parse only Pokemon number, name and type columns 
+pokedex_small <- rrapply(
+  pokedex,
+  condition = function(x, .xpos, .xname) {
+    length(.xpos) < 4 & .xname %in% c("num", "name", "type")
+    },
+  how = "bind"
+)
+
+head(pokedex_small)
 @
 
 \subsection{Avoid recursing into list nodes}
@@ -467,6 +498,19 @@ rrapply(
   condition = function(x) attr(x, "M49-code") == "155",
   f = function(x, .xname) .xname,
   how = "unlist")
+@
+Another illustration of the use of \code{classes = "list"} is to preprocess selection of list columns before unnesting a nested list with repeated observations into a wide data.frame with \code{how = "bind"}:
+<<>>=
+## Simplify Pokemon evolution sublists to character vectors 
+pokedex_wide2 <- rrapply(
+  pokedex,
+  classes = c("character", "list"),
+  condition = function(x, .xname) .xname %in% c("name", "next_evolution", "prev_evolution"), 
+  f = function(x) if(is.list(x)) sapply(x, `[[`, "name") else x,
+  how = "bind"
+)
+    
+head(pokedex_wide2, n = 9)
 @
 
 \subsection{Recursive list node modification}

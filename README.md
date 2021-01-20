@@ -105,19 +105,13 @@ na_drop_oceania2 <- rrapply(
   classes = "numeric",
   how = "flatten"
 )
-str(na_drop_oceania2, list.len = 10, give.attr = FALSE)
-#> List of 22
-#>  $ Australia                       : num 9.32
-#>  $ New Zealand                     : num 32.8
-#>  $ Fiji                            : num 24.4
-#>  $ New Caledonia                   : num 4.03
-#>  $ Papua New Guinea                : num 50.3
-#>  $ Solomon Islands                 : num 65.7
-#>  $ Vanuatu                         : num 33.7
-#>  $ Guam                            : num 3.03
-#>  $ Kiribati                        : num 45.4
-#>  $ Marshall Islands                : num 11.8
-#>   [list output truncated]
+head(na_drop_oceania2, n = 10)
+#>        Australia      New Zealand             Fiji    New Caledonia 
+#>             9.32            32.76            24.36             4.03 
+#> Papua New Guinea  Solomon Islands          Vanuatu             Guam 
+#>            50.34            65.73            33.67             3.03 
+#>         Kiribati Marshall Islands 
+#>            45.43            11.75
 ```
 
 Or, use `how = "melt"` to return a melted data.frame of the pruned list
@@ -167,6 +161,53 @@ str(na_drop_oceania4, list.len = 3, give.attr = FALSE)
 #>   .. ..$ Marshall Islands                : num 11.8
 #>   .. .. [list output truncated]
 #>   .. [list output truncated]
+```
+
+Nested lists containing repeated observations can be unnested with `how
+= "bind"`, which returns a wide data.frame similar in format to
+`dplyr::bind_rows()` applied to a list of data.frames or repeated
+application of `tidyr::unnest_wider()` to a nested data.frame.
+
+``` r
+## Nested list of Pokemon properties in Pokemon GO
+data("pokedex")
+
+str(pokedex, list.len = 3)
+#> List of 1
+#>  $ pokemon:List of 151
+#>   ..$ :List of 16
+#>   .. ..$ id            : int 1
+#>   .. ..$ num           : chr "001"
+#>   .. ..$ name          : chr "Bulbasaur"
+#>   .. .. [list output truncated]
+#>   ..$ :List of 17
+#>   .. ..$ id            : int 2
+#>   .. ..$ num           : chr "002"
+#>   .. ..$ name          : chr "Ivysaur"
+#>   .. .. [list output truncated]
+#>   ..$ :List of 15
+#>   .. ..$ id            : int 3
+#>   .. ..$ num           : chr "003"
+#>   .. ..$ name          : chr "Venusaur"
+#>   .. .. [list output truncated]
+#>   .. [list output truncated]
+
+## Unnest list as a wide data.frame
+pokedex_wide <- rrapply(pokedex, how = "bind")
+
+head(pokedex_wide[, c(1:3, 5:10)], n = 5)
+#>   pokemon.id pokemon.num pokemon.name  pokemon.type pokemon.height
+#> 1          1         001    Bulbasaur Grass, Poison         0.71 m
+#> 2          2         002      Ivysaur Grass, Poison         0.99 m
+#> 3          3         003     Venusaur Grass, Poison         2.01 m
+#> 4          4         004   Charmander          Fire         0.61 m
+#> 5          5         005   Charmeleon          Fire         1.09 m
+#>   pokemon.weight    pokemon.candy pokemon.candy_count pokemon.egg
+#> 1         6.9 kg  Bulbasaur Candy                  25        2 km
+#> 2        13.0 kg  Bulbasaur Candy                 100 Not in Eggs
+#> 3       100.0 kg  Bulbasaur Candy                  NA Not in Eggs
+#> 4         8.5 kg Charmander Candy                  25        2 km
+#> 5        19.0 kg Charmander Candy                 100 Not in Eggs
 ```
 
 ### Condition function
@@ -252,19 +293,17 @@ renewable_oceania4 <- rrapply(
   condition = Negate(is.na),
   how = "flatten"
 )
-str(renewable_oceania4, list.len = 10)
-#> List of 22
-#>  $ Australia                       : chr "Renewable energy in Australia: 9.32%"
-#>  $ New Zealand                     : chr "Renewable energy in New Zealand: 32.76%"
-#>  $ Fiji                            : chr "Renewable energy in Fiji: 24.36%"
-#>  $ New Caledonia                   : chr "Renewable energy in New Caledonia: 4.03%"
-#>  $ Papua New Guinea                : chr "Renewable energy in Papua New Guinea: 50.34%"
-#>  $ Solomon Islands                 : chr "Renewable energy in Solomon Islands: 65.73%"
-#>  $ Vanuatu                         : chr "Renewable energy in Vanuatu: 33.67%"
-#>  $ Guam                            : chr "Renewable energy in Guam: 3.03%"
-#>  $ Kiribati                        : chr "Renewable energy in Kiribati: 45.43%"
-#>  $ Marshall Islands                : chr "Renewable energy in Marshall Islands: 11.75%"
-#>   [list output truncated]
+head(renewable_oceania4, n = 5)
+#>                                      Australia 
+#>         "Renewable energy in Australia: 9.32%" 
+#>                                    New Zealand 
+#>      "Renewable energy in New Zealand: 32.76%" 
+#>                                           Fiji 
+#>             "Renewable energy in Fiji: 24.36%" 
+#>                                  New Caledonia 
+#>     "Renewable energy in New Caledonia: 4.03%" 
+#>                               Papua New Guinea 
+#> "Renewable energy in Papua New Guinea: 50.34%"
 
 ## Extract values based on country names
 renewable_benelux <- rrapply(
@@ -299,7 +338,7 @@ str(renewable_europe_above_50, give.attr = FALSE)
 #>   .. .. ..$ Liechtenstein: num 62.9
 
 ## Filter European countries > 50% using .xparents
-renewbale_europe_above_50 <- rrapply(
+renewable_europe_above_50 <- rrapply(
   renewable_energy_by_country, 
   condition = function(x, .xparents) "Europe" %in% .xparents & x > 50,
   how = "prune"
@@ -335,19 +374,25 @@ siblings_sweden <- rrapply(
   condition = function(x, .xsiblings) "Sweden" %in% names(.xsiblings),
   how = "flatten"
 )
-str(siblings_sweden, list.len = 10, give.attr = FALSE)
-#> List of 14
-#>  $ Aland Islands                                       : logi NA
-#>  $ Denmark                                             : num 33.1
-#>  $ Estonia                                             : num 26.6
-#>  $ Faroe Islands                                       : num 4.24
-#>  $ Finland                                             : num 42
-#>  $ Iceland                                             : num 78.1
-#>  $ Ireland                                             : num 8.65
-#>  $ Isle of Man                                         : num 4.3
-#>  $ Latvia                                              : num 38.5
-#>  $ Lithuania                                           : num 31.4
-#>   [list output truncated]
+head(siblings_sweden, n = 5)
+#> Aland Islands       Denmark       Estonia Faroe Islands       Finland 
+#>            NA         33.06         26.55          4.24         42.03
+
+## Parse only Pokemon number, name and type columns 
+pokedex_small <- rrapply(
+  pokedex,
+  condition = function(x, .xpos, .xname) length(.xpos) < 4 & .xname %in% c("num", "name", "type"),
+  how = "bind"
+)
+
+head(pokedex_small)
+#>   pokemon.num pokemon.name  pokemon.type
+#> 1         001    Bulbasaur Grass, Poison
+#> 2         002      Ivysaur Grass, Poison
+#> 3         003     Venusaur Grass, Poison
+#> 4         004   Charmander          Fire
+#> 5         005   Charmeleon          Fire
+#> 6         006    Charizard  Fire, Flying
 ```
 
 ### Modifying list elements
@@ -370,8 +415,8 @@ rrapply(
   f = function(x) mean(unlist(x), na.rm = TRUE),
   how = "flatten"
 )
-#> $Europe
-#> [1] 22.36565
+#>   Europe 
+#> 22.36565
 
 ## Calculate mean value for each continent
 renewable_continent_summary <- rrapply(
@@ -391,6 +436,27 @@ str(renewable_continent_summary, give.attr = FALSE)
 #>   ..$ Asia      : num 17.9
 #>   ..$ Europe    : num 22.4
 #>   ..$ Oceania   : num 17.8
+
+## Simplify Pokemon evolution sublists to character vectors 
+pokedex_wide2 <- rrapply(
+  pokedex,
+  classes = c("character", "list"),
+  condition = function(x, .xname) .xname %in% c("name", "next_evolution", "prev_evolution"), 
+  f = function(x) if(is.list(x)) sapply(x, `[[`, "name") else x,
+  how = "bind"
+)
+    
+head(pokedex_wide2, n = 9)
+#>   pokemon.name pokemon.next_evolution pokemon.prev_evolution
+#> 1    Bulbasaur      Ivysaur, Venusaur                     NA
+#> 2      Ivysaur               Venusaur              Bulbasaur
+#> 3     Venusaur                     NA     Bulbasaur, Ivysaur
+#> 4   Charmander  Charmeleon, Charizard                     NA
+#> 5   Charmeleon              Charizard             Charmander
+#> 6    Charizard                     NA Charmander, Charmeleon
+#> 7     Squirtle   Wartortle, Blastoise                     NA
+#> 8    Wartortle              Blastoise               Squirtle
+#> 9    Blastoise                     NA    Squirtle, Wartortle
 ```
 
 ### Recursive list updating
@@ -433,8 +499,8 @@ Since base `rapply()` recurses into all list-like objects, and
 data.frames are list-like objects, `rapply()` always descends into the
 individual columns of a data.frame. To avoid this behavior using
 `rrapply()`, set `classes = "data.frame"`, in which case the `f` and
-`condition` functions are applied to any data.frame object instead of
-its individual columns.
+`condition` functions are applied to complete data.frame objects instead
+of individual data.frame columns.
 
 However, it can also be useful to exploit the property that a data.frame
 is a list-like object and use base `rapply()` to apply a function `f` to
@@ -576,11 +642,11 @@ str(expr_flatten)
 ## Prune and melt expression
 expr_melt <- rrapply(expr, classes = "name", condition = is_new_name, f = as.character, how = "melt")
 expr_melt
-#>    L1  L2   L3 value
-#> 1 ..1 ..2 <NA>     y
-#> 2 ..1 ..3  ..2     x
-#> 3 ..2 ..1 <NA>     f
-#> 4 ..2 ..2  ..1     g
+#>   L1 L2   L3 value
+#> 1  1  2 <NA>     y
+#> 2  1  3    2     x
+#> 3  2  1 <NA>     f
+#> 4  2  2    1     g
 ```
 
 Additional demonstrating examples from
