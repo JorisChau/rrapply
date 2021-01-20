@@ -52,6 +52,7 @@ static SEXP C_fill_unmelt(SEXP X, SEXP Xval, R_len_t *namesCount, R_len_t lvl, R
 
 	SEXP ansNew = PROTECT(Rf_allocVector(VECSXP, m + 1));
 	SEXP ansNames = PROTECT(Rf_allocVector(STRSXP, m + 1));
+	SEXPTYPE ansType = (SEXPTYPE)TYPEOF(Xval);
 	R_len_t mcum = start;
 
 	for (R_len_t j = 0; j < (m + 1); j++)
@@ -75,7 +76,32 @@ static SEXP C_fill_unmelt(SEXP X, SEXP Xval, R_len_t *namesCount, R_len_t lvl, R
 			(lvl < nlvls && STRING_ELT(Xi1, jstart) != NA_STRING))
 			SET_VECTOR_ELT(ansNew, j, C_fill_unmelt(X, Xval, namesCount, lvl + 1, nlvls, jstart, jend));
 		else
-			SET_VECTOR_ELT(ansNew, j, VECTOR_ELT(Xval, jstart));
+		{
+			switch (ansType)
+			{
+			case VECSXP:
+				SET_VECTOR_ELT(ansNew, j, VECTOR_ELT(Xval, jstart));
+				break;
+			case STRSXP:
+				SET_VECTOR_ELT(ansNew, j, Rf_ScalarString(STRING_ELT(Xval, jstart)));
+				break;
+			case CPLXSXP:
+				SET_VECTOR_ELT(ansNew, j, Rf_ScalarComplex(COMPLEX_ELT(Xval, jstart)));
+				break;
+			case REALSXP:
+				SET_VECTOR_ELT(ansNew, j, Rf_ScalarReal(REAL_ELT(Xval, jstart)));
+				break;
+			case INTSXP:
+				SET_VECTOR_ELT(ansNew, j, Rf_ScalarInteger(INTEGER_ELT(Xval, jstart)));
+				break;
+			case LGLSXP:
+				SET_VECTOR_ELT(ansNew, j, Rf_ScalarLogical(LOGICAL_ELT(Xval, jstart)));
+				break;
+			case RAWSXP:
+				SET_VECTOR_ELT(ansNew, j, Rf_ScalarRaw(RAW_ELT(Xval, jstart)));
+				break;
+			}
+		}
 	}
 
 	UNPROTECT(2);
