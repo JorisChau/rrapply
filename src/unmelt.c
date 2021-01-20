@@ -1,18 +1,13 @@
 #define R_NO_REMAP
-#include <R.h>
-#include <Rinternals.h>
-#include <string.h>
 
-/* ---------------------- */
+#include <string.h>
+#include "rrapply.h"
 
 /* prototypes */
 
 static SEXP C_fill_unmelt(SEXP X, SEXP Xval, R_len_t *namesCount, R_len_t lvl, R_len_t nlvls, R_len_t start, R_len_t end);
-SEXP C_unmelt(SEXP X);
-/* ---------------------- */
 
-/* Main function */
-
+/* main function */
 SEXP C_unmelt(SEXP X)
 {
 	R_len_t ncols = (R_len_t)Rf_length(X);
@@ -21,8 +16,6 @@ SEXP C_unmelt(SEXP X)
 
 	return C_fill_unmelt(X, VECTOR_ELT(X, ncols - 1), namesCount, 0, ncols - 2, 0, nrows);
 }
-
-/* Helper functions */
 
 /* unmelt data.frame to nested list */
 static SEXP C_fill_unmelt(SEXP X, SEXP Xval, R_len_t *namesCount, R_len_t lvl, R_len_t nlvls, R_len_t start, R_len_t end)

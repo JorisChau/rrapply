@@ -76,5 +76,6 @@ SEXP C_recurse_list(SEXP env, SEXP Xi, FunCall f, FunCall condition, FixedArgs *
 void C_recurse_flatten(SEXP env, SEXP Xi, FunCall f, FunCall condition, FixedArgs *fixedArgs, LocalArgs *localArgs, SEXP classes, SEXP xsym);
 SEXP C_prune_list(SEXP Xi, R_len_t *xinfo, R_len_t *buf, R_len_t node, R_len_t maxnodes, R_len_t newmaxnodes, R_len_t ibuf);
 SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPred, SEXP classes, SEXP how, SEXP deflt, SEXP R_dfaslist, SEXP R_feverywhere);
+SEXP C_unmelt(SEXP X);
 
 #endif
