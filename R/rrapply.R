@@ -6,17 +6,21 @@
 #' 
 #' @section How to structure result:
 #' In addition to \code{\link{rapply}}'s modes to set \code{how} equal to \code{"replace"}, \code{"list"} or \code{"unlist"}, 
-#' five choices \code{"prune"}, \code{"flatten"}, \code{"melt"}, \code{"unmelt"} and \code{"recurse"} are available. \code{how = "prune"} filters 
-#' all list elements not subject to application of \code{f} from the list \code{object}. The original list structure is retained, 
-#' similar to the non-pruned options \code{how = "replace"} or \code{how = "list"}. \code{how = "flatten"} is an efficient way to 
-#' return a flattened unnested version of the pruned list. \code{how = "melt"} returns a melted data.frame of the pruned list, 
-#' each row contains the path of a single terminal node in the pruned list at depth layers \code{L1}, \code{L2}, and so on. The list-column 
-#' \code{"value"} contains the values at the terminal nodes and is equivalent to the flattened list returned by \code{how = "flatten"}. 
-#' If no list names are present, the node names in the data.frame default to the indices of the list elements \code{"..1"}, \code{"..2"}, etc.
-#' \code{how = "unmelt"} is a special case that reconstructs a nested list from a melted data.frame. For this reason, \code{how = "unmelt"} 
+#' five choices \code{"prune"}, \code{"flatten"}, \code{"melt"}, \code{"bind"}, \code{"unmelt"} and \code{"recurse"} are available. 
+#' \code{how = "prune"} filters all list elements not subject to application of \code{f} from the list \code{object}. The original 
+#' list structure is retained, similar to the non-pruned options \code{how = "replace"} or \code{how = "list"}. \code{how = "flatten"} 
+#' is an efficient way to return a flattened unnested version of the pruned list. \code{how = "flatten"} uses similar coercion rules 
+#' as \code{how = "unlist"}. \code{how = "melt"} returns a melted data.frame of the pruned list, each row contains the path of a single 
+#' terminal node in the pruned list at depth layers \code{L1}, \code{L2}, and so on. The column \code{"value"} contains the 
+#' possible coerced values at the terminal nodes and is equivalent to the result of \code{how = "flatten"}. If no list names are present, 
+#' the node names in the data.frame default to the indices of the list elements \code{"1"}, \code{"2"}, etc.
+#' \code{how = "bind"} is used to unnest a nested list containing repeated sublists into a wide data.frame. Each repeated sublist is expanded 
+#' as a single row in the data.frame and identical names between sublists are aligned as individual columns. Repeated sublists are recognized
+#' as several sublists on the same nested level that are either unnamed or have the same name for each sublist. \code{how = "unmelt"} is a 
+#' special case that reconstructs a nested list from a melted data.frame. For this reason, \code{how = "unmelt"} 
 #' only applies to data.frames in the same format as returned by \code{how = "melt"}. Internally, \code{how = "unmelt"} first reconstructs 
 #' a nested list from the melted data.frame and second uses the same framework as \code{how = "replace"}. \code{how = "recurse"} is a specialized
-#' option that is only useful in combination with e.g. \code{how = "list"} to recurse further into updated \dQuote{list-like} elements. 
+#' option that is only useful in combination with e.g. \code{classes = "list"} to recurse further into updated \dQuote{list-like} elements. 
 #' This is explained in more detail below.
 #' 
 #' @section Condition function:
@@ -79,24 +83,27 @@
 #' 
 #' @return If \code{how = "unlist"}, a vector as in \code{\link{rapply}}. If \code{how = "list"}, \code{how = "replace"} or \code{how = "recurse"}, 
 #' \dQuote{list-like} of similar structure as \code{object} as in \code{\link{rapply}}. If \code{how = "prune"}, a pruned \dQuote{list-like} object 
-#' of similar structure as \code{object} with pruned list elements based on \code{classes} and \code{condition}. If \code{how = "flatten"}, an unnested 
-#' pruned list with pruned list elements based on \code{classes} and \code{condition}. If \code{how = "melt"}, a melted data.frame containing the node 
-#' paths and values of the pruned list elements based on \code{classes} and \code{condition}. If \code{how = "unmelt"}, a nested list with list names 
-#' and values defined in the data.frame \code{object}.
+#' of similar structure as \code{object} with pruned list elements based on \code{classes} and \code{condition}. If \code{how = "flatten"}, a flattened
+#' pruned vector or list with pruned elements based on \code{classes} and \code{condition}. The result of \code{how = "flatten"} is coerced to vector 
+#' similar to \code{how = "unlist"}. If \code{how = "melt"}, a melted data.frame containing the node paths and values of the pruned list elements based
+#' on \code{classes} and \code{condition}. If \code{how = "unmelt"}, a nested list with list names and values defined in the data.frame \code{object}.
 #' 
-#'  
 #' @note \code{rrapply} allows the \code{f} function argument to be missing, in which case no function is applied to the list 
 #' elements.
 #' @note \code{how = "unmelt"} requires as input a data.frame as returned by \code{how = "melt"} with character columns to name the nested list components
-#' and a final list-column containing the values of the nested list elements. 
+#' and a final list- or vector-column containing the values of the nested list elements. 
 #' 
 #' @examples
 #' # Example data
 #' 
 #' ## Nested list of renewable energy (%) of total energy consumption per country in 2016
 #' data("renewable_energy_by_country")
+#' 
 #' ## Subset values for countries and areas in Oceania
 #' renewable_oceania <- renewable_energy_by_country[["World"]]["Oceania"]
+#'
+#' ## Nested list of Pokemon properties in Pokemon GO
+#' data("pokedex")
 #'
 #' # List pruning and unnesting
 #' 
@@ -116,7 +123,8 @@
 #'   classes = "numeric",
 #'   how = "flatten"
 #' )
-#' str(na_drop_oceania2, list.len = 10, give.attr = FALSE)
+#' 
+#' head(na_drop_oceania2, n = 10)
 #' 
 #' ## Drop all logical NA's and return melted data.frame
 #' na_drop_oceania3 <- rrapply(
@@ -135,6 +143,11 @@
 #' )
 #' 
 #' str(na_drop_oceania4, list.len = 3, give.attr = FALSE)
+#' 
+#' ## Convert nested list to wide data.frame
+#' pokedex_wide <- rrapply(pokedex, how = "bind")
+#' 
+#' head(pokedex_wide)
 #' 
 #' # Condition function
 #' 
@@ -176,7 +189,7 @@
 #'   condition = Negate(is.na),
 #'   how = "flatten"
 #' )
-#' str(renewable_oceania_text, list.len = 10)
+#' head(renewable_oceania_text, n = 10)
 #' 
 #' ## Extract values based on country names
 #' renewable_benelux <- rrapply(
@@ -217,9 +230,18 @@
 #'   condition = function(x, .xsiblings) "Sweden" %in% names(.xsiblings),
 #'   how = "flatten"
 #' )
-#' str(siblings_sweden, list.len = 10, give.attr = FALSE)
+#' head(siblings_sweden, n = 10)
 #' 
-#' # Avoid skipping list nodes
+#' ## Return wide Pokedex data.frame without evolutions 
+#' pokedex_small <- rrapply(
+#'    pokedex,
+#'    condition = function(x, .xparents) !any(grepl("evolution", .xparents)),
+#'    how = "bind"
+#' )  
+#' 
+#' head(pokedex_small)
+#' 
+#' # Modifying list elements
 #' 
 #' ## Calculate mean value of Europe
 #' rrapply(
@@ -334,7 +356,7 @@
 #' \code{.xparents} and/or \code{.xsiblings} (see \sQuote{Details}), passing further arguments via \code{\dots}.
 #' @param classes character vector of \code{\link{class}} names, or \code{"ANY"} to match the class of any terminal node. Include \code{"list"} or \code{"data.frame"}
 #' to match the class of non-terminal nodes as well.
-#' @param how character string partially matching the eight possibilities given: see \sQuote{Details}.
+#' @param how character string partially matching the nine possibilities given: see \sQuote{Details}.
 #' @param deflt the default result (only used if \code{how = "list"} or \code{how = "unlist"}).
 #' @param feverywhere deprecated use \code{classes = "list"}, \code{classes = "language"} or \code{classes = "expression"} and optionally \code{how = "recurse"} instead.
 #' @param dfaslist deprecated use \code{classes = "data.frame"} instead.
@@ -347,26 +369,26 @@
 #' @useDynLib rrapply, .registration = TRUE
 #' @export 
 rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL, 
-    how = c("replace", "list", "unlist", "prune", "flatten", "melt", "recurse", "unmelt"),
-    feverywhere, dfaslist, ...)
+                    how = c("replace", "list", "unlist", "prune", "flatten", "melt", "bind", "recurse", "unmelt"),
+                    feverywhere, dfaslist, ...)
 {
   ## non-function arguments
   if(!(is.list(object) || is.call(object) || is.expression(object)) || length(object) < 1) 
     stop("'object' argument should be list-like and of length greater than zero")
   
-  how <- match.arg(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "recurse", "unmelt"))
-  howInt <- match(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "recurse", "unmelt"))
+  how <- match.arg(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "bind", "recurse", "unmelt"))
+  howInt <- match(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "bind", "recurse", "unmelt"))
   if(identical(how, "recurse")) howInt <- 1L
   
   if(!missing(feverywhere))
   {
-	  warning("'feverywhere' is deprecated, use e.g. classes = 'list' or classes = 'call' instead")
+    warning("'feverywhere' is deprecated, use e.g. classes = 'list' or classes = 'call' instead")
     feverywhere <- match.arg(feverywhere, c("no", "break", "recurse"))
     feverywhere <- match(feverywhere, c("no", "break", "recurse")) - 1L
   }
   else 
     feverywhere <- ifelse(isTRUE(any(classes %in% c("list", "language", "pairlist", "expression"))), 1L + identical(how, "recurse"), 0L)
-
+  
   if(!missing(dfaslist))
   {
     warning("'dfaslist' is deprecated, use classes = 'data.frame' instead")
@@ -375,11 +397,11 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
   else 
     dfaslist <- isFALSE("data.frame" %in% classes)
   if(length(classes) > 1 && isTRUE("ANY" %in% classes)) classes <- "ANY"
-
+  
   ## unmelt data.frame to nested list
   if(identical(how, "unmelt"))
   {
-    if(is.data.frame(object) && is.list(object[[length(object)]]) && all(vapply(object[, -length(object)], is.character, logical(1))))
+    if(is.data.frame(object) && all(vapply(object[, -length(object)], is.character, logical(1))))
     {
       if(nrow(object) > 0 && length(object) > 1)
       {
@@ -388,17 +410,17 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
         howInt <- 1L
       }
       else
-        stop("'object' argument must be non-empty and contain at least one naming character column and one value list column")
+        stop("'object' argument must be non-empty and contain at least one naming character column followed by a value column")
     }
     else
-      stop("'object' argument must be a data.frame consisting of naming character columns and a value list column")
+      stop("'object' argument must be a data.frame consisting of naming character columns followed by a value column")
   }
   ## function arguments  
   if(missing(f)) f <- NULL else f <- match.fun(f)
   if(missing(condition)) condition <- NULL else condition <- match.fun(condition)
   
   if(is.null(f) && (is.null(condition) || identical(howInt, 1L)) && identical(feverywhere, 0L) && 
-      ((is.list(object) && howInt < 5L) || (!is.list(object) && howInt < 2L)))
+     ((is.list(object) && howInt < 5L) || (!is.list(object) && howInt < 2L)))
   {  
     ## nothing to be done
     res <- object  
@@ -414,35 +436,40 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
     ## call main C function
     res <- .Call(C_rrapply, environment(), object, f, fArgs, condition, conditionArgs, classes, howInt, deflt, dfaslist, feverywhere)  
   }
-  
+
   if(identical(how, "melt"))
   {
-    ## drop NULL name columns
-    res <- res[vapply(res, Negate(is.null), logical(1L))]
+    anysymbol <- attr(res, "anysymbol")
+    attr(res, "anysymbol") <- NULL
+    
     ## convert list to data.frame
-    if(length(res) > 1)
-    {
-      if(getRversion() >= "4.0.0" || !any(vapply(res[[length(res)]], is.symbol, logical(1L)))) {
+    if(getRversion() >= "4.0.0" || !anysymbol)
+      {
         res <- structure(
-            res,
-            names =  c(paste0("L", seq_len(length(res) - 1L)), "value"),
-            row.names = seq_len(length(res[[1L]])),
-            class = "data.frame"
+          res,
+          names =  c(paste0("L", seq_len(length(res) - 1L)), "value"),
+          row.names = seq_len(length(res[[1L]])),
+          class = "data.frame"
         )
       } else {
         ## no format method for names in R < 4.0.0 
         names(res) <- c(paste0("L", seq_len(length(res) - 1L)), "value")
       }
-    }
-    else
+  }
+  
+  if(identical(how, "bind"))
+  {
+    ## convert list to data.frame (no format method for names in R < 4.0.0)
+    if(length(res) > 0 && (getRversion() >= "4.0.0" || !attr(res, "anysymbol")))
     {
       res <- structure(
-          res,
-          names = "value",
-          row.names = integer(0L),
-          class = "data.frame"
+        res,
+        names = names(res),
+        row.names = seq_len(length(res[[1L]])),
+        class = "data.frame"
       )
     }
+    attr(res, "anysymbol") <- NULL
   }
   
   ## unlist result

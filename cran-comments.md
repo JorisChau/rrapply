@@ -1,4 +1,4 @@
-## CRAN package version 1.2.1
+## CRAN package version 1.2.2
 
 ### Test environments
 
@@ -15,7 +15,7 @@
 
 * linux-x86_64-rocker-gcc-san (rhub)
 * ubuntu-rchk (rhub)
-* ubuntu clang R-release (local install) --use-valgrind/--use-gct
+* ubuntu clang R-release, R-old-release (local install) --use-valgrind/--use-gct
 
 ### Notes
 
