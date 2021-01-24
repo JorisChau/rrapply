@@ -33,6 +33,6 @@ A nested list containing 151 sublists with up to 17 list elements:
 pokedex
 }
 \description{
-A nested list containing property values of each Pokemon in Pokemon GO. The data is available in JSON format from GitHub (credits to Gianluca Bonifazi).
+A nested list containing property values of the original 151 Pokemon present in Pokemon GO. The data is available in JSON format from GitHub (credits to Gianluca Bonifazi).
 }
 \keyword{datasets}

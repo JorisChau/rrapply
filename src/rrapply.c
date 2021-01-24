@@ -179,8 +179,8 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 	names = PROTECT(Rf_getAttrib(X, R_NamesSymbol));
 	nprotect++;
 
-	if (fixedArgs.how == 6 && C_dupnames(names, n, Rf_isVectorList(X) ? Rf_isVectorList(VECTOR_ELT(X, 0)) : FALSE))
-		fixedArgs.ans_depthpivot = 0;
+	if (fixedArgs.how == 6)
+		fixedArgs.ans_depthpivot = C_pivotFlag(X, names, n, 0);
 
 	if (fixedArgs.how == 4 && !Rf_isNull(names))
 		fixedArgs.anynames = TRUE;
