@@ -59,14 +59,13 @@ SEXP C_int2char(int i)
 /* flag pivot depth */
 int C_pivotFlag(SEXP X, SEXP names, R_len_t n, int depth)
 {
+    int flag = -1;
     Rboolean hasSubList = Rf_isVectorList(X) ? Rf_isVectorList(VECTOR_ELT(X, 0)) : FALSE;
-
     if (n > 1 && hasSubList && (Rf_isNull(names) || strcmp(CHAR(STRING_ELT(names, 0)), CHAR(STRING_ELT(names, 1))) == 0))
-        return depth; // empty or duplicate names with non-empty sublists (flag current depth)
+        flag = depth; // empty or duplicate names with non-empty sublists (flag current depth)
     else if (n > 1)
-        return -2; // no pivot depth present
-    else
-        return -1; // no pivot depth at current depth
+        flag = -2; // no pivot depth present
+    return flag;
 }
 
 /* concatenate names */
