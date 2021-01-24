@@ -1,33 +1,35 @@
 ---
-title: "Efficient list melting and unmelting with rrapply"
+title: "Efficient list melting and unnesting with rrapply"
 author: "Joris Chau"
 date: "Latest date: `r Sys.Date()`"
 output:
   rmarkdown::html_vignette:
     toc: false
 vignette: >
-  %\VignetteIndexEntry{Efficient list melting and unmelting with rrapply}
+%\VignetteIndexEntry{Efficient list melting and unnesting with rrapply}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
----
+  ---
   
-```{r, echo = FALSE}
+  ```{r, echo = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
+collapse = TRUE,
+comment = "#>"
 )
 ```
-  
-# Efficient list melting
-  
-The tutorial `vignette("1-when-to-use-rrapply")` describes the use of `rrapply()` when applied directly to data formatted as a nested list. If there is no specific reason to keep the data in the form of a nested list, it is often more practical to transform the nested list into a more manageable rectangular format and execute any further data processing steps on the unnested object (e.g. a data.frame). 
-  
-For this purpose, `rrapply()` includes the option `how = "melt"`, which returns a *melted* data.frame of the nested list similar in format to `reshape2::melt()` applied to a nested list. The rows of the melted data.frame contain the individual node paths of the elements in the nested list after pruning (based on the `condition` or `classes` arguments). The `"value"` column is a list-column with the values of the terminal nodes analogous to the flattened list returned by `how = "flatten"`, see also `vignette("1-when-to-use-rrapply")`.
-  
+
+# Efficient list unnesting
+
+The tutorial `vignette("1-when-to-use-rrapply")` describes the use of `rrapply()` when applied directly to data formatted as a nested list. If there is no specific reason to keep the data in the form of a nested list, it is often more practical to transform the nested list into a more manageable rectangular format and execute any further data processing steps on the unnested object (e.g. a data.frame). For this purpose, `rrapply()` includes the options `how = "melt"` and `how = "bind"` to unnest a nested list to either a *long* or a *wide* data.frame. The following sections explain these two options in more detail and provide several examples on their usage.
+
+## Unnest to long data.frame with `how = "melt"`
+
+The option `how = "melt"` unnests a nested list to a *long* or melted data.frame similar in format to `reshape2::melt()` applied to a nested list. The rows of the melted data.frame contain the individual node paths of the elements in the nested list after pruning (based on the `condition` or `classes` arguments). The `"value"` column is a vector- or list-column with the values of the terminal nodes identical to the result returned by `how = "flatten"`, see also `vignette("1-when-to-use-rrapply")`. 
+
 In comparison to `reshape2::melt()`, `rrapply()` provides additional flexibility to filter or transform specific list elements before melting a nested list using e.g. the `f`, `classes`  or `condition` arguments. More importantly, `rrapply()` is optimized specifically for nested lists, whereas `reshape2::melt()` was mainly aimed at melting data.frames before it was superseded by `tidyr::gather()` and the more recent `tidyr::pivot_longer()`. For this reason, `reshape2::melt()` tends to be quite slow when applied to larger nested lists. 
-  
+
 For illustration purposes, we use the same dataset `renewable_energy_by_country` as in `vignette("1-when-to-use-rrapply")`, a nested list containing the per country shares of renewable energy as a percentage in the total energy consumption in 2016.
-  
+
 ```{r}
 library(rrapply)
 data("renewable_energy_by_country")
@@ -43,7 +45,7 @@ system.time(
 head(renewable_energy_melted, 10)
 ```
 
-As data processing and reshaping for data.frames is familiar R territory, any subsequent processing tasks are likely more straightforward to execute using the melted data.frame than using the original nested list. For instance, we can easily filter all Western European countries with `subset()` (or instead by relying on external packages, such as `dplyr` or `data.table`):
+As data processing and reshaping for data.frames is familiar R territory, any subsequent processing tasks are likely more straightforward to execute using the melted data.frame than using the original nested list. For instance, we can easily filter all Western European countries with `subset()` (or instead by using an external R-package, such as `dplyr` or `data.table`):
 
 ```{r}
 renewable_energy_melted_west_eu <- subset(renewable_energy_melted, L3 == "Western Europe")
@@ -60,7 +62,7 @@ rrapply(
   how = "melt"
 )
 ```
-Here, the `L5` column is no longer present as the pruned list does not contain any elements at this depth before melting to a data.frame.
+Here, the `L5` column is no longer present as the pruned list does not contain any elements at this depth before melting to a long data.frame.
 
 Now let us return the same results with `reshape2::melt()`, 
 
@@ -76,49 +78,138 @@ head(renewable_energy_melted_reshape2, 10)
 `rrapply()` orders the columns differently by default and produces a `"value"` list-column instead of `reshape2:melt()`'s numeric `"value"` column, but other than that the data contained in the melted data.frame is identical. For a medium-sized list as used here, the computational speed of `reshape2::melt()` is acceptable for practical usage. However, its computational efficiency quickly decreases when melting larger or more deeply nested lists:
 
 ```{r}
-## helper function to populate named nested list
-generate_ls <- function(n, depth_max) {
-  
-  ls_new <- setNames(replicate(n, 1L, simplify = FALSE), seq_len(n))
-  
-  rrapply(
-    ls_new, 
-    classes = c("list", "integer"),
-    condition = function(x, .xpos) length(.xpos) < depth_max,
-    f = function(x, .xpos) {
-      ## add names based on element position
-      setNames(ls_new, sprintf("%s.%d", paste(.xpos, collapse = "."), seq_len(n)))
-    },
-    how = "recurse"
-  )
+## helper function to generate named nested list
+new_list <- function(n, dmax, d = 0, name = NULL) {
+  x <- vector(mode = "list", length = n)
+  names(x) <- if(!is.null(name)) paste(name, seq_len(n), sep = ".") else seq_len(n)
+  for(i in seq_len(n)) {
+    if(d + 1 < dmax) {
+      x[[i]] <- Recall(n, dmax, d + 1, paste(c(name, i), collapse = "."))
+    } else {
+      x[[i]] <- 1L
+    }
+  }
+  return(x)
 }
 
 ## generate a large shallow list with 3 layers and a total of 10^6 elements
-ls_shallow <- generate_ls(n = 100, depth_max = 3)  
-str(ls_shallow, list.len = 2)
+shallow_list <- new_list(n = 100, dmax = 3)
+str(shallow_list, list.len = 2)
 
 ## benchmark timing with rrapply
-system.time(ls_shallow_melted <- rrapply(ls_shallow, how = "melt")) 
-head(ls_shallow_melted)
+system.time(shallow_melted <- rrapply(shallow_list, how = "melt")) 
+head(shallow_melted)
+```
 
+```{r, eval = FALSE}
 ## benchmark timing with reshape2::melt
-system.time(ls_shallow_melted_reshape2 <- reshape2::melt(ls_shallow))
-head(ls_shallow_melted_reshape2)
+system.time(shallow_melted_reshape2 <- reshape2::melt(shallow_list))
+head(shallow_melted_reshape2)
 ```
 
 ```{r}
 ## generate a deeply nested list with 18 layers and a total of 2^18 elements
-ls_deep <- generate_ls(n = 2, depth_max = 18)
-str(ls_deep, max.level = 3)
+deep_list <- new_list(n = 2, dmax = 18)
+str(deep_list, max.level = 3)
 
 ## benchmark timing with rrapply
-system.time(ls_deep_melted <- rrapply(ls_deep, how = "melt")) 
+system.time(deep_melted <- rrapply(deep_list, how = "melt")) 
+```
 
+```{r, eval = FALSE}
 ## benchmark timing with reshape2::melt
-system.time(ls_deep_melted_reshape2 <- reshape2::melt(ls_deep))
+system.time(deep_melted_reshape2 <- reshape2::melt(deep_list))
 ```
 
 Although unlikely to encounter such large or deeply nested lists in practice, these artificial examples serve to illustrate that `reshape2::melt()` is not very well-suited to convert large nested lists to melted data.frames. 
+
+## Unnest to wide data.frame with `how = "bind"`
+
+The option `how = "bind"` unnests a nested list to a *wide* data.frame and is only useful to unnest nested lists containing *repeated* observations of the same variables. Consider for instance the `pokedex` dataset as in `vignette("1-when-to-use-rrapply")`, a nested list containing various property values for each of the 151 original Pok&#233;mon. Here, each property variable is repeated (up to) 151 times in the nested list, once for each individual Pok&#233;mon.
+
+```{r}
+data("pokedex")
+
+## all 151 Pokemon entries
+str(pokedex, list.len = 3)
+
+## single Pokemon entry
+str(pokedex[["pokemon"]][[1]])
+```
+Setting `how = "bind"` unnests the `pokedex` list to a wide data.frame according to: 
+
+```{r}
+pokedex_wide <- rrapply(pokedex, how = "bind")
+
+## ay few data.frame columns
+head(pokedex_wide[, c(1:3, 5:10)], n = 5)
+
+## all data.frame columns
+str(pokedex_wide, max.level = 1, vec.len = 1)
+```
+Each Pok&#233;mon sublist has been flattened to a single wide row in the data.frame. The 151 rows are stacked and aligned by matching variable names, with missing variables replaced by `NA`s (similar to `data.table::rbindlist(..., fill = TRUE)`). Note that any nested variables, such as `next_evolution` and `prev_evolution`, are unnested as individual data.frame columns similar to repeated application of `tidyr::unnest_wider()` to a data.frame with nested list-columns. 
+
+**Remark**: The discovery of repeated observations (e.g. individual Pok#233;mon) is based on a *greedy* approach. Conceptually, the nested list is traversed to detect any multi-element sublists without names or with the same name repeated for each list element. When such a sublist is detected, each of its elements is flattened and row-binded into a wide data.frame.
+
+### Comparison to common alternatives
+
+Several common alternatives to unnest lists containing repeated observations also eluded to in the previous section include `data.table::rbindlist()`, `dplyr::bind_rows()`, and `tidyr`s dedicated rectangling functions such as `unnest_longer()`, `unnest_wider()` and `hoist()` among others.
+
+The first two functions are most useful for lists of repeated data.frames (or lists) containing no further levels of nesting (e.g. data.frames without list-columns):
+
+```{r}
+## bind_rows() works fine with simple lists 
+pokedex_wide_dplyr <- dplyr::bind_rows(lapply(pokedex[["pokemon"]], `[`, 1:4))
+head(pokedex_wide_dplyr)
+
+## but does not like list-columns
+tryCatch(dplyr::bind_rows(lapply(pokedex[["pokemon"]], `[`, 1:5)), error = function(err) err$message)  
+
+## rbindlist() works fine with simple lists 
+pokedex_wide_dt <- data.table::rbindlist(lapply(pokedex[["pokemon"]], `[`, 1:4))  
+head(pokedex_wide_dt)
+
+## but is not ideal for nested variables
+pokedex_wide_dt2 <- data.table::rbindlist(lapply(pokedex[["pokemon"]], `[`, c("name", "prev_evolution")), fill = TRUE)
+head(pokedex_wide_dt2)
+```
+
+The rectangling functions in the `tidyr`-package provide a lot more flexibility. A similar result as `rrapply(pokedex, how = "bind"` can be obtained with:
+
+```{r}
+library(tidyr)
+library(tibble)
+
+pokedex_wide_tidyr <- as_tibble(pokedex) %>%
+  unnest_wider(pokemon) %>%
+  unnest_wider(next_evolution, names_sep = ".") %>%
+  unnest_wider(prev_evolution, names_sep = ".") %>%
+  unnest_wider(next_evolution.1, names_sep = ".") %>%
+  unnest_wider(next_evolution.2, names_sep = ".") %>%
+  unnest_wider(next_evolution.3, names_sep = ".") %>%
+  unnest_wider(prev_evolution.1, names_sep = ".") %>%
+  unnest_wider(prev_evolution.2, names_sep = ".") 
+
+pokedex_wide_tidyr
+```
+```{r}
+## make the original pokedex 100 times as large
+pokedex_large <- as.list(replicate(100, pokedex[["pokemon"]], simplify = FALSE))
+
+system.time({
+  test <- rrapply(pokedex_large, how = "bind")
+})
+
+system.time({
+ as_tibble(pokedex_large) %>%
+    unnest_wider(pokemon) %>%
+    unnest_wider(next_evolution, names_sep = ".") %>%
+    unnest_wider(prev_evolution, names_sep = ".") 
+})
+
+
+
+```
 
 # Efficient unmelting of melted data.frames
 
@@ -155,21 +246,26 @@ In terms of computational effort, `rrapply()`'s `how = "unmelt"` can be equally 
 ```{r}
 ## deeply nested list with 18 layers and a total of 2^18 elements
 ## benchmark timing with rrapply how = "unmelt"
-system.time(ls_deep_unmelted <- rrapply(ls_deep_melted, how = "unmelt")) 
-identical(ls_deep_unmelted, ls_deep)
-
+system.time(deep_unmelted <- rrapply(deep_melted, how = "unmelt")) 
+identical(deep_unmelted, deep_list)
+```
+```{r, eval = FALSE}
 ## benchmark timing with relist
-ls_deep_unlist <- unlist(as.relistable(ls_deep))
-system.time(ls_deep_relist <- relist(ls_deep_unlist))
+deep_unlist <- unlist(as.relistable(deep_list))
+system.time(deep_relist <- relist(deep_unlist))
+```
 
+```{r}
 ## large shallow list with 3 layers and a total of 10^6 elements
 ## benchmark timing with rrapply how = "unmelt"
-system.time(ls_shallow_unmelted <- rrapply(ls_shallow_melted, how = "unmelt")) 
-identical(ls_shallow_unmelted, ls_shallow)
+system.time(shallow_unmelted <- rrapply(shallow_melted, how = "unmelt")) 
+identical(shallow_unmelted, shallow_list)
+```
 
+```{r, eval = FALSE}
 ## benchmark timing with relist
-ls_shallow_unlist <- unlist(as.relistable(ls_shallow))
-system.time(ls_shallow_relist <- relist(ls_shallow_unlist))
+shallow_unlist <- unlist(as.relistable(shallow_list))
+system.time(shallow_relist <- relist(shallow_unlist))
 ```
 
 

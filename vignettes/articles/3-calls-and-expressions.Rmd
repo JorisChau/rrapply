@@ -86,7 +86,7 @@ str(call_ast)
 
 **Remark**: Note that in the second function call we did not use `classes = "logical"` to avoid that all list elements that are not of class `"logical"` are replaced by the `deflt` argument (`NULL`).
 
-The choices `how = "prune"`, `how = "flatten"` and `how = "melt"` return the pruned abstract syntax tree as: a nested list, a flattened list and a melted data.frame respectively. This is identical to application of `rrapply()` to the abstract syntax tree formatted as a nested list. To illustrate, let us return all names in the abstract syntax tree of an expression vector that are not part of base R.
+The choices `how = "prune"`, `how = "flatten"` and `how = "melt"` return the pruned abstract syntax tree as: a nested list, a flattened vector or list and a melted data.frame respectively. This is identical to application of `rrapply()` to the abstract syntax tree formatted as a nested list. To illustrate, let us return all names in the abstract syntax tree of an expression vector that are not part of base R.
 
 ```{r}
 ## example expression
@@ -124,7 +124,7 @@ rrapply(
 
 ## Additional code examples
 
-This section provides several worked out code examples using `rrapply()` to recurse through the abstract syntax tree of a call object, mainly inspired by the `codetools` package and the chapter https://adv-r.hadley.nz/expressions.html#ast-funs. Note that all examples can also be rewritten using recursive function definitions in base R, but the use of `rrapply()` makes the code more concise and easier to follow and reason about. The examples are ordered in increasing degrees of code complexity.
+This section provides several worked out code examples using `rrapply()` to recurse through the abstract syntax tree of a call object, mainly inspired by the `codetools` package and the chapter https://adv-r.hadley.nz/expressions.html#ast-funs. Note that all examples can also be rewritten using recursive function definitions in base R, but the use of `rrapply()` makes the code quite concise and straightforward to follow. The examples are ordered in increasing degrees of code complexity.
 
 ### Example 1: Replacing `T` and `F`
 
@@ -207,7 +207,7 @@ call4 <- quote({
 
 find_assign(call4)
 ```
-Revisiting this example using `rrapply()`, we essentially need to filter any name (i.e. symbol) that is the second element of a call to `<-`. Checking the position of the element in the call can be done with the special `.xpos` argument. To verify that the first element of the call is an actual assignment, we can make use of the special `.xsiblings` argument. We slightly generalize the `find_assign()` function to also return variables created by `=`, `for`, `assign` or `delayedAssign`.  
+Revisiting this example using `rrapply()`, we essentially need to filter any name (i.e. symbol) that is the second element of a call to `<-`. Checking the position of the element in the call can be done with the `.xpos` argument. To verify that the first element of the call is an actual assignment, we can make use of the `.xsiblings` argument. We slightly generalize the `find_assign()` function to also return variables created by `=`, `for`, `assign` or `delayedAssign`.  
 
 ```{r}
 ## helper function to check if variable is created by assignment
