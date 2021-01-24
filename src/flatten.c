@@ -262,8 +262,8 @@ void C_recurse_flatten(
         (localArgs->depth)++;
 
         /* check if rowbind pivot depth should be set */
-        if (fixedArgs->how == 6 && fixedArgs->ans_depthpivot < 0 && C_dupnames(names, n, Rf_isVectorList(Xi) ? Rf_isVectorList(VECTOR_ELT(Xi, 0)) : FALSE))
-            fixedArgs->ans_depthpivot = localArgs->depth;
+        if (fixedArgs->how == 6 && fixedArgs->ans_depthpivot == -1)
+            fixedArgs->ans_depthpivot = C_pivotFlag(Xi, names, n, localArgs->depth);
 
         for (R_len_t i = 0; i < n; i++)
         {

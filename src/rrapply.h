@@ -69,7 +69,7 @@ void C_copyAttrs(SEXP obj, SEXP ans, SEXP names, Rboolean copyAttrs);
 Rboolean C_matchClass(SEXP obj, SEXP classes);
 void C_coerceList(SEXP ans, SEXP newans, R_len_t newlen, SEXPTYPE type);
 int C_answerType(SEXP x);
-Rboolean C_dupnames(SEXP names, R_len_t n, Rboolean hasSubList);
+int C_pivotFlag(SEXP X, SEXP names, R_len_t n, int depth);
 
 // main recursion functions
 SEXP C_recurse_list(SEXP env, SEXP Xi, FunCall f, FunCall condition, FixedArgs *fixedArgs, LocalArgs *localArgs, SEXP classes, SEXP deflt, SEXP xsym);
