@@ -56,13 +56,16 @@ SEXP C_int2char(int i)
     return Rf_mkChar(buff);
 }
 
-/* check for duplicate/empty names */
-Rboolean C_dupnames(SEXP names, R_len_t n, Rboolean hasSubList)
+/* flag pivot depth */
+int C_pivotFlag(SEXP X, SEXP names, R_len_t n, int depth)
 {
+    int flag = -1;
+    Rboolean hasSubList = Rf_isVectorList(X) ? Rf_isVectorList(VECTOR_ELT(X, 0)) : FALSE;
     if (n > 1 && hasSubList && (Rf_isNull(names) || strcmp(CHAR(STRING_ELT(names, 0)), CHAR(STRING_ELT(names, 1))) == 0))
-        return TRUE; // empty or duplicate names with non-empty sublists
-    else
-        return FALSE; // single name or multiple unique names
+        flag = depth; // empty or duplicate names with non-empty sublists (flag current depth)
+    else if (n > 1)
+        flag = -2; // no pivot depth present
+    return flag;
 }
 
 /* concatenate names */
@@ -82,7 +85,7 @@ SEXP C_strcat(SEXP names, int depth)
         {
             if (STRING_ELT(names, j) != NA_STRING)
             {
-                if(nbuff > 0)
+                if (nbuff > 0)
                     strncat(buff, ".", BUFFER_SIZE - nbuff - 1);
 
                 strncat(buff, CHAR(STRING_ELT(names, j)), BUFFER_SIZE - strlen(buff) - 1);
