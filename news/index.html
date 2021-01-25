@@ -73,7 +73,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">rrapply</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.2</span>
       </span>
     </div>
 
@@ -99,7 +99,7 @@
       <a href="../articles/articles/1-when-to-use-rrapply.html">Efficient list recursion with rrapply</a>
     </li>
     <li>
-      <a href="../articles/articles/2-efficient-melting-unmelting.html">Efficient list melting and unmelting with rrapply</a>
+      <a href="../articles/articles/2-efficient-melting-unnesting.html">Efficient list melting and unnesting with rrapply</a>
     </li>
     <li>
       <a href="../articles/articles/3-calls-and-expressions.html">Recursive apply for call and expression objects</a>
@@ -134,14 +134,26 @@
       <small>Source: <a href='https://github.com/JorisChau/rrapply/blob/master/NEWS.md'><code>NEWS.md</code></a></small>
     </div>
 
+    <div id="rrapply-122" class="section level1">
+<h1 class="page-header" data-toc-text="1.2.2">
+<a href="#rrapply-122" class="anchor"></a>rrapply 1.2.2<small> Unreleased </small>
+</h1>
+<ul>
+<li>Added new option ‘how = “bind”’ to unnest a nested list to wide data.frame</li>
+<li>Options ‘how = “flaten”’, ‘how = “melt”’ and ‘how = “bind”’ coerce flat lists to common types</li>
+<li>Unnamed list elements receive names “1”, “2”, … in ‘.xname’, ‘.xparents’, ‘how = “melt”’ and ‘how = “bind”’</li>
+<li>Added ‘pokedex’ demo dataset</li>
+<li>Reorganized source code</li>
+</ul>
+</div>
     <div id="rrapply-121" class="section level1">
 <h1 class="page-header" data-toc-text="1.2.1">
-<a href="#rrapply-121" class="anchor"></a>rrapply 1.2.1<small> Unreleased </small>
+<a href="#rrapply-121" class="anchor"></a>rrapply 1.2.1<small> 2020-11-07 </small>
 </h1>
 <ul>
 <li>Arguments ‘feverywhere’ and ‘dfaslist’ are deprecated in favor of ‘classes’ (instead use ‘classes = “list” or ’classes = “data.frame”’)</li>
 <li>Added the option ‘how = “recurse”’ to replace the deprecated ‘feverywhere = “recurse”’</li>
-<li>Cleaned up C-code and fixed several minor issues</li>
+<li>Cleaned up source code and fixed several minor issues</li>
 </ul>
 </div>
     <div id="rrapply-120" class="section level1">
@@ -169,7 +181,7 @@
 <ul>
 <li>Added new option ‘how = “melt”’ to return melted data.frame from pruned nested list</li>
 <li>Added options ‘feverywhere = “break”’ for list node aggregation and ‘feverywhere = “recurse”’ for list node updating</li>
-<li>Cleaned up C-code and fixed several minor issues</li>
+<li>Cleaned up source code and fixed several minor issues</li>
 </ul>
 </div>
   </div>

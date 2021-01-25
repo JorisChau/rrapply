@@ -75,7 +75,7 @@ a set of elements of a list and deciding how the result is structured." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">rrapply</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.2</span>
       </span>
     </div>
 
@@ -101,7 +101,7 @@ a set of elements of a list and deciding how the result is structured." />
       <a href="../articles/articles/1-when-to-use-rrapply.html">Efficient list recursion with rrapply</a>
     </li>
     <li>
-      <a href="../articles/articles/2-efficient-melting-unmelting.html">Efficient list melting and unmelting with rrapply</a>
+      <a href="../articles/articles/2-efficient-melting-unnesting.html">Efficient list melting and unnesting with rrapply</a>
     </li>
     <li>
       <a href="../articles/articles/3-calls-and-expressions.html">Recursive apply for call and expression objects</a>
@@ -148,7 +148,8 @@ a set of elements of a list and deciding <em>how</em> the result is structured.<
   <span class='no'>f</span>,
   <span class='kw'>classes</span> <span class='kw'>=</span> <span class='st'>"ANY"</span>,
   <span class='kw'>deflt</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>how</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"replace"</span>, <span class='st'>"list"</span>, <span class='st'>"unlist"</span>, <span class='st'>"prune"</span>, <span class='st'>"flatten"</span>, <span class='st'>"melt"</span>, <span class='st'>"recurse"</span>, <span class='st'>"unmelt"</span>),
+  <span class='kw'>how</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"replace"</span>, <span class='st'>"list"</span>, <span class='st'>"unlist"</span>, <span class='st'>"prune"</span>, <span class='st'>"flatten"</span>, <span class='st'>"melt"</span>, <span class='st'>"bind"</span>, <span class='st'>"recurse"</span>,
+    <span class='st'>"unmelt"</span>),
   <span class='no'>feverywhere</span>,
   <span class='no'>dfaslist</span>,
   <span class='no'>...</span>
@@ -182,7 +183,7 @@ to match the class of non-terminal nodes as well.</p></td>
     </tr>
     <tr>
       <th>how</th>
-      <td><p>character string partially matching the eight possibilities given: see &#8216;Details&#8217;.</p></td>
+      <td><p>character string partially matching the nine possibilities given: see &#8216;Details&#8217;.</p></td>
     </tr>
     <tr>
       <th>feverywhere</th>
@@ -202,32 +203,36 @@ to match the class of non-terminal nodes as well.</p></td>
 
     <p>If <code>how = "unlist"</code>, a vector as in <code><a href='https://rdrr.io/r/base/rapply.html'>rapply</a></code>. If <code>how = "list"</code>, <code>how = "replace"</code> or <code>how = "recurse"</code>, 
 &#8220;list-like&#8221; of similar structure as <code>object</code> as in <code><a href='https://rdrr.io/r/base/rapply.html'>rapply</a></code>. If <code>how = "prune"</code>, a pruned &#8220;list-like&#8221; object 
-of similar structure as <code>object</code> with pruned list elements based on <code>classes</code> and <code>condition</code>. If <code>how = "flatten"</code>, an unnested 
-pruned list with pruned list elements based on <code>classes</code> and <code>condition</code>. If <code>how = "melt"</code>, a melted data.frame containing the node 
-paths and values of the pruned list elements based on <code>classes</code> and <code>condition</code>. If <code>how = "unmelt"</code>, a nested list with list names 
-and values defined in the data.frame <code>object</code>.</p>
+of similar structure as <code>object</code> with pruned list elements based on <code>classes</code> and <code>condition</code>. If <code>how = "flatten"</code>, a flattened
+pruned vector or list with pruned elements based on <code>classes</code> and <code>condition</code>. The result of <code>how = "flatten"</code> is coerced to vector 
+similar to <code>how = "unlist"</code>. If <code>how = "melt"</code>, a melted data.frame containing the node paths and values of the pruned list elements based
+on <code>classes</code> and <code>condition</code>. If <code>how = "unmelt"</code>, a nested list with list names and values defined in the data.frame <code>object</code>.</p>
     <h2 class="hasAnchor" id="note"><a class="anchor" href="#note"></a>Note</h2>
 
     <p><code>rrapply</code> allows the <code>f</code> function argument to be missing, in which case no function is applied to the list 
 elements.</p>
 <p><code>how = "unmelt"</code> requires as input a data.frame as returned by <code>how = "melt"</code> with character columns to name the nested list components
-and a final list-column containing the values of the nested list elements.</p>
+and a final list- or vector-column containing the values of the nested list elements.</p>
     <h2 class="hasAnchor" id="how-to-structure-result"><a class="anchor" href="#how-to-structure-result"></a>How to structure result</h2>
 
     
 
 <p>In addition to <code><a href='https://rdrr.io/r/base/rapply.html'>rapply</a></code>'s modes to set <code>how</code> equal to <code>"replace"</code>, <code>"list"</code> or <code>"unlist"</code>, 
-five choices <code>"prune"</code>, <code>"flatten"</code>, <code>"melt"</code>, <code>"unmelt"</code> and <code>"recurse"</code> are available. <code>how = "prune"</code> filters 
-all list elements not subject to application of <code>f</code> from the list <code>object</code>. The original list structure is retained, 
-similar to the non-pruned options <code>how = "replace"</code> or <code>how = "list"</code>. <code>how = "flatten"</code> is an efficient way to 
-return a flattened unnested version of the pruned list. <code>how = "melt"</code> returns a melted data.frame of the pruned list, 
-each row contains the path of a single terminal node in the pruned list at depth layers <code>L1</code>, <code>L2</code>, and so on. The list-column 
-<code>"value"</code> contains the values at the terminal nodes and is equivalent to the flattened list returned by <code>how = "flatten"</code>. 
-If no list names are present, the node names in the data.frame default to the indices of the list elements <code>"..1"</code>, <code>"..2"</code>, etc.
-<code>how = "unmelt"</code> is a special case that reconstructs a nested list from a melted data.frame. For this reason, <code>how = "unmelt"</code> 
+five choices <code>"prune"</code>, <code>"flatten"</code>, <code>"melt"</code>, <code>"bind"</code>, <code>"unmelt"</code> and <code>"recurse"</code> are available. 
+<code>how = "prune"</code> filters all list elements not subject to application of <code>f</code> from the list <code>object</code>. The original 
+list structure is retained, similar to the non-pruned options <code>how = "replace"</code> or <code>how = "list"</code>. <code>how = "flatten"</code> 
+is an efficient way to return a flattened unnested version of the pruned list. <code>how = "flatten"</code> uses similar coercion rules 
+as <code>how = "unlist"</code>. <code>how = "melt"</code> returns a melted data.frame of the pruned list, each row contains the path of a single 
+terminal node in the pruned list at depth layers <code>L1</code>, <code>L2</code>, and so on. The column <code>"value"</code> contains the 
+possible coerced values at the terminal nodes and is equivalent to the result of <code>how = "flatten"</code>. If no list names are present, 
+the node names in the data.frame default to the indices of the list elements <code>"1"</code>, <code>"2"</code>, etc.
+<code>how = "bind"</code> is used to unnest a nested list containing repeated sublists into a wide data.frame. Each repeated sublist is expanded 
+as a single row in the data.frame and identical names between sublists are aligned as individual columns. Repeated sublists are recognized
+as several sublists on the same nested level that are either unnamed or have the same name for each sublist. <code>how = "unmelt"</code> is a 
+special case that reconstructs a nested list from a melted data.frame. For this reason, <code>how = "unmelt"</code> 
 only applies to data.frames in the same format as returned by <code>how = "melt"</code>. Internally, <code>how = "unmelt"</code> first reconstructs 
 a nested list from the melted data.frame and second uses the same framework as <code>how = "replace"</code>. <code>how = "recurse"</code> is a specialized
-option that is only useful in combination with e.g. <code>how = "list"</code> to recurse further into updated &#8220;list-like&#8221; elements. 
+option that is only useful in combination with e.g. <code>classes = "list"</code> to recurse further into updated &#8220;list-like&#8221; elements. 
 This is explained in more detail below.</p>
     <h2 class="hasAnchor" id="condition-function"><a class="anchor" href="#condition-function"></a>Condition function</h2>
 
@@ -312,8 +317,12 @@ a flattened list and a melted data.frame respectively. This is identical to appl
 
 <span class='co'>## Nested list of renewable energy (%) of total energy consumption per country in 2016</span>
 <span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span>(<span class='st'>"renewable_energy_by_country"</span>)
+
 <span class='co'>## Subset values for countries and areas in Oceania</span>
 <span class='no'>renewable_oceania</span> <span class='kw'>&lt;-</span> <span class='no'>renewable_energy_by_country</span><span class='kw'>[[</span><span class='st'>"World"</span>]][<span class='st'>"Oceania"</span>]
+
+<span class='co'>## Nested list of Pokemon properties in Pokemon GO</span>
+<span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span>(<span class='st'>"pokedex"</span>)
 
 <span class='co'># List pruning and unnesting</span>
 
@@ -347,18 +356,13 @@ a flattened list and a melted data.frame respectively. This is identical to appl
   <span class='kw'>classes</span> <span class='kw'>=</span> <span class='st'>"numeric"</span>,
   <span class='kw'>how</span> <span class='kw'>=</span> <span class='st'>"flatten"</span>
 )
-<span class='fu'><a href='https://rdrr.io/r/utils/str.html'>str</a></span>(<span class='no'>na_drop_oceania2</span>, <span class='kw'>list.len</span> <span class='kw'>=</span> <span class='fl'>10</span>, <span class='kw'>give.attr</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; List of 22
-#&gt;  $ Australia                       : num 9.32
-#&gt;  $ New Zealand                     : num 32.8
-#&gt;  $ Fiji                            : num 24.4
-#&gt;  $ New Caledonia                   : num 4.03
-#&gt;  $ Papua New Guinea                : num 50.3
-#&gt;  $ Solomon Islands                 : num 65.7
-#&gt;  $ Vanuatu                         : num 33.7
-#&gt;  $ Guam                            : num 3.03
-#&gt;  $ Kiribati                        : num 45.4
-#&gt;  $ Marshall Islands                : num 11.8
-#&gt;   [list output truncated]</div><div class='input'>
+
+<span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>na_drop_oceania2</span>, <span class='kw'>n</span> <span class='kw'>=</span> <span class='fl'>10</span>)</div><div class='output co'>#&gt;        Australia      New Zealand             Fiji    New Caledonia 
+#&gt;             9.32            32.76            24.36             4.03 
+#&gt; Papua New Guinea  Solomon Islands          Vanuatu             Guam 
+#&gt;            50.34            65.73            33.67             3.03 
+#&gt;         Kiribati Marshall Islands 
+#&gt;            45.43            11.75 </div><div class='input'>
 <span class='co'>## Drop all logical NA's and return melted data.frame</span>
 <span class='no'>na_drop_oceania3</span> <span class='kw'>&lt;-</span> <span class='fu'>rrapply</span>(
   <span class='no'>renewable_oceania</span>,
@@ -396,6 +400,79 @@ a flattened list and a melted data.frame respectively. This is identical to appl
 #&gt;   .. ..$ Marshall Islands                : num 11.8
 #&gt;   .. .. [list output truncated]
 #&gt;   .. [list output truncated]</div><div class='input'>
+<span class='co'>## Convert nested list to wide data.frame</span>
+<span class='no'>pokedex_wide</span> <span class='kw'>&lt;-</span> <span class='fu'>rrapply</span>(<span class='no'>pokedex</span>, <span class='kw'>how</span> <span class='kw'>=</span> <span class='st'>"bind"</span>)
+
+<span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>pokedex_wide</span>)</div><div class='output co'>#&gt;   pokemon.id pokemon.num pokemon.name
+#&gt; 1          1         001    Bulbasaur
+#&gt; 2          2         002      Ivysaur
+#&gt; 3          3         003     Venusaur
+#&gt; 4          4         004   Charmander
+#&gt; 5          5         005   Charmeleon
+#&gt; 6          6         006    Charizard
+#&gt;                                        pokemon.img  pokemon.type pokemon.height
+#&gt; 1 http://www.serebii.net/pokemongo/pokemon/001.png Grass, Poison         0.71 m
+#&gt; 2 http://www.serebii.net/pokemongo/pokemon/002.png Grass, Poison         0.99 m
+#&gt; 3 http://www.serebii.net/pokemongo/pokemon/003.png Grass, Poison         2.01 m
+#&gt; 4 http://www.serebii.net/pokemongo/pokemon/004.png          Fire         0.61 m
+#&gt; 5 http://www.serebii.net/pokemongo/pokemon/005.png          Fire         1.09 m
+#&gt; 6 http://www.serebii.net/pokemongo/pokemon/006.png  Fire, Flying         1.70 m
+#&gt;   pokemon.weight    pokemon.candy pokemon.candy_count pokemon.egg
+#&gt; 1         6.9 kg  Bulbasaur Candy                  25        2 km
+#&gt; 2        13.0 kg  Bulbasaur Candy                 100 Not in Eggs
+#&gt; 3       100.0 kg  Bulbasaur Candy                  NA Not in Eggs
+#&gt; 4         8.5 kg Charmander Candy                  25        2 km
+#&gt; 5        19.0 kg Charmander Candy                 100 Not in Eggs
+#&gt; 6        90.5 kg Charmander Candy                  NA Not in Eggs
+#&gt;   pokemon.spawn_chance pokemon.avg_spawns pokemon.spawn_time
+#&gt; 1               0.6900              69.00              20:00
+#&gt; 2               0.0420               4.20              07:00
+#&gt; 3               0.0170               1.70              11:30
+#&gt; 4               0.2530              25.30              08:45
+#&gt; 5               0.0120               1.20              19:00
+#&gt; 6               0.0031               0.31              13:34
+#&gt;   pokemon.multipliers         pokemon.weaknesses pokemon.next_evolution.1.num
+#&gt; 1                1.58 Fire, Ice, Flying, Psychic                          002
+#&gt; 2            1.2, 1.6 Fire, Ice, Flying, Psychic                          003
+#&gt; 3                  NA Fire, Ice, Flying, Psychic                         &lt;NA&gt;
+#&gt; 4                1.65        Water, Ground, Rock                          005
+#&gt; 5                1.79        Water, Ground, Rock                          006
+#&gt; 6                  NA      Water, Electric, Rock                         &lt;NA&gt;
+#&gt;   pokemon.next_evolution.1.name pokemon.next_evolution.2.num
+#&gt; 1                       Ivysaur                          003
+#&gt; 2                      Venusaur                         &lt;NA&gt;
+#&gt; 3                          &lt;NA&gt;                         &lt;NA&gt;
+#&gt; 4                    Charmeleon                          006
+#&gt; 5                     Charizard                         &lt;NA&gt;
+#&gt; 6                          &lt;NA&gt;                         &lt;NA&gt;
+#&gt;   pokemon.next_evolution.2.name pokemon.prev_evolution.1.num
+#&gt; 1                      Venusaur                         &lt;NA&gt;
+#&gt; 2                          &lt;NA&gt;                          001
+#&gt; 3                          &lt;NA&gt;                          001
+#&gt; 4                     Charizard                         &lt;NA&gt;
+#&gt; 5                          &lt;NA&gt;                          004
+#&gt; 6                          &lt;NA&gt;                          004
+#&gt;   pokemon.prev_evolution.1.name pokemon.prev_evolution.2.num
+#&gt; 1                          &lt;NA&gt;                         &lt;NA&gt;
+#&gt; 2                     Bulbasaur                         &lt;NA&gt;
+#&gt; 3                     Bulbasaur                          002
+#&gt; 4                          &lt;NA&gt;                         &lt;NA&gt;
+#&gt; 5                    Charmander                         &lt;NA&gt;
+#&gt; 6                    Charmander                          005
+#&gt;   pokemon.prev_evolution.2.name pokemon.next_evolution.3.num
+#&gt; 1                          &lt;NA&gt;                         &lt;NA&gt;
+#&gt; 2                          &lt;NA&gt;                         &lt;NA&gt;
+#&gt; 3                       Ivysaur                         &lt;NA&gt;
+#&gt; 4                          &lt;NA&gt;                         &lt;NA&gt;
+#&gt; 5                          &lt;NA&gt;                         &lt;NA&gt;
+#&gt; 6                    Charmeleon                         &lt;NA&gt;
+#&gt;   pokemon.next_evolution.3.name
+#&gt; 1                          &lt;NA&gt;
+#&gt; 2                          &lt;NA&gt;
+#&gt; 3                          &lt;NA&gt;
+#&gt; 4                          &lt;NA&gt;
+#&gt; 5                          &lt;NA&gt;
+#&gt; 6                          &lt;NA&gt;</div><div class='input'>
 <span class='co'># Condition function</span>
 
 <span class='co'>## Drop all NA elements using condition function</span>
@@ -481,18 +558,26 @@ a flattened list and a melted data.frame respectively. This is identical to appl
   <span class='kw'>condition</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/funprog.html'>Negate</a></span>(<span class='no'>is.na</span>),
   <span class='kw'>how</span> <span class='kw'>=</span> <span class='st'>"flatten"</span>
 )
-<span class='fu'><a href='https://rdrr.io/r/utils/str.html'>str</a></span>(<span class='no'>renewable_oceania_text</span>, <span class='kw'>list.len</span> <span class='kw'>=</span> <span class='fl'>10</span>)</div><div class='output co'>#&gt; List of 22
-#&gt;  $ Australia                       : chr "Renewable energy in Australia: 9.32%"
-#&gt;  $ New Zealand                     : chr "Renewable energy in New Zealand: 32.76%"
-#&gt;  $ Fiji                            : chr "Renewable energy in Fiji: 24.36%"
-#&gt;  $ New Caledonia                   : chr "Renewable energy in New Caledonia: 4.03%"
-#&gt;  $ Papua New Guinea                : chr "Renewable energy in Papua New Guinea: 50.34%"
-#&gt;  $ Solomon Islands                 : chr "Renewable energy in Solomon Islands: 65.73%"
-#&gt;  $ Vanuatu                         : chr "Renewable energy in Vanuatu: 33.67%"
-#&gt;  $ Guam                            : chr "Renewable energy in Guam: 3.03%"
-#&gt;  $ Kiribati                        : chr "Renewable energy in Kiribati: 45.43%"
-#&gt;  $ Marshall Islands                : chr "Renewable energy in Marshall Islands: 11.75%"
-#&gt;   [list output truncated]</div><div class='input'>
+<span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>renewable_oceania_text</span>, <span class='kw'>n</span> <span class='kw'>=</span> <span class='fl'>10</span>)</div><div class='output co'>#&gt;                                      Australia 
+#&gt;         "Renewable energy in Australia: 9.32%" 
+#&gt;                                    New Zealand 
+#&gt;      "Renewable energy in New Zealand: 32.76%" 
+#&gt;                                           Fiji 
+#&gt;             "Renewable energy in Fiji: 24.36%" 
+#&gt;                                  New Caledonia 
+#&gt;     "Renewable energy in New Caledonia: 4.03%" 
+#&gt;                               Papua New Guinea 
+#&gt; "Renewable energy in Papua New Guinea: 50.34%" 
+#&gt;                                Solomon Islands 
+#&gt;  "Renewable energy in Solomon Islands: 65.73%" 
+#&gt;                                        Vanuatu 
+#&gt;          "Renewable energy in Vanuatu: 33.67%" 
+#&gt;                                           Guam 
+#&gt;              "Renewable energy in Guam: 3.03%" 
+#&gt;                                       Kiribati 
+#&gt;         "Renewable energy in Kiribati: 45.43%" 
+#&gt;                               Marshall Islands 
+#&gt; "Renewable energy in Marshall Islands: 11.75%" </div><div class='input'>
 <span class='co'>## Extract values based on country names</span>
 <span class='no'>renewable_benelux</span> <span class='kw'>&lt;-</span> <span class='fu'>rrapply</span>(
   <span class='no'>renewable_energy_by_country</span>,
@@ -553,19 +638,53 @@ a flattened list and a melted data.frame respectively. This is identical to appl
   <span class='kw'>condition</span> <span class='kw'>=</span> <span class='kw'>function</span>(<span class='no'>x</span>, <span class='no'>.xsiblings</span>) <span class='st'>"Sweden"</span> <span class='kw'>%in%</span> <span class='fu'><a href='https://rdrr.io/r/base/names.html'>names</a></span>(<span class='no'>.xsiblings</span>),
   <span class='kw'>how</span> <span class='kw'>=</span> <span class='st'>"flatten"</span>
 )
-<span class='fu'><a href='https://rdrr.io/r/utils/str.html'>str</a></span>(<span class='no'>siblings_sweden</span>, <span class='kw'>list.len</span> <span class='kw'>=</span> <span class='fl'>10</span>, <span class='kw'>give.attr</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; List of 14
-#&gt;  $ Aland Islands                                       : logi NA
-#&gt;  $ Denmark                                             : num 33.1
-#&gt;  $ Estonia                                             : num 26.6
-#&gt;  $ Faroe Islands                                       : num 4.24
-#&gt;  $ Finland                                             : num 42
-#&gt;  $ Iceland                                             : num 78.1
-#&gt;  $ Ireland                                             : num 8.65
-#&gt;  $ Isle of Man                                         : num 4.3
-#&gt;  $ Latvia                                              : num 38.5
-#&gt;  $ Lithuania                                           : num 31.4
-#&gt;   [list output truncated]</div><div class='input'>
-<span class='co'># Avoid skipping list nodes</span>
+<span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>siblings_sweden</span>, <span class='kw'>n</span> <span class='kw'>=</span> <span class='fl'>10</span>)</div><div class='output co'>#&gt; Aland Islands       Denmark       Estonia Faroe Islands       Finland 
+#&gt;            NA         33.06         26.55          4.24         42.03 
+#&gt;       Iceland       Ireland   Isle of Man        Latvia     Lithuania 
+#&gt;         78.07          8.65          4.30         38.48         31.42 </div><div class='input'>
+<span class='co'>## Return wide Pokedex data.frame without evolutions </span>
+<span class='no'>pokedex_small</span> <span class='kw'>&lt;-</span> <span class='fu'>rrapply</span>(
+   <span class='no'>pokedex</span>,
+   <span class='kw'>condition</span> <span class='kw'>=</span> <span class='kw'>function</span>(<span class='no'>x</span>, <span class='no'>.xparents</span>) !<span class='fu'><a href='https://rdrr.io/r/base/any.html'>any</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/grep.html'>grepl</a></span>(<span class='st'>"evolution"</span>, <span class='no'>.xparents</span>)),
+   <span class='kw'>how</span> <span class='kw'>=</span> <span class='st'>"bind"</span>
+)
+
+<span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>pokedex_small</span>)</div><div class='output co'>#&gt;   pokemon.id pokemon.num pokemon.name
+#&gt; 1          1         001    Bulbasaur
+#&gt; 2          2         002      Ivysaur
+#&gt; 3          3         003     Venusaur
+#&gt; 4          4         004   Charmander
+#&gt; 5          5         005   Charmeleon
+#&gt; 6          6         006    Charizard
+#&gt;                                        pokemon.img  pokemon.type pokemon.height
+#&gt; 1 http://www.serebii.net/pokemongo/pokemon/001.png Grass, Poison         0.71 m
+#&gt; 2 http://www.serebii.net/pokemongo/pokemon/002.png Grass, Poison         0.99 m
+#&gt; 3 http://www.serebii.net/pokemongo/pokemon/003.png Grass, Poison         2.01 m
+#&gt; 4 http://www.serebii.net/pokemongo/pokemon/004.png          Fire         0.61 m
+#&gt; 5 http://www.serebii.net/pokemongo/pokemon/005.png          Fire         1.09 m
+#&gt; 6 http://www.serebii.net/pokemongo/pokemon/006.png  Fire, Flying         1.70 m
+#&gt;   pokemon.weight    pokemon.candy pokemon.candy_count pokemon.egg
+#&gt; 1         6.9 kg  Bulbasaur Candy                  25        2 km
+#&gt; 2        13.0 kg  Bulbasaur Candy                 100 Not in Eggs
+#&gt; 3       100.0 kg  Bulbasaur Candy                  NA Not in Eggs
+#&gt; 4         8.5 kg Charmander Candy                  25        2 km
+#&gt; 5        19.0 kg Charmander Candy                 100 Not in Eggs
+#&gt; 6        90.5 kg Charmander Candy                  NA Not in Eggs
+#&gt;   pokemon.spawn_chance pokemon.avg_spawns pokemon.spawn_time
+#&gt; 1               0.6900              69.00              20:00
+#&gt; 2               0.0420               4.20              07:00
+#&gt; 3               0.0170               1.70              11:30
+#&gt; 4               0.2530              25.30              08:45
+#&gt; 5               0.0120               1.20              19:00
+#&gt; 6               0.0031               0.31              13:34
+#&gt;   pokemon.multipliers         pokemon.weaknesses
+#&gt; 1                1.58 Fire, Ice, Flying, Psychic
+#&gt; 2            1.2, 1.6 Fire, Ice, Flying, Psychic
+#&gt; 3                  NA Fire, Ice, Flying, Psychic
+#&gt; 4                1.65        Water, Ground, Rock
+#&gt; 5                1.79        Water, Ground, Rock
+#&gt; 6                  NA      Water, Electric, Rock</div><div class='input'>
+<span class='co'># Modifying list elements</span>
 
 <span class='co'>## Calculate mean value of Europe</span>
 <span class='fu'>rrapply</span>(
@@ -574,9 +693,8 @@ a flattened list and a melted data.frame respectively. This is identical to appl
   <span class='kw'>condition</span> <span class='kw'>=</span> <span class='kw'>function</span>(<span class='no'>x</span>, <span class='no'>.xname</span>) <span class='no'>.xname</span> <span class='kw'>==</span> <span class='st'>"Europe"</span>,
   <span class='kw'>f</span> <span class='kw'>=</span> <span class='kw'>function</span>(<span class='no'>x</span>) <span class='fu'><a href='https://rdrr.io/r/base/mean.html'>mean</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/unlist.html'>unlist</a></span>(<span class='no'>x</span>), <span class='kw'>na.rm</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>),
   <span class='kw'>how</span> <span class='kw'>=</span> <span class='st'>"flatten"</span>
-)</div><div class='output co'>#&gt; $Europe
-#&gt; [1] 22.36565
-#&gt; </div><div class='input'>
+)</div><div class='output co'>#&gt;   Europe 
+#&gt; 22.36565 </div><div class='input'>
 <span class='co'>## Calculate mean value for each continent</span>
 <span class='no'>renewable_continent_summary</span> <span class='kw'>&lt;-</span> <span class='fu'>rrapply</span>(
   <span class='no'>renewable_energy_by_country</span>,
@@ -713,11 +831,11 @@ a flattened list and a melted data.frame respectively. This is identical to appl
   <span class='kw'>f</span> <span class='kw'>=</span> <span class='no'>as.character</span>,
   <span class='kw'>how</span> <span class='kw'>=</span> <span class='st'>"melt"</span>
 )
-<span class='no'>expr_melt</span></div><div class='output co'>#&gt;    L1  L2   L3 value
-#&gt; 1 ..1 ..2 &lt;NA&gt;     y
-#&gt; 2 ..1 ..3  ..2     x
-#&gt; 3 ..2 ..1 &lt;NA&gt;     f
-#&gt; 4 ..2 ..2  ..1     g</div><div class='input'>
+<span class='no'>expr_melt</span></div><div class='output co'>#&gt;   L1 L2   L3 value
+#&gt; 1  1  2 &lt;NA&gt;     y
+#&gt; 2  1  3    2     x
+#&gt; 3  2  1 &lt;NA&gt;     f
+#&gt; 4  2  2    1     g</div><div class='input'>
 <span class='co'>## Avoid recursing into call objects</span>
 <span class='fu'>rrapply</span>(
   <span class='no'>expr</span>,
