@@ -1,7 +1,7 @@
 # rrapply 1.2.2
 
 * Added new option 'how = "bind"' to unnest a nested list to wide data.frame
-* Options 'how = "flaten"', 'how = "melt"' and 'how = "bind"' coerce flat lists to common types 
+* Options 'how = "flatten"', 'how = "melt"' and 'how = "bind"' coerce flat lists to common types 
 * Unnamed list elements receive names "1", "2", ... in '.xname', '.xparents', 'how = "melt"' and 'how = "bind"'
 * Added 'pokedex' demo dataset 
 * Reorganized source code
