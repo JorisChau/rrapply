@@ -9,7 +9,7 @@
 * centos6-epel R-3.5.2 (rhub)
 * macos-highsierra R-release (rhub)
 * solaris-ods R-release (rhub)
-* win-builder R-release, R-devel, R-old-release, 1 note (see below)
+* win-builder R-release, R-devel, R-old-release
 
 ### Compiled code checks
 
