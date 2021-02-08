@@ -1,3 +1,7 @@
+# rrapply 1.2.3
+
+* Fixed a minor bug 'classes' argument in case of missing 'f' and 'condition' arguments
+
 # rrapply 1.2.2
 
 * Added new option 'how = "bind"' to unnest a nested list to wide data.frame
