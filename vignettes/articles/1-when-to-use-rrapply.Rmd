@@ -621,4 +621,4 @@ students_Euler <- rrapply(
 str(students_Euler, give.attr = FALSE)
 ```
 
-For additional information and details check out the package vignette (`browseVignettes(package = "rapply")`) or the other articles in the **Articles** section.
+For additional information and details check out the package vignette (`browseVignettes(package = "rrapply")`) or the other articles in the **Articles** section.

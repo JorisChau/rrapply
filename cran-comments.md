@@ -1,4 +1,4 @@
-## CRAN package version 1.2.2
+## CRAN package version 1.2.3
 
 ### Test environments
 
@@ -9,7 +9,7 @@
 * centos6-epel R-3.5.2 (rhub)
 * macos-highsierra R-release (rhub)
 * solaris-ods R-release (rhub)
-* win-builder R-release, R-devel, R-old-release
+* win-builder R-patched, R-release, R-devel, R-old-release (see below)
 
 ### Compiled code checks
 
@@ -19,4 +19,5 @@
 
 ### Notes
 
-* None
+* Possibly mis-spelled words in DESCRIPTION:
+    Rapply (3:24)
