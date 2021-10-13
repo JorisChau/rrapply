@@ -12,6 +12,8 @@ Status](https://travis-ci.org/JorisChau/rrapply.svg?branch=master)](https://trav
 [![codecov](https://codecov.io/gh/JorisChau/rrapply/branch/master/graph/badge.svg)](https://codecov.io/gh/JorisChau/rrapply)
 [![AppVeyor build
 status](https://ci.appveyor.com/api/projects/status/github/JorisChau/rrapply?branch=master&svg=true)](https://ci.appveyor.com/project/JorisChau/rrapply)
+[![Total
+Downloads](https://cranlogs.r-pkg.org/badges/grand-total/rrapply)](https://cran.r-project.org/package=rrapply)
 <!-- badges: end -->
 
 The minimal rrapply-package contains a single function `rrapply()`,
@@ -135,8 +137,8 @@ head(na_drop_oceania3)
 #> 6 Oceania                 Melanesia  Solomon Islands 65.73
 ```
 
-A melted data.frame can be used to reconstruct a nested list with `how =
-"unmelt"`,
+A melted data.frame can be used to reconstruct a nested list with
+`how = "unmelt"`,
 
 ``` r
 ## Reconstruct nested list from melted data.frame
@@ -163,8 +165,8 @@ str(na_drop_oceania4, list.len = 3, give.attr = FALSE)
 #>   .. [list output truncated]
 ```
 
-Nested lists containing repeated observations can be unnested with `how
-= "bind"`, which returns a wide data.frame similar in format to
+Nested lists containing repeated observations can be unnested with
+`how = "bind"`, which returns a wide data.frame similar in format to
 `dplyr::bind_rows()` applied to a list of data.frames or repeated
 application of `tidyr::unnest_wider()` to a nested data.frame.
 
@@ -464,9 +466,9 @@ head(pokedex_wide2, n = 9)
 If `classes = "list"` and `how = "recurse"`, `rrapply()` applies the `f`
 function to any list element that satisfies the `condition` argument
 similar to the previous section, but recurses further into any *updated*
-list-like element after application of the `f` function. Using `how =
-"recurse"`, we can for instance recursively update all node names in a
-nested list:
+list-like element after application of the `f` function. Using
+`how = "recurse"`, we can for instance recursively update all node names
+in a nested list:
 
 ``` r
 ## Replace country names by M-49 attributes
@@ -573,8 +575,8 @@ on their internal abstract syntax trees. As such, all functionality that
 applies to nested lists extends directly to call objects and expression
 vectors.
 
-To update the abstract syntax tree of a call object, use `how =
-"replace"`:
+To update the abstract syntax tree of a call object, use
+`how = "replace"`:
 
 ``` r
 call_old <- quote(y <- x <- 1 + TRUE)
