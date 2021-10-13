@@ -420,7 +420,7 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
   if(missing(condition)) condition <- NULL else condition <- match.fun(condition)
   
   if(is.null(f) && (is.null(condition) || identical(howInt, 1L)) && identical(feverywhere, 0L) && 
-     ((is.list(object) && howInt < 5L) || (!is.list(object) && howInt < 2L)))
+     identical(classes, "ANY") && ((is.list(object) && howInt < 5L) || (!is.list(object) && howInt < 2L)))
   {  
     ## nothing to be done
     res <- object  

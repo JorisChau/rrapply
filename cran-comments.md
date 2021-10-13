@@ -1,4 +1,4 @@
-## CRAN package version 1.2.2
+## CRAN package version 1.2.3
 
 ### Test environments
 
@@ -9,14 +9,15 @@
 * centos6-epel R-3.5.2 (rhub)
 * macos-highsierra R-release (rhub)
 * solaris-ods R-release (rhub)
-* win-builder R-release, R-devel, R-old-release, 1 note (see below)
+* win-builder R-patched, R-release, R-devel, R-old-release (see below)
 
 ### Compiled code checks
 
 * linux-x86_64-rocker-gcc-san (rhub)
 * ubuntu-rchk (rhub)
-* ubuntu clang R-release (local install) --use-valgrind/--use-gct
+* ubuntu clang R-release, R-old-release (local install) --use-valgrind/--use-gct
 
 ### Notes
 
-* None
+* Possibly mis-spelled words in DESCRIPTION:
+    Rapply (3:24)
