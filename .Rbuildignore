@@ -2,10 +2,8 @@
 ^\.Rproj\.user$
 ^doc$
 ^Meta$
-^\.travis\.yml$
 ^README.Rmd$
 ^cran-comments.md$
 ^CRAN-RELEASE$
-^appveyor\.yml$
 ^\.gitignore$
-^\.gitattributes$
+^\.github$
