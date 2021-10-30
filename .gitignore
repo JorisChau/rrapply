@@ -15,3 +15,5 @@ README.Rmd
 *.o
 *.so
 *.gz
+/doc/
+/Meta/

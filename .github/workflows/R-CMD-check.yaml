@@ -28,8 +28,8 @@ jobs:
           - {os: ubuntu-18.04,   r: 'devel', http-user-agent: 'release'}
           - {os: ubuntu-18.04,   r: 'release'}
           - {os: ubuntu-18.04,   r: 'oldrel-1'}
-          - {os: ubuntu-18.04,   r: 'oldrel-2'}
-          - {os: ubuntu-18.04,   r: 'oldrel-3'}
+          #- {os: ubuntu-18.04,   r: 'oldrel-2'}
+          #- {os: ubuntu-18.04,   r: 'oldrel-3'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -49,15 +49,11 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v1
         with:
           extra-packages: rcmdcheck
+          
+      - uses: r-lib/actions/setup-tinytex@master
 
-      - name: Check
-        env:
-          _R_CHECK_CRAN_INCOMING_: false
-        run: |
-          options(crayon.enabled = TRUE)
-          rcmdcheck::rcmdcheck(args = c("--no-manual", "--no-build-vignettes"), build_args = "--no-build-vignettes", error_on = "error", check_dir = "check")
-        shell: Rscript {0}
-        
+      - uses: r-lib/actions/check-r-package@v1
+
       - name: Upload check results
         if: failure()
         uses: actions/upload-artifact@main
