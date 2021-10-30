@@ -52,6 +52,11 @@ jobs:
           
       - uses: r-lib/actions/setup-tinytex@master
 
+      - name: Install tex dependencies
+        run: |
+          tinytex::tlmgr_install("ae")
+        shell: Rscript {0}
+
       - uses: r-lib/actions/check-r-package@v1
 
       - name: Upload check results
