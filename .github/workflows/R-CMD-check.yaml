@@ -50,11 +50,8 @@ jobs:
         with:
           extra-packages: rcmdcheck
           
-      - uses: r-lib/actions/setup-tinytex@master
-
-      - name: Install tex dependencies
-        run: tlmgr install ae grfext
-        shell: bash
+      - uses: r-lib/actions/setup-tinytex@v1
+      - run: tlmgr install ae grfext
 
       - uses: r-lib/actions/check-r-package@v1
 
