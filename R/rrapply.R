@@ -358,8 +358,6 @@
 #' to match the class of non-terminal nodes as well.
 #' @param how character string partially matching the nine possibilities given: see \sQuote{Details}.
 #' @param deflt the default result (only used if \code{how = "list"} or \code{how = "unlist"}).
-#' @param feverywhere deprecated use \code{classes = "list"}, \code{classes = "language"} or \code{classes = "expression"} and optionally \code{how = "recurse"} instead.
-#' @param dfaslist deprecated use \code{classes = "data.frame"} instead.
 #' @param ... additional arguments passed to the call to \code{f} and \code{condition}.
 #' 
 #' @aliases rrapply
@@ -369,8 +367,8 @@
 #' @useDynLib rrapply, .registration = TRUE
 #' @export 
 rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL, 
-                    how = c("replace", "list", "unlist", "prune", "flatten", "melt", "bind", "recurse", "unmelt"),
-                    feverywhere, dfaslist, ...)
+                    how = c("replace", "list", "unlist", "prune", "flatten", "melt", "bind", "recurse", "unmelt"), 
+                    ...)
 {
   ## non-function arguments
   if(!(is.list(object) || is.call(object) || is.expression(object)) || length(object) < 1) 
@@ -379,23 +377,9 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
   how <- match.arg(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "bind", "recurse", "unmelt"))
   howInt <- match(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "bind", "recurse", "unmelt"))
   if(identical(how, "recurse")) howInt <- 1L
+  feverywhere <- ifelse(isTRUE(any(classes %in% c("list", "language", "pairlist", "expression"))), 1L + identical(how, "recurse"), 0L)
+  dfaslist <- ifelse(isFALSE("data.frame" %in% classes), 1L, -identical(how, "recurse"))
   
-  if(!missing(feverywhere))
-  {
-    warning("'feverywhere' is deprecated, use e.g. classes = 'list' or classes = 'call' instead")
-    feverywhere <- match.arg(feverywhere, c("no", "break", "recurse"))
-    feverywhere <- match(feverywhere, c("no", "break", "recurse")) - 1L
-  }
-  else 
-    feverywhere <- ifelse(isTRUE(any(classes %in% c("list", "language", "pairlist", "expression"))), 1L + identical(how, "recurse"), 0L)
-  
-  if(!missing(dfaslist))
-  {
-    warning("'dfaslist' is deprecated, use classes = 'data.frame' instead")
-    dfaslist <- isTRUE(dfaslist)
-  }
-  else 
-    dfaslist <- isFALSE("data.frame" %in% classes)
   if(length(classes) > 1 && isTRUE("ANY" %in% classes)) classes <- "ANY"
   
   ## unmelt data.frame to nested list
@@ -432,7 +416,6 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
       fArgs <- match(c(".xname", ".xpos", ".xparents", ".xsiblings"), names(formals(f)), nomatch = 0L) 
     if(identical(typeof(condition), "closure"))
       conditionArgs <- match(c(".xname", ".xpos", ".xparents", ".xsiblings"), names(formals(condition)), nomatch = 0L)
-    
     ## call main C function
     res <- .Call(C_rrapply, environment(), object, f, fArgs, condition, conditionArgs, classes, howInt, deflt, dfaslist, feverywhere)  
   }

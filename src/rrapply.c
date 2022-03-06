@@ -143,7 +143,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		.ans_ptr = NULL,
 		.ansnames_ptr = NULL,
 		.how = INTEGER_ELT(R_how, 0) - 1,
-		.dfaslist = LOGICAL_ELT(R_dfaslist, 0),
+		.dfaslist = INTEGER_ELT(R_dfaslist, 0),
 		.feverywhere = INTEGER_ELT(R_feverywhere, 0),
 		.depthmax = 1,
 		.maxnodes = 0,

@@ -12,8 +12,6 @@ rrapply(
   deflt = NULL,
   how = c("replace", "list", "unlist", "prune", "flatten", "melt", "bind", "recurse",
     "unmelt"),
-  feverywhere,
-  dfaslist,
   ...
 )
 }
@@ -32,10 +30,6 @@ to match the class of non-terminal nodes as well.}
 \item{deflt}{the default result (only used if \code{how = "list"} or \code{how = "unlist"}).}
 
 \item{how}{character string partially matching the nine possibilities given: see \sQuote{Details}.}
-
-\item{feverywhere}{deprecated use \code{classes = "list"}, \code{classes = "language"} or \code{classes = "expression"} and optionally \code{how = "recurse"} instead.}
-
-\item{dfaslist}{deprecated use \code{classes = "data.frame"} instead.}
 
 \item{...}{additional arguments passed to the call to \code{f} and \code{condition}.}
 }

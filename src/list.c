@@ -27,7 +27,7 @@ SEXP C_recurse_list(
     if (fixedArgs->feverywhere < 1 && ((Rf_isVectorList(Xi) || Rf_isPairList(Xi)) && TYPEOF(Xi) != NILSXP))
     {
         recurse = TRUE;
-        if (!fixedArgs->dfaslist)
+        if (fixedArgs->dfaslist < 1)
         {
             if (C_matchClass(Xi, PROTECT(Rf_ScalarString(Rf_mkChar("data.frame")))))
                 recurse = FALSE;
@@ -221,8 +221,8 @@ SEXP C_recurse_list(
                 fval = Xi;
             }
 
-            /* recurse further with new value if feverywhere == 2 */
-            if (fixedArgs->feverywhere == 2 && ((Rf_isVectorList(fval) || Rf_isPairList(fval)) && TYPEOF(fval) != NILSXP))
+            /* recurse further with new value if feverywhere == 2 or dfaslist == -1 */
+            if ((fixedArgs->feverywhere == 2 || fixedArgs->dfaslist == -1) && ((Rf_isVectorList(fval) || Rf_isPairList(fval)) && TYPEOF(fval) != NILSXP))
             {
                 recurse = TRUE;
             }
@@ -232,7 +232,7 @@ SEXP C_recurse_list(
                 return fval;
             }
         }
-        else if (fixedArgs->feverywhere > 0 && !emptysymbol && ((Rf_isVectorList(Xi) || Rf_isPairList(Xi)) && TYPEOF(Xi) != NILSXP))
+        else if ((fixedArgs->feverywhere > 0 || fixedArgs->dfaslist == -1) && !emptysymbol && ((Rf_isVectorList(Xi) || Rf_isPairList(Xi)) && TYPEOF(Xi) != NILSXP))
         {
             /* recurse further */
             fval = Xi;
@@ -292,7 +292,7 @@ SEXP C_recurse_list(
         (localArgs->depth)++;
 
         /* reallocate .xpos and .xparent vectors */
-        if (fixedArgs->feverywhere == 2)
+        if (fixedArgs->feverywhere == 2 || fixedArgs->dfaslist == -1)
         {
             if (localArgs->depth > 100)
                 Rf_error("a hard limit of maximum 100 nested layers is enforced to avoid infinite recursion"); /* stop with error if depth too large */

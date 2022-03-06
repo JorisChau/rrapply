@@ -1,3 +1,8 @@
+# rrapply 1.2.4
+
+* Fixed minor issue with nested data.frames using 'classes = "data.frame"' and 'how = "recurse"'
+* Removed deprecated arguments 'feverywhere' and 'dfaslist'
+
 # rrapply 1.2.3
 
 * Fixed a minor bug 'classes' argument in case of missing 'f' and 'condition' arguments

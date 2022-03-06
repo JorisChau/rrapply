@@ -239,9 +239,6 @@ dotest("3.20", rrapply(xin2, f = function(x) 1L, classes = "data.frame"), xout3.
 dotest("3.21", rrapply(xin, condition = function(x, .xpos) all(.xpos < 2), classes = c("data.frame", "ANY"), how = "bind"), xout3.21)
 dotest("3.22", rrapply(xin5, condition = function(x, .xname) grepl("a", .xname), classes = c("list", "ANY"), how = "flatten"), xout3.22)
 
-## warnings
-tools::assertWarning(rrapply(xin, f = identity, dfaslist = FALSE))
-
 ## deflt argument
 xin <- list(a = 1L, b = list(b1 = 2L, b2 = 3L), c = 4L)
 xin1 <- quote(f1(a = 1L, b = f2(b1 = 2L, b2 = 3L), c = 4L))
@@ -270,6 +267,7 @@ xin3 <- quote(f1(a = 1L, b = f2(b1 = 2L, b2 = 3L), c = 4L))
 xin4 <- list(expression(a <- 1L), expression(...))
 xin5 <- list(par = pairlist(a = 1L, b = 2L))
 xin6 <- list(1L, 2L, 3L)
+xin7 <- list(data.frame(a = I(data.frame(b = I(data.frame(c = 1L))))))
 
 xout6.1 <- list(a = 1L, b = "b", c = 4L)
 xout6.2 <- list(a = "a", b = "b", c = "c")
@@ -307,7 +305,7 @@ xout6.27 <- xout6.26
 
 xout6.28 <- structure(list(a = "a", b = "b", c = "c"), row.names = 1L, class = "data.frame")
 xout6.29 <- structure(list(b = list(structure(2:3, .Names = c("b1", "b2")))), row.names = 1L, class = "data.frame")
-
+xout6.30 <- list(list(a = list(b = list(c = 1L))))
 
 dotest("6.1", rrapply(xin1, f = function(x, .xname) .xname, classes = "list"), xout6.1)
 dotest("6.2", rrapply(xin1, f = function(x, .xname) .xname, classes = c("list", "ANY")), xout6.2)
@@ -346,10 +344,10 @@ dotest("6.27", rrapply(xin6, classes = c("list", "integer"), f = function(x, .xp
 
 dotest("6.28", rrapply(xin1, f = function(x, .xparents) .xparents, how = "bind", classes = c("list", "ANY")), xout6.28)
 dotest("6.29", rrapply(xin2, f = unlist, condition = function(x, .xname) .xname == "b", how = "bind", classes = "list"), xout6.29)
-
-## warnings/errors
+dotest("6.30", rrapply(xin7, classes = "data.frame", f = as.list, how = "recurse"), xout6.30)
+       
+## errors
 tools::assertError(rrapply(list(list(1)), f = list, classes = "list", how = "recurse"))
-tools::assertWarning(rrapply(list(list(1)), f = identity, feverywhere = "recurse"))
 
 ## named flat list
 xin1 <- list(a = 1L, b = 2L, c = 3L)
