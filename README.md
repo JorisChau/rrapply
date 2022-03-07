@@ -8,7 +8,7 @@
 [![CRAN
 version](http://www.r-pkg.org/badges/version/rrapply)](https://cran.r-project.org/package=rrapply)
 [![R-CMD-check](https://github.com/JorisChau/rrapply/workflows/R-CMD-check/badge.svg)](https://github.com/JorisChau/rrapply/actions)
-[![codecov](https://codecov.io/gh/JorisChau/rrapply/branch/master/graph/badge.svg)](https://codecov.io/gh/JorisChau/rrapply)
+[![codecov](https://codecov.io/gh/JorisChau/rrapply/branch/master/graph/badge.svg)](https://app.codecov.io/gh/JorisChau/rrapply)
 [![status](https://tinyverse.netlify.com/badge/rrapply)](https://CRAN.R-project.org/package=rrapply)
 [![Total
 Downloads](https://cranlogs.r-pkg.org/badges/grand-total/rrapply)](https://cran.r-project.org/package=rrapply)
