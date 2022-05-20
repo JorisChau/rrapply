@@ -8,3 +8,4 @@
 ^\.gitignore$
 ^\.github$
 ^CRAN-SUBMISSION$
+^sticker\.svg$

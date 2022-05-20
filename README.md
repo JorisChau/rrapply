@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# rrapply: revisiting R-base rapply
+# rrapply: revisiting R-base rapply <img src='sticker.svg' align="right" height="139" />
 
 <!-- badges: start -->
 
