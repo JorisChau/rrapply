@@ -1,0 +1,13 @@
+\documentclass{article}
+\usepackage{pdfpages}
+
+%\VignetteIndexEntry{rrapply: cheat sheet}
+%\VignetteAuthor{Joris Chau}
+%\VignetteKeyword{introduction}
+%\VignetteKeyword{cheatsheet}
+%\VignetteKeyword{rrapply}
+%\VignetteEncoding{UTF-8}
+
+\begin{document}
+\includepdf[pages=-, fitpaper=true]{cheatsheet.pdf}
+\end{document}

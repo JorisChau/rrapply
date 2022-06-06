@@ -32,6 +32,15 @@ install.packages("rrapply")
 devtools::install_github("JorisChau/rrapply")
 ```
 
+## Cheat sheet
+
+<div>
+
+<a href='vignettes/cheatsheet.pdf'>
+<img src='cheatsheet.svg' align="center" height="600" /> </a>
+
+</div>
+
 ## Example usage
 
 ### List pruning and unnesting
@@ -196,18 +205,18 @@ str(pokedex, list.len = 3)
 pokedex_wide <- rrapply(pokedex, how = "bind")
 
 head(pokedex_wide[, c(1:3, 5:10)], n = 5)
-#>   pokemon.id pokemon.num pokemon.name  pokemon.type pokemon.height
-#> 1          1         001    Bulbasaur Grass, Poison         0.71 m
-#> 2          2         002      Ivysaur Grass, Poison         0.99 m
-#> 3          3         003     Venusaur Grass, Poison         2.01 m
-#> 4          4         004   Charmander          Fire         0.61 m
-#> 5          5         005   Charmeleon          Fire         1.09 m
-#>   pokemon.weight    pokemon.candy pokemon.candy_count pokemon.egg
-#> 1         6.9 kg  Bulbasaur Candy                  25        2 km
-#> 2        13.0 kg  Bulbasaur Candy                 100 Not in Eggs
-#> 3       100.0 kg  Bulbasaur Candy                  NA Not in Eggs
-#> 4         8.5 kg Charmander Candy                  25        2 km
-#> 5        19.0 kg Charmander Candy                 100 Not in Eggs
+#>   id num       name          type height   weight            candy candy_count
+#> 1  1 001  Bulbasaur Grass, Poison 0.71 m   6.9 kg  Bulbasaur Candy          25
+#> 2  2 002    Ivysaur Grass, Poison 0.99 m  13.0 kg  Bulbasaur Candy         100
+#> 3  3 003   Venusaur Grass, Poison 2.01 m 100.0 kg  Bulbasaur Candy          NA
+#> 4  4 004 Charmander          Fire 0.61 m   8.5 kg Charmander Candy          25
+#> 5  5 005 Charmeleon          Fire 1.09 m  19.0 kg Charmander Candy         100
+#>           egg
+#> 1        2 km
+#> 2 Not in Eggs
+#> 3 Not in Eggs
+#> 4        2 km
+#> 5 Not in Eggs
 ```
 
 ### Condition function
@@ -386,13 +395,13 @@ pokedex_small <- rrapply(
 )
 
 head(pokedex_small)
-#>   pokemon.num pokemon.name  pokemon.type
-#> 1         001    Bulbasaur Grass, Poison
-#> 2         002      Ivysaur Grass, Poison
-#> 3         003     Venusaur Grass, Poison
-#> 4         004   Charmander          Fire
-#> 5         005   Charmeleon          Fire
-#> 6         006    Charizard  Fire, Flying
+#>   num       name          type
+#> 1 001  Bulbasaur Grass, Poison
+#> 2 002    Ivysaur Grass, Poison
+#> 3 003   Venusaur Grass, Poison
+#> 4 004 Charmander          Fire
+#> 5 005 Charmeleon          Fire
+#> 6 006  Charizard  Fire, Flying
 ```
 
 ### Modifying list elements
@@ -445,18 +454,18 @@ pokedex_wide2 <- rrapply(
   f = function(x) if(is.list(x)) sapply(x, `[[`, "name") else x,
   how = "bind"
 )
-    
+
 head(pokedex_wide2, n = 9)
-#>   pokemon.name pokemon.next_evolution pokemon.prev_evolution
-#> 1    Bulbasaur      Ivysaur, Venusaur                     NA
-#> 2      Ivysaur               Venusaur              Bulbasaur
-#> 3     Venusaur                     NA     Bulbasaur, Ivysaur
-#> 4   Charmander  Charmeleon, Charizard                     NA
-#> 5   Charmeleon              Charizard             Charmander
-#> 6    Charizard                     NA Charmander, Charmeleon
-#> 7     Squirtle   Wartortle, Blastoise                     NA
-#> 8    Wartortle              Blastoise               Squirtle
-#> 9    Blastoise                     NA    Squirtle, Wartortle
+#>         name        next_evolution         prev_evolution
+#> 1  Bulbasaur     Ivysaur, Venusaur                     NA
+#> 2    Ivysaur              Venusaur              Bulbasaur
+#> 3   Venusaur                    NA     Bulbasaur, Ivysaur
+#> 4 Charmander Charmeleon, Charizard                     NA
+#> 5 Charmeleon             Charizard             Charmander
+#> 6  Charizard                    NA Charmander, Charmeleon
+#> 7   Squirtle  Wartortle, Blastoise                     NA
+#> 8  Wartortle             Blastoise               Squirtle
+#> 9  Blastoise                    NA    Squirtle, Wartortle
 ```
 
 ### Recursive list updating
@@ -676,7 +685,7 @@ character vector:
 ``` r
 ## Check if variable is created by assignment
 is_assign <- function(x, .xpos, .xsiblings) {
-    identical(.xpos[length(.xpos)], 2L) &&
+  identical(.xpos[length(.xpos)], 2L) &&
     as.character(.xsiblings[[1]]) %in% c("<-", "=", "for", "assign", "delayedAssign")
 }
 
