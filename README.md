@@ -345,7 +345,7 @@ of the list element under evaluation, and there is no convenient way to
 access its name or location in the nested list from inside `f`.
 `rrapply()` defines the special arguments `.xname`, `.xpos`,
 `.xparents`, `.xsiblings` inside the `f` and `condition` functions (in
-addition to the principal function argument), where
+addition to the principal function argument):
 
 -   `.xname` evaluates to the name of the list element;
 -   `.xpos` evaluates to the position of the element in the nested list
