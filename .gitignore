@@ -17,3 +17,6 @@ README.Rmd
 *.o
 *.so
 *.gz
+/doc/
+/Meta/
+!vignettes/cheatsheet.pdf

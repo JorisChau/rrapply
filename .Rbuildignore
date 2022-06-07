@@ -2,10 +2,11 @@
 ^\.Rproj\.user$
 ^doc$
 ^Meta$
-^\.travis\.yml$
 ^README.Rmd$
 ^cran-comments.md$
 ^CRAN-RELEASE$
-^appveyor\.yml$
 ^\.gitignore$
-^\.gitattributes$
+^\.github$
+^CRAN-SUBMISSION$
+^sticker\.svg$
+^cheatsheet\.svg$

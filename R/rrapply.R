@@ -6,22 +6,29 @@
 #' 
 #' @section How to structure result:
 #' In addition to \code{\link{rapply}}'s modes to set \code{how} equal to \code{"replace"}, \code{"list"} or \code{"unlist"}, 
-#' five choices \code{"prune"}, \code{"flatten"}, \code{"melt"}, \code{"bind"}, \code{"unmelt"} and \code{"recurse"} are available. 
-#' \code{how = "prune"} filters all list elements not subject to application of \code{f} from the list \code{object}. The original 
-#' list structure is retained, similar to the non-pruned options \code{how = "replace"} or \code{how = "list"}. \code{how = "flatten"} 
-#' is an efficient way to return a flattened unnested version of the pruned list. \code{how = "flatten"} uses similar coercion rules 
-#' as \code{how = "unlist"}. \code{how = "melt"} returns a melted data.frame of the pruned list, each row contains the path of a single 
+#' seven choices \code{"prune"}, \code{"flatten"}, \code{"melt"}, \code{"bind"}, \code{"unmelt"}, \code{"recurse"}  and \code{"names"} are available:
+#' \itemize{
+#' \item \code{how = "prune"} filters all list elements not subject to application of \code{f} from the list \code{object}. The original 
+#' list structure is retained, similar to the non-pruned options \code{how = "replace"} or \code{how = "list"}.
+#' \item \code{how = "flatten"} is an efficient way to return a flattened unnested version of the pruned list. By default \code{how = "flatten"} 
+#' uses similar coercion rules as \code{how = "unlist"}, this can be disabled with \code{simplify = FALSE} in the \code{options} argument.
+#' \item \code{how = "melt"} returns a melted data.frame of the pruned list, each row contains the path of a single 
 #' terminal node in the pruned list at depth layers \code{L1}, \code{L2}, and so on. The column \code{"value"} contains the 
-#' possible coerced values at the terminal nodes and is equivalent to the result of \code{how = "flatten"}. If no list names are present, 
+#' possibly coerced values at the terminal nodes and is equivalent to the result of \code{how = "flatten"}. If no list names are present, 
 #' the node names in the data.frame default to the indices of the list elements \code{"1"}, \code{"2"}, etc.
-#' \code{how = "bind"} is used to unnest a nested list containing repeated sublists into a wide data.frame. Each repeated sublist is expanded 
-#' as a single row in the data.frame and identical names between sublists are aligned as individual columns. Repeated sublists are recognized
-#' as several sublists on the same nested level that are either unnamed or have the same name for each sublist. \code{how = "unmelt"} is a 
-#' special case that reconstructs a nested list from a melted data.frame. For this reason, \code{how = "unmelt"} 
+#' \item \code{how = "bind"} is used to unnest a nested list containing repeated sublists into a wide data.frame. Each repeated sublist is expanded 
+#' as a single row in the data.frame and identical sublist component names are aligned as individual columns. By default, the list layer 
+#' containing repeated sublists is identified based on the minimal depth detected across leaf nodes, this can be set manually with \code{coldepth} 
+#' in the \code{options} argument.
+#' \item \code{how = "unmelt"} is a special case that reconstructs a nested list from a melted data.frame. For this reason, \code{how = "unmelt"} 
 #' only applies to data.frames in the same format as returned by \code{how = "melt"}. Internally, \code{how = "unmelt"} first reconstructs 
-#' a nested list from the melted data.frame and second uses the same framework as \code{how = "replace"}. \code{how = "recurse"} is a specialized
-#' option that is only useful in combination with e.g. \code{classes = "list"} to recurse further into updated \dQuote{list-like} elements. 
-#' This is explained in more detail below.
+#' a nested list from the melted data.frame and second uses the same functional framework as \code{how = "replace"}.
+#' \item \code{how = "recurse"} is a specialized option that is only useful in combination with e.g. \code{classes = "list"} to recurse further 
+#' into updated \dQuote{list-like} elements. This is explained in more detail below.
+#' \item \code{how = "names"} modifies the \emph{names} of the nested list elements instead of the list content. \code{how = "names"} internally works   
+#' the same as \code{how = "replace"}, except that the value of \code{f} is used to replace the name of the list element under consideration 
+#' instead of its content.
+#' }
 #' 
 #' @section Condition function:
 #' Both \code{\link{rapply}} and \code{rrapply} allow to apply \code{f} to list elements of certain classes via the \code{classes} argument. 
@@ -35,7 +42,7 @@
 #'
 #' @section Correct use of \code{...}:
 #' The principal argument of the \code{f} and \code{condition} functions evaluates to the content of the list element. Any further arguments to 
-#' \code{f} and \code{condition} (besides the special arguments \code{.xname} and \code{.xpos} discussed below) supplied via the dots \code{...} 
+#' \code{f} and \code{condition} (besides the special arguments \code{.xname}, \code{.xpos}, etc. discussed below) supplied via the dots \code{...} 
 #' argument need to be defined as function arguments in \emph{both} the \code{f} and \code{condition} function (if existing), even if they are not
 #'  used in the function itself. See also the \sQuote{Examples} section.
 #' 
@@ -59,8 +66,8 @@
 #' @section Recursive list node updating:
 #' If \code{classes = "list"} and \code{how = "recurse"}, \code{rrapply} applies the \code{f} function to any list element of \code{object} that satisfies 
 #' \code{condition} similar to the previous section using \code{how = "replace"}, but recurses further into the \emph{updated} list-like element 
-#' after application of the \code{f} function. The primary use of \code{how = "recurse"} in combination with \code{classes = "list"} is to 
-#' recursively update for instance the names of all nodes in a nested list. Additional examples are found in the package vignette.
+#' after application of the \code{f} function. A primary use of \code{how = "recurse"} in combination with \code{classes = "list"} is to 
+#' recursively update for instance the class or other attributes of all nodes in a nested list. Additional examples are found in the package vignette.
 #' 
 #' @section Avoid recursing into data.frames:
 #' If \code{classes = "ANY"} (default), \code{rrapply} recurses into all \dQuote{list-like} objects equivalent to \code{\link{rapply}}. 
@@ -71,8 +78,8 @@
 #' @section List attributes:
 #' In \code{\link{rapply}} intermediate list attributes (not located at terminal nodes) are kept when \code{how = "replace"}, but are dropped when 
 #' \code{how = "list"}. To avoid unexpected behavior, \code{rrapply} always preserves intermediate list attributes when using \code{how = "replace"}, 
-#' \code{how = "list"} or \code{how = "prune"}. If \code{how = "flatten"} or \code{how = "unlist"} intermediate list attributes cannot be preserved as 
-#' the result is no longer a nested list. 
+#' \code{how = "list"}, \code{how = "prune"} or \code{how = "names"}. If \code{how = "unlist"}, \code{how = "flatten"}, \code{how = "melt"} or \code{how = "bind"} 
+#' intermediate list attributes cannot be preserved as the result is no longer a nested list. 
 #' 
 #' @section Expressions:
 #' Call objects and expression vectors are also accepted as \code{object} argument, which are treated as nested lists based on their internal abstract
@@ -81,12 +88,31 @@
 #' structured as a nested list. \code{how = "prune"}, \code{how = "flatten"} and \code{how = "melt"} return the pruned abstract syntax tree as: a nested list, 
 #' a flattened list and a melted data.frame respectively. This is identical to application of \code{rrapply} to the abstract syntax tree formatted as a nested list.
 #' 
-#' @return If \code{how = "unlist"}, a vector as in \code{\link{rapply}}. If \code{how = "list"}, \code{how = "replace"} or \code{how = "recurse"}, 
+#' @section Additional options:
+#' The \code{options} argument accepts a named list to configure several default options that only apply to certain choices of \code{how}. The \code{options} 
+#' list can contain (any of) the named components \code{namesep}, \code{simplify}, \code{namecols} and/or \code{coldepth}:
+#' \itemize{
+#' \item \code{namesep}, a character separator used to combine parent and child list names in \code{how = "flatten"} and \code{how = "bind"}. If \code{namesep = NA} (default), 
+#' no parent names are included in \code{how = "flatten"} and the default separator \code{"."} is used in \code{how = "bind"}. Note that \code{namesep} cannot be used with 
+#' \code{how = "unlist"} for which the name separator always defaults to \code{"."}. 
+#' \item \code{simplify}, a logical value indicating whether the flattened unnested list in \code{how = "flatten"} and \code{how = "melt"} is simplified 
+#' according to standard coercion rules similar to \code{how = "unlist"}. The default is \code{simplify = TRUE}. If \code{simplify = FALSE}, 
+#' \code{object} is flattened to a single-layer list and returned as is.
+#' \item \code{namecols}, a logical value that only applies to \code{how = "bind"} indicating whether the parent node names associated to the each expanded sublist 
+#' should be included as columns \code{L1}, \code{L2}, etc. in the wide data.frame returned by \code{how = "bind"}. 
+#' \item \code{coldepth}, an integer value indicating the depth (starting from depth 1) at which list elements should be mapped to individual columns 
+#' in the wide data.frame returned by \code{how = "bind"}. If \code{coldepth = 0} (default), this depth layer is identified automatically based on the 
+#' minimal depth detected across all leaf nodes. This option only applies to \code{how = "bind"}.
+#' }
+#' 
+#' @return If \code{how = "unlist"}, a vector as in \code{\link{rapply}}. If \code{how = "list"}, \code{how = "replace"}, \code{how = "recurse"} or \code{how = "names"}, 
 #' \dQuote{list-like} of similar structure as \code{object} as in \code{\link{rapply}}. If \code{how = "prune"}, a pruned \dQuote{list-like} object 
 #' of similar structure as \code{object} with pruned list elements based on \code{classes} and \code{condition}. If \code{how = "flatten"}, a flattened
-#' pruned vector or list with pruned elements based on \code{classes} and \code{condition}. The result of \code{how = "flatten"} is coerced to vector 
-#' similar to \code{how = "unlist"}. If \code{how = "melt"}, a melted data.frame containing the node paths and values of the pruned list elements based
-#' on \code{classes} and \code{condition}. If \code{how = "unmelt"}, a nested list with list names and values defined in the data.frame \code{object}.
+#' pruned vector or list with pruned elements based on \code{classes} and \code{condition}. If \code{how = "melt"}, a melted data.frame containing the node paths 
+#' and values of the pruned list elements based on \code{classes} and \code{condition}. If \code{how = "bind"}, a wide data.frame with repeated list elements
+#' expanded as single data.frame rows and aligned by identical list names using the same coercion rules as \code{how = "unlist"}. The repeated list elements 
+#' are subject to pruning based on \code{classes} and \code{condition}. If \code{how = "unmelt"}, a nested list with list names and values defined 
+#' in the data.frame \code{object}.
 #' 
 #' @note \code{rrapply} allows the \code{f} function argument to be missing, in which case no function is applied to the list 
 #' elements.
@@ -356,10 +382,10 @@
 #' \code{.xparents} and/or \code{.xsiblings} (see \sQuote{Details}), passing further arguments via \code{\dots}.
 #' @param classes character vector of \code{\link{class}} names, or \code{"ANY"} to match the class of any terminal node. Include \code{"list"} or \code{"data.frame"}
 #' to match the class of non-terminal nodes as well.
-#' @param how character string partially matching the nine possibilities given: see \sQuote{Details}.
+#' @param how character string partially matching the ten possibilities given: see \sQuote{Details}.
 #' @param deflt the default result (only used if \code{how = "list"} or \code{how = "unlist"}).
-#' @param feverywhere deprecated use \code{classes = "list"}, \code{classes = "language"} or \code{classes = "expression"} and optionally \code{how = "recurse"} instead.
-#' @param dfaslist deprecated use \code{classes = "data.frame"} instead.
+#' @param options a named \code{\link{list}} with additional options \code{namesep}, \code{simplify}, \code{namecols} and/or \code{coldepth} 
+#' that only apply to certain choices of \code{how}: see \sQuote{Details}. 
 #' @param ... additional arguments passed to the call to \code{f} and \code{condition}.
 #' 
 #' @aliases rrapply
@@ -369,34 +395,48 @@
 #' @useDynLib rrapply, .registration = TRUE
 #' @export 
 rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL, 
-                    how = c("replace", "list", "unlist", "prune", "flatten", "melt", "bind", "recurse", "unmelt"),
-                    feverywhere, dfaslist, ...)
+                    how = c("replace", "list", "unlist", "prune", "flatten", "melt", "bind", "recurse", "unmelt", "names"), 
+                    options, ...)
 {
   ## non-function arguments
   if(!(is.list(object) || is.call(object) || is.expression(object)) || length(object) < 1) 
     stop("'object' argument should be list-like and of length greater than zero")
   
-  how <- match.arg(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "bind", "recurse", "unmelt"))
-  howInt <- match(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "bind", "recurse", "unmelt"))
+  how <- match.arg(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "bind", "recurse", "unmelt", "names"))
+  howInt <- match(how, c("replace", "list", "unlist", "prune", "flatten", "melt", "bind", "recurse", "unmelt", "names"))
   if(identical(how, "recurse")) howInt <- 1L
+  if(identical(how, "names") && !is.list(object))
+      stop("'object' argument needs to be a list when combined with 'how = \"names\"'")
+    
+  feverywhere <- ifelse(isTRUE(any(classes %in% c("list", "language", "pairlist", "expression"))) || identical(how, "names"), 
+                        1L + how %in% c("recurse", "names"), 0L) 
+  dfaslist <- ifelse(isFALSE("data.frame" %in% classes), 1L, -identical(how, "recurse"))
   
-  if(!missing(feverywhere))
-  {
-    warning("'feverywhere' is deprecated, use e.g. classes = 'list' or classes = 'call' instead")
-    feverywhere <- match.arg(feverywhere, c("no", "break", "recurse"))
-    feverywhere <- match(feverywhere, c("no", "break", "recurse")) - 1L
-  }
-  else 
-    feverywhere <- ifelse(isTRUE(any(classes %in% c("list", "language", "pairlist", "expression"))), 1L + identical(how, "recurse"), 0L)
-  
-  if(!missing(dfaslist))
-  {
-    warning("'dfaslist' is deprecated, use classes = 'data.frame' instead")
-    dfaslist <- isTRUE(dfaslist)
-  }
-  else 
-    dfaslist <- isFALSE("data.frame" %in% classes)
   if(length(classes) > 1 && isTRUE("ANY" %in% classes)) classes <- "ANY"
+  
+  ## additional options
+  .options <- list(namesep = NA_character_, simplify = TRUE, namecols = FALSE, coldepth = 0L)
+  if(!missing(options)) 
+  {
+    options <- as.list(options)
+    .options[names(options)] <- options
+    if(how %in% c("flatten", "bind"))
+    {
+      .options$namesep <- as.character(.options$namesep)
+      stopifnot(length(.options$namesep) == 1L)
+    }
+    if(how %in% c("flatten", "melt")) 
+      stopifnot(is.logical(.options$simplify))
+    if(how %in% c("bind"))
+    {
+      .options$coldepth <- as.integer(.options$coldepth)
+      stopifnot(
+        is.logical(.options$namecols),
+        !is.na(.options$coldepth),
+        length(.options$coldepth) == 1L
+      )
+    }
+  }
   
   ## unmelt data.frame to nested list
   if(identical(how, "unmelt"))
@@ -419,8 +459,8 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
   if(missing(f)) f <- NULL else f <- match.fun(f)
   if(missing(condition)) condition <- NULL else condition <- match.fun(condition)
   
-  if(is.null(f) && (is.null(condition) || identical(howInt, 1L)) && identical(feverywhere, 0L) && 
-     identical(classes, "ANY") && ((is.list(object) && howInt < 5L) || (!is.list(object) && howInt < 2L)))
+  if(is.null(f) && (((is.null(condition) || identical(howInt, 1L)) && identical(feverywhere, 0L) && 
+     identical(classes, "ANY") && ((is.list(object) && howInt < 5L) || (!is.list(object) && howInt < 2L))) || identical(howInt, 10L)))
   {  
     ## nothing to be done
     res <- object  
@@ -432,11 +472,10 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
       fArgs <- match(c(".xname", ".xpos", ".xparents", ".xsiblings"), names(formals(f)), nomatch = 0L) 
     if(identical(typeof(condition), "closure"))
       conditionArgs <- match(c(".xname", ".xpos", ".xparents", ".xsiblings"), names(formals(condition)), nomatch = 0L)
-    
     ## call main C function
-    res <- .Call(C_rrapply, environment(), object, f, fArgs, condition, conditionArgs, classes, howInt, deflt, dfaslist, feverywhere)  
+    res <- .Call(C_rrapply, environment(), object, f, fArgs, condition, conditionArgs, classes, howInt, deflt, dfaslist, feverywhere, .options)  
   }
-
+  
   if(identical(how, "melt"))
   {
     anysymbol <- attr(res, "anysymbol")
@@ -444,17 +483,17 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
     
     ## convert list to data.frame
     if(getRversion() >= "4.0.0" || !anysymbol)
-      {
-        res <- structure(
-          res,
-          names =  c(paste0("L", seq_len(length(res) - 1L)), "value"),
-          row.names = seq_len(length(res[[1L]])),
-          class = "data.frame"
-        )
-      } else {
-        ## no format method for names in R < 4.0.0 
-        names(res) <- c(paste0("L", seq_len(length(res) - 1L)), "value")
-      }
+    {
+      res <- structure(
+        res,
+        names =  c(paste0("L", seq_len(length(res) - 1L)), "value"),
+        row.names = seq_len(length(res[[1L]])),
+        class = "data.frame"
+      )
+    } else {
+      ## no format method for names in R < 4.0.0 
+      names(res) <- c(paste0("L", seq_len(length(res) - 1L)), "value")
+    }
   }
   
   if(identical(how, "bind"))

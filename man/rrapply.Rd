@@ -11,9 +11,8 @@ rrapply(
   classes = "ANY",
   deflt = NULL,
   how = c("replace", "list", "unlist", "prune", "flatten", "melt", "bind", "recurse",
-    "unmelt"),
-  feverywhere,
-  dfaslist,
+    "unmelt", "names"),
+  options,
   ...
 )
 }
@@ -31,21 +30,22 @@ to match the class of non-terminal nodes as well.}
 
 \item{deflt}{the default result (only used if \code{how = "list"} or \code{how = "unlist"}).}
 
-\item{how}{character string partially matching the nine possibilities given: see \sQuote{Details}.}
+\item{how}{character string partially matching the ten possibilities given: see \sQuote{Details}.}
 
-\item{feverywhere}{deprecated use \code{classes = "list"}, \code{classes = "language"} or \code{classes = "expression"} and optionally \code{how = "recurse"} instead.}
-
-\item{dfaslist}{deprecated use \code{classes = "data.frame"} instead.}
+\item{options}{a named \code{\link{list}} with additional options \code{namesep}, \code{simplify}, \code{namecols} and/or \code{coldepth} 
+that only apply to certain choices of \code{how}: see \sQuote{Details}.}
 
 \item{...}{additional arguments passed to the call to \code{f} and \code{condition}.}
 }
 \value{
-If \code{how = "unlist"}, a vector as in \code{\link{rapply}}. If \code{how = "list"}, \code{how = "replace"} or \code{how = "recurse"}, 
+If \code{how = "unlist"}, a vector as in \code{\link{rapply}}. If \code{how = "list"}, \code{how = "replace"}, \code{how = "recurse"} or \code{how = "names"}, 
 \dQuote{list-like} of similar structure as \code{object} as in \code{\link{rapply}}. If \code{how = "prune"}, a pruned \dQuote{list-like} object 
 of similar structure as \code{object} with pruned list elements based on \code{classes} and \code{condition}. If \code{how = "flatten"}, a flattened
-pruned vector or list with pruned elements based on \code{classes} and \code{condition}. The result of \code{how = "flatten"} is coerced to vector 
-similar to \code{how = "unlist"}. If \code{how = "melt"}, a melted data.frame containing the node paths and values of the pruned list elements based
-on \code{classes} and \code{condition}. If \code{how = "unmelt"}, a nested list with list names and values defined in the data.frame \code{object}.
+pruned vector or list with pruned elements based on \code{classes} and \code{condition}. If \code{how = "melt"}, a melted data.frame containing the node paths 
+and values of the pruned list elements based on \code{classes} and \code{condition}. If \code{how = "bind"}, a wide data.frame with repeated list elements
+expanded as single data.frame rows and aligned by identical list names using the same coercion rules as \code{how = "unlist"}. The repeated list elements 
+are subject to pruning based on \code{classes} and \code{condition}. If \code{how = "unmelt"}, a nested list with list names and values defined 
+in the data.frame \code{object}.
 }
 \description{
 \code{rrapply} is a reimplemented and extended version of \code{\link{rapply}} to recursively apply a function \code{f} to 
@@ -61,22 +61,29 @@ and a final list- or vector-column containing the values of the nested list elem
 \section{How to structure result}{
 
 In addition to \code{\link{rapply}}'s modes to set \code{how} equal to \code{"replace"}, \code{"list"} or \code{"unlist"}, 
-five choices \code{"prune"}, \code{"flatten"}, \code{"melt"}, \code{"bind"}, \code{"unmelt"} and \code{"recurse"} are available. 
-\code{how = "prune"} filters all list elements not subject to application of \code{f} from the list \code{object}. The original 
-list structure is retained, similar to the non-pruned options \code{how = "replace"} or \code{how = "list"}. \code{how = "flatten"} 
-is an efficient way to return a flattened unnested version of the pruned list. \code{how = "flatten"} uses similar coercion rules 
-as \code{how = "unlist"}. \code{how = "melt"} returns a melted data.frame of the pruned list, each row contains the path of a single 
+seven choices \code{"prune"}, \code{"flatten"}, \code{"melt"}, \code{"bind"}, \code{"unmelt"}, \code{"recurse"}  and \code{"names"} are available:
+\itemize{
+\item \code{how = "prune"} filters all list elements not subject to application of \code{f} from the list \code{object}. The original 
+list structure is retained, similar to the non-pruned options \code{how = "replace"} or \code{how = "list"}.
+\item \code{how = "flatten"} is an efficient way to return a flattened unnested version of the pruned list. By default \code{how = "flatten"} 
+uses similar coercion rules as \code{how = "unlist"}, this can be disabled with \code{simplify = FALSE} in the \code{options} argument.
+\item \code{how = "melt"} returns a melted data.frame of the pruned list, each row contains the path of a single 
 terminal node in the pruned list at depth layers \code{L1}, \code{L2}, and so on. The column \code{"value"} contains the 
-possible coerced values at the terminal nodes and is equivalent to the result of \code{how = "flatten"}. If no list names are present, 
+possibly coerced values at the terminal nodes and is equivalent to the result of \code{how = "flatten"}. If no list names are present, 
 the node names in the data.frame default to the indices of the list elements \code{"1"}, \code{"2"}, etc.
-\code{how = "bind"} is used to unnest a nested list containing repeated sublists into a wide data.frame. Each repeated sublist is expanded 
-as a single row in the data.frame and identical names between sublists are aligned as individual columns. Repeated sublists are recognized
-as several sublists on the same nested level that are either unnamed or have the same name for each sublist. \code{how = "unmelt"} is a 
-special case that reconstructs a nested list from a melted data.frame. For this reason, \code{how = "unmelt"} 
+\item \code{how = "bind"} is used to unnest a nested list containing repeated sublists into a wide data.frame. Each repeated sublist is expanded 
+as a single row in the data.frame and identical sublist component names are aligned as individual columns. By default, the list layer 
+containing repeated sublists is identified based on the minimal depth detected across leaf nodes, this can be set manually with \code{coldepth} 
+in the \code{options} argument.
+\item \code{how = "unmelt"} is a special case that reconstructs a nested list from a melted data.frame. For this reason, \code{how = "unmelt"} 
 only applies to data.frames in the same format as returned by \code{how = "melt"}. Internally, \code{how = "unmelt"} first reconstructs 
-a nested list from the melted data.frame and second uses the same framework as \code{how = "replace"}. \code{how = "recurse"} is a specialized
-option that is only useful in combination with e.g. \code{classes = "list"} to recurse further into updated \dQuote{list-like} elements. 
-This is explained in more detail below.
+a nested list from the melted data.frame and second uses the same functional framework as \code{how = "replace"}.
+\item \code{how = "recurse"} is a specialized option that is only useful in combination with e.g. \code{classes = "list"} to recurse further 
+into updated \dQuote{list-like} elements. This is explained in more detail below.
+\item \code{how = "names"} modifies the \emph{names} of the nested list elements instead of the list content. \code{how = "names"} internally works   
+the same as \code{how = "replace"}, except that the value of \code{f} is used to replace the name of the list element under consideration 
+instead of its content.
+}
 }
 
 \section{Condition function}{
@@ -94,7 +101,7 @@ not evaluate to \code{TRUE}.
 \section{Correct use of \code{...}}{
 
 The principal argument of the \code{f} and \code{condition} functions evaluates to the content of the list element. Any further arguments to 
-\code{f} and \code{condition} (besides the special arguments \code{.xname} and \code{.xpos} discussed below) supplied via the dots \code{...} 
+\code{f} and \code{condition} (besides the special arguments \code{.xname}, \code{.xpos}, etc. discussed below) supplied via the dots \code{...} 
 argument need to be defined as function arguments in \emph{both} the \code{f} and \code{condition} function (if existing), even if they are not
  used in the function itself. See also the \sQuote{Examples} section.
 }
@@ -124,8 +131,8 @@ and so on. Note that this behavior can only be triggered using the \code{classes
 
 If \code{classes = "list"} and \code{how = "recurse"}, \code{rrapply} applies the \code{f} function to any list element of \code{object} that satisfies 
 \code{condition} similar to the previous section using \code{how = "replace"}, but recurses further into the \emph{updated} list-like element 
-after application of the \code{f} function. The primary use of \code{how = "recurse"} in combination with \code{classes = "list"} is to 
-recursively update for instance the names of all nodes in a nested list. Additional examples are found in the package vignette.
+after application of the \code{f} function. A primary use of \code{how = "recurse"} in combination with \code{classes = "list"} is to 
+recursively update for instance the class or other attributes of all nodes in a nested list. Additional examples are found in the package vignette.
 }
 
 \section{Avoid recursing into data.frames}{
@@ -140,8 +147,8 @@ the data.frame and not its columns. Note that this behavior can only be triggere
 
 In \code{\link{rapply}} intermediate list attributes (not located at terminal nodes) are kept when \code{how = "replace"}, but are dropped when 
 \code{how = "list"}. To avoid unexpected behavior, \code{rrapply} always preserves intermediate list attributes when using \code{how = "replace"}, 
-\code{how = "list"} or \code{how = "prune"}. If \code{how = "flatten"} or \code{how = "unlist"} intermediate list attributes cannot be preserved as 
-the result is no longer a nested list.
+\code{how = "list"}, \code{how = "prune"} or \code{how = "names"}. If \code{how = "unlist"}, \code{how = "flatten"}, \code{how = "melt"} or \code{how = "bind"} 
+intermediate list attributes cannot be preserved as the result is no longer a nested list.
 }
 
 \section{Expressions}{
@@ -151,6 +158,25 @@ syntax trees. As such, all functionality that applies to nested lists extends di
 call object or expression vector, \code{how = "replace"} always maintains the type of \code{object}, whereas \code{how = "list"} returns the result 
 structured as a nested list. \code{how = "prune"}, \code{how = "flatten"} and \code{how = "melt"} return the pruned abstract syntax tree as: a nested list, 
 a flattened list and a melted data.frame respectively. This is identical to application of \code{rrapply} to the abstract syntax tree formatted as a nested list.
+}
+
+\section{Additional options}{
+
+The \code{options} argument accepts a named list to configure several default options that only apply to certain choices of \code{how}. The \code{options} 
+list can contain (any of) the named components \code{namesep}, \code{simplify}, \code{namecols} and/or \code{coldepth}:
+\itemize{
+\item \code{namesep}, a character separator used to combine parent and child list names in \code{how = "flatten"} and \code{how = "bind"}. If \code{namesep = NA} (default), 
+no parent names are included in \code{how = "flatten"} and the default separator \code{"."} is used in \code{how = "bind"}. Note that \code{namesep} cannot be used with 
+\code{how = "unlist"} for which the name separator always defaults to \code{"."}. 
+\item \code{simplify}, a logical value indicating whether the flattened unnested list in \code{how = "flatten"} and \code{how = "melt"} is simplified 
+according to standard coercion rules similar to \code{how = "unlist"}. The default is \code{simplify = TRUE}. If \code{simplify = FALSE}, 
+\code{object} is flattened to a single-layer list and returned as is.
+\item \code{namecols}, a logical value that only applies to \code{how = "bind"} indicating whether the parent node names associated to the each expanded sublist 
+should be included as columns \code{L1}, \code{L2}, etc. in the wide data.frame returned by \code{how = "bind"}. 
+\item \code{coldepth}, an integer value indicating the depth (starting from depth 1) at which list elements should be mapped to individual columns 
+in the wide data.frame returned by \code{how = "bind"}. If \code{coldepth = 0} (default), this depth layer is identified automatically based on the 
+minimal depth detected across all leaf nodes. This option only applies to \code{how = "bind"}.
+}
 }
 
 \examples{

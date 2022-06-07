@@ -4,9 +4,9 @@
 #include <stdio.h>
 #include "rrapply.h"
 
-SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPred, SEXP classes, SEXP R_how, SEXP deflt, SEXP R_dfaslist, SEXP R_feverywhere)
+SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPred, SEXP classes, SEXP R_how, SEXP deflt, SEXP R_dfaslist, SEXP R_feverywhere, SEXP options)
 {
-	SEXP ans, ansnames = NULL, ansptr, xptr, names, xsym, xname, xpos, xparents, xsiblings;
+	SEXP ans, ansnames = NULL, ansnamecols = NULL, ansptr, xptr, names, xsym, xname, xpos, xparents, xsiblings;
 
 	/* protect calls */
 	int nprotect = 0;
@@ -143,7 +143,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		.ans_ptr = NULL,
 		.ansnames_ptr = NULL,
 		.how = INTEGER_ELT(R_how, 0) - 1,
-		.dfaslist = LOGICAL_ELT(R_dfaslist, 0),
+		.dfaslist = INTEGER_ELT(R_dfaslist, 0),
 		.feverywhere = INTEGER_ELT(R_feverywhere, 0),
 		.depthmax = 1,
 		.maxnodes = 0,
@@ -151,13 +151,10 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		.anynames = FALSE,
 		.anysymbol = FALSE,
 		.ans_flags = 0,
+		.ans_sep = NULL,
 		.ans_depthmax = 0,
-		.ans_depthpivot = -1};
-
-	/* traverse list once for max nodes and max depth
-	   for more accurate initialization, computational 
-	   effort is negligible */
-	C_traverse(&fixedArgs, X, 0);
+		.ans_depthpivot = -1,
+		.ans_maxrows = 0};
 
 	/* variable values and counters */
 	PROTECT_INDEX ipx = 0; // initialize to avoid warning
@@ -173,29 +170,68 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		.ans_row = 0,
 		.xparent_ipx = ipx};
 
-	/* fill remaining values, depends on how argument 
+	/* fill remaining values, depends on how argument
 	   and presence of special arguments */
 	R_len_t n = Rf_length(X);
 	names = PROTECT(Rf_getAttrib(X, R_NamesSymbol));
 	nprotect++;
 
+	/* how = 'flatten' */
+	if (fixedArgs.how == 4)
+	{
+		if (!Rf_isNull(names))
+			fixedArgs.anynames = TRUE;
+
+		/* name separator */
+		SEXP namesep = STRING_ELT(VECTOR_ELT(options, 0), 0);
+		if (namesep != NA_STRING)
+			fixedArgs.ans_sep = CHAR(namesep);
+	}
+
+	/* how = 'bind' */
 	if (fixedArgs.how == 6)
-		fixedArgs.ans_depthpivot = C_pivotFlag(X, names, n, 0);
+	{
+		/* include name-column(s) */
+		fixedArgs.ans_namecols = LOGICAL_ELT(VECTOR_ELT(options, 2), 0);
 
-	if (fixedArgs.how == 4 && !Rf_isNull(names))
-		fixedArgs.anynames = TRUE;
+		/* traverse list once for max nodes, max depth and
+		   pivot depth for more accurate initialization,
+		   computational effort is negligible */
+		C_traverse_bind(&fixedArgs, X, 0);
 
+		/* override with user pivot depth */
+		int coldepth = INTEGER_ELT(VECTOR_ELT(options, 3), 0) - 1;
+		if (coldepth > -1 && coldepth < fixedArgs.ans_depthpivot)
+			fixedArgs.ans_depthpivot = coldepth;
+
+		/* detect maximum number of binding rows */
+		C_count_rows(&fixedArgs, X, 0);
+
+		/* name separator */
+		SEXP namesep = STRING_ELT(VECTOR_ELT(options, 0), 0);
+		if (namesep != NA_STRING)
+			fixedArgs.ans_sep = CHAR(namesep);
+	}
+	else
+	{
+		/* traverse list once for max nodes and max depth
+		   for more accurate initialization, computational
+		   effort is negligible */
+		C_traverse(&fixedArgs, X, 0);
+	}
+
+	/* how = 'prune' */
 	if (fixedArgs.how == 3)
 		localArgs.xinfo_array = (R_len_t *)S_alloc(3 * fixedArgs.maxnodes, sizeof(R_len_t));
 	else if (fixedArgs.how == 6)
 		localArgs.xinfo_array = (R_len_t *)S_alloc(fixedArgs.maxleafs, sizeof(R_len_t));
 
 	/* current value of .xpos argument */
-	if (f.xpos || condition.xpos)
+	if (f.xpos || condition.xpos || fixedArgs.how == 9)
 		localArgs.xpos_vec = (R_len_t *)S_alloc(fixedArgs.depthmax, sizeof(R_len_t));
 
 	/* current value of .xparents and/or .xname arguments */
-	if (f.xparents || condition.xparents || fixedArgs.how > 4)
+	if (f.xparents || condition.xparents || fixedArgs.ans_sep || fixedArgs.how == 5 || fixedArgs.how == 6)
 	{
 		PROTECT_WITH_INDEX(localArgs.xparent_ptr = Rf_allocVector(STRSXP, fixedArgs.depthmax), &ipx);
 		for (R_len_t j = 0; j < fixedArgs.depthmax; j++)
@@ -212,11 +248,11 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 	if (f.xsiblings || condition.xsiblings)
 		localArgs.xsiblings_ptr = X;
 
-	/* allocate output list */
+	/* allocate output objects */
 	ansptr = NULL; /* avoid unitialized warning */
 	xptr = Rf_isPairList(X) ? X : NULL;
 
-	if (fixedArgs.how > 3)
+	if (fixedArgs.how == 4 || fixedArgs.how == 5 || fixedArgs.how == 6)
 	{
 		ans = PROTECT(Rf_allocVector(VECSXP, fixedArgs.maxleafs));
 		fixedArgs.ans_ptr = ans;
@@ -228,15 +264,28 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 
 		fixedArgs.ansnames_ptr = ansnames;
 		nprotect += 2;
+
+		/* temp object to hold extra binding name-columns
+		   (only used if namecols == TRUE) */
+		if (fixedArgs.how == 6 && fixedArgs.ans_namecols)
+		{
+			ansnamecols = PROTECT(Rf_allocVector(VECSXP, fixedArgs.ans_depthpivot));
+			SEXP namecol = PROTECT(Rf_allocVector(STRSXP, fixedArgs.ans_maxrows));
+			for (R_len_t j = 0; j < fixedArgs.ans_depthpivot; j++)
+				SET_VECTOR_ELT(ansnamecols, j, Rf_duplicate(namecol));
+			UNPROTECT(1);
+			fixedArgs.ansnamecols_ptr = ansnamecols;
+			nprotect++;
+		}
 	}
-	else if ((Rf_isVectorList(X) && (fixedArgs.how == 1 || fixedArgs.how == 2)) ||
-			 (Rf_isPairList(X) && fixedArgs.how > 0))
+	else if ((Rf_isVectorList(X) && (fixedArgs.how == 1 || fixedArgs.how == 2)) || (Rf_isPairList(X) && fixedArgs.how > 0))
 	{
 		ans = PROTECT(Rf_allocVector(VECSXP, n));
 		C_copyAttrs(X, ans, names, !Rf_isPairList(X));
 		if (Rf_isPairList(X))
 			Rf_copyMostAttrib(X, ans);
 		nprotect++;
+
 	}
 	else
 	{
@@ -244,27 +293,31 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		if (Rf_isPairList(X))
 			ansptr = ans;
 		nprotect++;
+
+		if (fixedArgs.how == 9)
+		{
+			if (Rf_isNull(names))
+				ansnames = PROTECT(Rf_allocVector(STRSXP, n));
+			else
+				ansnames = PROTECT(Rf_duplicate(names));
+
+			fixedArgs.ansnames_ptr = ansnames;
+			nprotect++;
+		}
 	}
 
 	/* traverse list to evaluate function calls */
 	for (R_len_t i = 0; i < n; i++)
 	{
 		/* update variable arguments and counters */
-		if (f.xpos || condition.xpos)
+		if (f.xpos || condition.xpos || fixedArgs.how == 9)
 			(localArgs.xpos_vec[0])++; // increment .xpos
 
-		if (f.xparents || condition.xparents || f.xname || condition.xname || fixedArgs.how > 3)
+		if (localArgs.xparent_ptr)
 		{
-			if (fixedArgs.how == 6 && fixedArgs.ans_depthpivot == 0 && Rf_isNull(names))
-			{
-				SET_STRING_ELT(localArgs.xparent_ptr, 0, NA_STRING);
-			}
-			else
-			{
-				SEXP iname = PROTECT(Rf_isNull(names) ? C_int2char(i + 1) : STRING_ELT(names, i));
-				SET_STRING_ELT(localArgs.xparent_ptr, 0, iname); // update .xparents and/or .xname
-				UNPROTECT(1);
-			}
+			SEXP iname = PROTECT(Rf_isNull(names) ? C_int2char(i + 1, FALSE) : STRING_ELT(names, i));
+			SET_STRING_ELT(localArgs.xparent_ptr, 0, iname); // update .xparents and/or .xname
+			UNPROTECT(1);
 
 			/* clean-up dangling names when melting */
 			if (fixedArgs.how == 5 && fixedArgs.depthmax > 1)
@@ -276,7 +329,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 
 		if (fixedArgs.how == 3)
 		{
-			localArgs.node++; // global node counter
+			localArgs.node++;													// global node counter
 			localArgs.xinfo_array[localArgs.node + fixedArgs.maxnodes] = -1;	// parent node counter
 			localArgs.xinfo_array[localArgs.node + 2 * fixedArgs.maxnodes] = i; // child node counter
 		}
@@ -284,10 +337,17 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		/* main recursion part */
 		if (Rf_isVectorList(X))
 		{
-			if (fixedArgs.how < 4)
-				SET_VECTOR_ELT(ans, i, C_recurse_list(env, VECTOR_ELT(X, i), f, condition, &fixedArgs, &localArgs, classes, deflt, xsym));
-			else
+			switch (fixedArgs.how)
+			{
+			case 4:
+			case 5:
+			case 6:
 				C_recurse_flatten(env, VECTOR_ELT(X, i), f, condition, &fixedArgs, &localArgs, classes, xsym);
+				break;
+			default:
+				SET_VECTOR_ELT(ans, i, C_recurse_list(env, VECTOR_ELT(X, i), f, condition, &fixedArgs, &localArgs, classes, deflt, xsym));
+				break;
+			}
 		}
 		else if (Rf_isPairList(X))
 		{
@@ -300,6 +360,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 			case 1:
 			case 2:
 			case 3:
+			case 9:
 				SET_VECTOR_ELT(ans, i, C_recurse_list(env, CAR(xptr), f, condition, &fixedArgs, &localArgs, classes, deflt, xsym));
 				break;
 			case 4:
@@ -315,9 +376,18 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		if (f.xsiblings || condition.xsiblings)
 			localArgs.xsiblings_ptr = X;
 
-		/* increase row number when binding */
-		if (fixedArgs.how == 6 && fixedArgs.ans_depthpivot == 0)
+		/* update assignments how = 'bind' */
+		if (fixedArgs.how == 6 && fixedArgs.ans_depthpivot == 1)
+		{
+			/* assign binding name columns */
+			if (fixedArgs.ans_namecols && localArgs.ans_row < fixedArgs.ans_maxrows)
+				SET_STRING_ELT(VECTOR_ELT(fixedArgs.ansnamecols_ptr, 0), localArgs.ans_row, STRING_ELT(localArgs.xparent_ptr, 0));
 			localArgs.ans_row++;
+		}
+
+		/* reset names */
+		if (fixedArgs.how == 9)
+			fixedArgs.ansnames_ptr = ansnames;
 	}
 
 	if (fixedArgs.how == 3) // prune list
@@ -328,7 +398,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		R_len_t m = 0;
 		for (R_len_t i = 0; i < fixedArgs.maxnodes; i++)
 		{
-			/* if nested list filter only level zero evaluated nodes, 
+			/* if nested list filter only level zero evaluated nodes,
 			   otherwise filter evaluated terminal nodes */
 			if (localArgs.xinfo_array[i] && localArgs.xinfo_array[i + fixedArgs.maxnodes] == -1)
 			{
@@ -360,29 +430,34 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		UNPROTECT(nprotect);
 		return newans;
 	}
-	else if (fixedArgs.how == 4 || fixedArgs.how == 5) // flatten and/or melt list
+	else if (fixedArgs.how == 4 || fixedArgs.how == 5) // unlist, flatten or melt list
 	{
-		/* return type */
-		SEXPTYPE mode = VECSXP;
-		if(fixedArgs.ans_flags & 256)
-			mode = VECSXP;
-		else if (fixedArgs.ans_flags & 128)
-			mode = STRSXP;
-		else if (fixedArgs.ans_flags & 64)
-			mode = CPLXSXP;
-		else if (fixedArgs.ans_flags & 32)
-			mode = REALSXP;
-		else if (fixedArgs.ans_flags & 16)
-			mode = INTSXP;
-		else if (fixedArgs.ans_flags & 2)
-			mode = LGLSXP;
+		SEXP newans = ans;
 
-		/* create return object */
-		SEXP newans = PROTECT(Rf_allocVector(mode, localArgs.ans_idx));
-		nprotect++;
+		if (LOGICAL_ELT(VECTOR_ELT(options, 1), 0))
+		{
+			/* coerce type */
+			SEXPTYPE mode = VECSXP;
+			if (fixedArgs.ans_flags & 256)
+				mode = VECSXP;
+			else if (fixedArgs.ans_flags & 128)
+				mode = STRSXP;
+			else if (fixedArgs.ans_flags & 64)
+				mode = CPLXSXP;
+			else if (fixedArgs.ans_flags & 32)
+				mode = REALSXP;
+			else if (fixedArgs.ans_flags & 16)
+				mode = INTSXP;
+			else if (fixedArgs.ans_flags & 2)
+				mode = LGLSXP;
 
-		/* populate  return object and coerce to flagged type */
-		C_coerceList(ans, newans, localArgs.ans_idx, mode);
+			/* create return object */
+			newans = PROTECT(Rf_allocVector(mode, localArgs.ans_idx));
+			nprotect++;
+
+			/* populate  return object and coerce to flagged type */
+			C_coerceList(ans, newans, localArgs.ans_idx, mode);
+		}
 
 		if (fixedArgs.how == 4)
 		{
@@ -478,7 +553,8 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		}
 
 		/* create and populate return object */
-		SEXP newans = PROTECT(Rf_allocVector(VECSXP, ncol));
+		R_len_t ncol1 = fixedArgs.ans_namecols ? fixedArgs.ans_depthpivot : 0;
+		SEXP newans = PROTECT(Rf_allocVector(VECSXP, ncol + ncol1));
 		nprotect++;
 
 		/* set default column values to NA_LOGICAL */
@@ -490,11 +566,11 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 				SET_VECTOR_ELT(anscol, i, Rf_ScalarLogical(NA_LOGICAL));
 
 			for (R_len_t j = 0; j < ncol; j++)
-				SET_VECTOR_ELT(newans, j, Rf_shallow_duplicate(anscol));
+				SET_VECTOR_ELT(newans, j + ncol1, Rf_shallow_duplicate(anscol));
 			UNPROTECT(1);
 
 			for (R_len_t i = 0; i < localArgs.ans_idx; i++)
-				SET_VECTOR_ELT(VECTOR_ELT(newans, col_idx_array[i]), localArgs.xinfo_array[i], VECTOR_ELT(ans, i));
+				SET_VECTOR_ELT(VECTOR_ELT(newans, col_idx_array[i] + ncol1), localArgs.xinfo_array[i], VECTOR_ELT(ans, i));
 
 			/* coerce columns */
 			int col_flags;
@@ -504,7 +580,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 			{
 				col_flags = 0;
 				for (R_len_t i = 0; i < nrow; i++)
-					col_flags |= C_answerType(VECTOR_ELT(VECTOR_ELT(newans, j), i));
+					col_flags |= C_answerType(VECTOR_ELT(VECTOR_ELT(newans, j + ncol1), i));
 
 				if (col_flags < 256)
 				{
@@ -522,10 +598,17 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 						mode = LGLSXP;
 
 					SEXP newcol = PROTECT(Rf_allocVector(mode, nrow));
-					C_coerceList(VECTOR_ELT(newans, j), newcol, nrow, mode);
-					SET_VECTOR_ELT(newans, j, newcol);
+					C_coerceList(VECTOR_ELT(newans, j + ncol1), newcol, nrow, mode);
+					SET_VECTOR_ELT(newans, j + ncol1, newcol);
 					UNPROTECT(1);
 				}
+			}
+
+			/* add name columns */
+			if (fixedArgs.ans_namecols && nrow == fixedArgs.ans_maxrows)
+			{
+				for (R_len_t j = 0; j < ncol1; j++)
+					SET_VECTOR_ELT(newans, j, Rf_duplicate(VECTOR_ELT(ansnamecols, j)));
 			}
 		}
 
@@ -533,15 +616,30 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		Rf_setAttrib(newans, Rf_install("anysymbol"), PROTECT(Rf_ScalarLogical((int)fixedArgs.anysymbol)));
 
 		/* add column names */
-		SEXP newnames = PROTECT(Rf_allocVector(STRSXP, ncol));
+		SEXP newnames = PROTECT(Rf_allocVector(STRSXP, ncol + ncol1));
 		nprotect += 2;
 
 		for (R_len_t j = 0; j < ncol; j++)
-			SET_STRING_ELT(newnames, j, STRING_ELT(ansnames_uniq, j));
+			SET_STRING_ELT(newnames, j + ncol1, STRING_ELT(ansnames_uniq, j));
+
+		if (fixedArgs.ans_namecols)
+		{
+			for (R_len_t j = 0; j < ncol1; j++)
+				SET_STRING_ELT(newnames, j, C_int2char(j + 1, TRUE));
+		}
+
 		Rf_setAttrib(newans, R_NamesSymbol, newnames);
 
 		UNPROTECT(nprotect);
 		return newans;
+	}
+	else if (fixedArgs.how == 9)
+	{
+		/* update names */
+		Rf_setAttrib(ans, R_NamesSymbol, ansnames);
+
+		UNPROTECT(nprotect);
+		return ans;
 	}
 	else // other 'how' options
 	{

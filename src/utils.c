@@ -39,6 +39,77 @@ void C_traverse(FixedArgs *fixedArgs, SEXP X, int depth)
     }
 }
 
+/* initialize part of 'FixedArgs' for how = 'bind' */
+void C_traverse_bind(FixedArgs *fixedArgs, SEXP X, int depth)
+{
+    SEXP Xi;
+    SEXP xptr = X;
+    /* increment max depth if current depth is higher than max depth */
+    R_len_t n = Rf_length(X);
+    depth++;
+    fixedArgs->maxnodes += n;
+    fixedArgs->depthmax += (depth > fixedArgs->depthmax);
+
+    for (R_len_t i = 0; i < n; i++)
+    {
+        /* X is either a list or pairlist */
+        if (Rf_isVectorList(X))
+        {
+            Xi = VECTOR_ELT(X, i);
+        }
+        else
+        {
+            Xi = CAR(xptr);
+            xptr = CDR(xptr);
+        }
+        /* descend one level */
+        if (TYPEOF(Xi) != NILSXP && (Rf_isVectorList(Xi) || Rf_isPairList(Xi))) // skip NILSXP
+        {
+            C_traverse_bind(fixedArgs, Xi, depth);
+        }
+        else
+        {
+            (fixedArgs->maxleafs)++;
+            if (fixedArgs->ans_depthpivot == -1 || (depth - 1) < fixedArgs->ans_depthpivot)
+                fixedArgs->ans_depthpivot = depth - 1;
+        }
+    }
+}
+
+/* initialize number of rows for how = 'bind' */
+void C_count_rows(FixedArgs *fixedArgs, SEXP X, int depth)
+{
+    SEXP Xi;
+    SEXP xptr = X;
+    R_len_t n = Rf_length(X);
+
+    if (depth < fixedArgs->ans_depthpivot - 1)
+    {
+        for (R_len_t i = 0; i < n; i++)
+        {
+            /* X is either a list or pairlist */
+            if (Rf_isVectorList(X))
+            {
+                Xi = VECTOR_ELT(X, i);
+            }
+            else
+            {
+                Xi = CAR(xptr);
+                xptr = CDR(xptr);
+            }
+            /* descend one level */
+            if (TYPEOF(Xi) != NILSXP && (Rf_isVectorList(Xi) || Rf_isPairList(Xi))) // skip NILSXP
+            {
+                C_count_rows(fixedArgs, Xi, depth + 1);
+            }
+        }
+    }
+    else if (depth == fixedArgs->ans_depthpivot - 1)
+    {
+        fixedArgs->ans_maxrows += n;
+    }
+}
+
 /* create long language object */
 SEXP C_lang7(SEXP s, SEXP t, SEXP u, SEXP v, SEXP w, SEXP x, SEXP y)
 {
@@ -49,44 +120,35 @@ SEXP C_lang7(SEXP s, SEXP t, SEXP u, SEXP v, SEXP w, SEXP x, SEXP y)
 }
 
 /* convert integer to character */
-SEXP C_int2char(int i)
+SEXP C_int2char(int i, Rboolean prefix)
 {
     char buff[64]; // fixed buffer size
-    snprintf(buff, 64, "%d", i);
+    if (prefix)
+        snprintf(buff, 64, "L%d", i);
+    else
+        snprintf(buff, 64, "%d", i);
     return Rf_mkChar(buff);
 }
 
-/* flag pivot depth */
-int C_pivotFlag(SEXP X, SEXP names, R_len_t n, int depth)
-{
-    int flag = -1;
-    Rboolean hasSubList = Rf_isVectorList(X) ? Rf_isVectorList(VECTOR_ELT(X, 0)) : FALSE;
-    if (n > 1 && hasSubList && (Rf_isNull(names) || strcmp(CHAR(STRING_ELT(names, 0)), CHAR(STRING_ELT(names, 1))) == 0))
-        flag = depth; // empty or duplicate names with non-empty sublists (flag current depth)
-    else if (n > 1)
-        flag = -2; // no pivot depth present
-    return flag;
-}
-
 /* concatenate names */
-SEXP C_strcat(SEXP names, int depth)
+SEXP C_strcat(SEXP names, int start, int end, const char *sep)
 {
     size_t BUFFER_SIZE = 8192; // fixed buffer size
     char buff[8192];
 
     // do not copy unnamed elements at pivot depth
-    strncpy(buff, STRING_ELT(names, 0) == NA_STRING ? "" : CHAR(STRING_ELT(names, 0)), BUFFER_SIZE - 1);
+    strncpy(buff, STRING_ELT(names, start) == NA_STRING ? "" : CHAR(STRING_ELT(names, start)), BUFFER_SIZE - 1);
     buff[BUFFER_SIZE - 1] = '\0';
     size_t nbuff = strlen(buff);
 
-    for (int j = 1; j < depth + 1; j++)
+    for (int j = start + 1; j < end + 1; j++)
     {
         if (nbuff < (BUFFER_SIZE - 1))
         {
             if (STRING_ELT(names, j) != NA_STRING)
             {
                 if (nbuff > 0)
-                    strncat(buff, ".", BUFFER_SIZE - nbuff - 1);
+                    strncat(buff, sep, BUFFER_SIZE - nbuff - 1);
 
                 strncat(buff, CHAR(STRING_ELT(names, j)), BUFFER_SIZE - strlen(buff) - 1);
                 nbuff = strlen(buff);
@@ -249,7 +311,7 @@ void C_coerceList(SEXP ans, SEXP newans, R_len_t newlen, SEXPTYPE type)
     case CPLXSXP:
         for (R_len_t j = 0; j < newlen; j++)
             COMPLEX0(newans)
-            [j] = Rf_asComplex(VECTOR_ELT(ans, j));
+        [j] = Rf_asComplex(VECTOR_ELT(ans, j));
         break;
     case REALSXP:
         for (R_len_t j = 0; j < newlen; j++)

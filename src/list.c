@@ -21,13 +21,13 @@ SEXP C_recurse_list(
     int nprotect = 0;
 
     /* if Xi is list (and data.frame is treated as list if !dfaslist)
-	   and !feverywhere recurse, otherwise evaluate functions */
+       and !feverywhere recurse, otherwise evaluate functions */
     Rboolean recurse = FALSE;
 
     if (fixedArgs->feverywhere < 1 && ((Rf_isVectorList(Xi) || Rf_isPairList(Xi)) && TYPEOF(Xi) != NILSXP))
     {
         recurse = TRUE;
-        if (!fixedArgs->dfaslist)
+        if (fixedArgs->dfaslist < 1)
         {
             if (C_matchClass(Xi, PROTECT(Rf_ScalarString(Rf_mkChar("data.frame")))))
                 recurse = FALSE;
@@ -35,7 +35,7 @@ SEXP C_recurse_list(
         }
     }
 
-    /* do not recurse further, i.e. apply f on node 
+    /* do not recurse further, i.e. apply f on node
         if condition and classes are satisfied */
     if (!recurse)
     {
@@ -191,7 +191,7 @@ SEXP C_recurse_list(
         if (eval && matched && !emptysymbol)
         {
             /* update current node info only for pruning and melting */
-            if (fixedArgs->how > 2)
+            if (fixedArgs->how == 3 || fixedArgs->how == 5)
             {
                 R_len_t i1 = localArgs->node;
                 (localArgs->xinfo_array)[i1] = 1;
@@ -215,14 +215,29 @@ SEXP C_recurse_list(
             {
                 fval = PROTECT(R_forceAndCall(f.call, f.nargs, env));
                 nprotect++;
+
+                /* update evaluated name */
+                if (fixedArgs->how == 9)
+                {
+                    if (!Rf_isString(fval))
+                    {
+                        SEXP fname = PROTECT(Rf_coerceVector(fval, STRSXP));
+                        SET_STRING_ELT(fixedArgs->ansnames_ptr, localArgs->xpos_vec[localArgs->depth] - 1, STRING_ELT(fname, 0));
+                        UNPROTECT(1);
+                    }
+                    else
+                        SET_STRING_ELT(fixedArgs->ansnames_ptr, localArgs->xpos_vec[localArgs->depth] - 1, STRING_ELT(fval, 0));
+
+                    fval = Xi;
+                }
             }
             else
             {
                 fval = Xi;
             }
 
-            /* recurse further with new value if feverywhere == 2 */
-            if (fixedArgs->feverywhere == 2 && ((Rf_isVectorList(fval) || Rf_isPairList(fval)) && TYPEOF(fval) != NILSXP))
+            /* recurse further with new value if feverywhere == 2 or dfaslist == -1 */
+            if ((fixedArgs->feverywhere == 2 || fixedArgs->dfaslist == -1) && ((Rf_isVectorList(fval) || Rf_isPairList(fval)) && TYPEOF(fval) != NILSXP))
             {
                 recurse = TRUE;
             }
@@ -232,7 +247,7 @@ SEXP C_recurse_list(
                 return fval;
             }
         }
-        else if (fixedArgs->feverywhere > 0 && !emptysymbol && ((Rf_isVectorList(Xi) || Rf_isPairList(Xi)) && TYPEOF(Xi) != NILSXP))
+        else if ((fixedArgs->feverywhere > 0 || fixedArgs->dfaslist == -1) && !emptysymbol && ((Rf_isVectorList(Xi) || Rf_isPairList(Xi)) && TYPEOF(Xi) != NILSXP))
         {
             /* recurse further */
             fval = Xi;
@@ -261,7 +276,7 @@ SEXP C_recurse_list(
     if (recurse)
     {
         /* avoid unitialized warning */
-        SEXP ans = NULL, ansptr = NULL;
+        SEXP ans = NULL, ansptr = NULL, ansnames = NULL;
 
         /* current element information */
         R_len_t n = Rf_length(fval);
@@ -281,6 +296,17 @@ SEXP C_recurse_list(
             ans = PROTECT(Rf_shallow_duplicate(fval));
             if (Rf_isPairList(fval))
                 ansptr = ans;
+
+            if (fixedArgs->how == 9)
+            {
+                if (Rf_isNull(names))
+                    ansnames = PROTECT(Rf_allocVector(STRSXP, n));
+                else
+                    ansnames = PROTECT(Rf_duplicate(names));
+
+                fixedArgs->ansnames_ptr = ansnames;
+                nprotect++;
+            }
         }
         nprotect += 2;
 
@@ -292,14 +318,14 @@ SEXP C_recurse_list(
         (localArgs->depth)++;
 
         /* reallocate .xpos and .xparent vectors */
-        if (fixedArgs->feverywhere == 2)
+        if (fixedArgs->feverywhere == 2 || fixedArgs->dfaslist == -1)
         {
             if (localArgs->depth > 100)
                 Rf_error("a hard limit of maximum 100 nested layers is enforced to avoid infinite recursion"); /* stop with error if depth too large */
 
             if (localArgs->depth >= fixedArgs->depthmax)
             {
-                if (f.xpos || condition.xpos)
+                if (f.xpos || condition.xpos || fixedArgs->how == 9)
                     localArgs->xpos_vec = (R_len_t *)S_realloc((char *)localArgs->xpos_vec, 2 * fixedArgs->depthmax, fixedArgs->depthmax, sizeof(R_len_t));
 
                 if (f.xparents || condition.xparents)
@@ -317,28 +343,28 @@ SEXP C_recurse_list(
 
         /* update variable arguments and counters */
         R_len_t parent = 0; // avoid uninitialized warning
-        if (fixedArgs->how > 2)
+        if (fixedArgs->how == 3 || fixedArgs->how == 5)
             parent = localArgs->node;
 
         for (R_len_t i = 0; i < n; i++)
         {
             /* update .xpos argument */
-            if (f.xpos || condition.xpos)
+            if (f.xpos || condition.xpos || fixedArgs->how == 9)
                 (localArgs->xpos_vec)[localArgs->depth] = i + 1;
 
             /* update .xparents and/or .xname arguments */
             if (f.xparents || condition.xparents || f.xname || condition.xname)
             {
-                SEXP iname = PROTECT(Rf_isNull(names) ? C_int2char(i + 1) : STRING_ELT(names, i));
+                SEXP iname = PROTECT(Rf_isNull(names) ? C_int2char(i + 1, FALSE) : STRING_ELT(names, i));
                 SET_STRING_ELT(localArgs->xparent_ptr, (f.xparents || condition.xparents) ? localArgs->depth : 0, iname);
                 UNPROTECT(1);
             }
 
-            if (fixedArgs->how > 2)
+            if (fixedArgs->how == 3 || fixedArgs->how == 5)
             {
-                localArgs->node++; // global node counter
-                (localArgs->xinfo_array)[localArgs->node + fixedArgs->maxnodes] = parent;                // parent node counter
-                (localArgs->xinfo_array)[localArgs->node + 2 * fixedArgs->maxnodes] = i;                 // child node counter
+                localArgs->node++;                                                        // global node counter
+                (localArgs->xinfo_array)[localArgs->node + fixedArgs->maxnodes] = parent; // parent node counter
+                (localArgs->xinfo_array)[localArgs->node + 2 * fixedArgs->maxnodes] = i;  // child node counter
             }
 
             /* main recursion part */
@@ -361,12 +387,20 @@ SEXP C_recurse_list(
             }
 
             /* reset .xsiblings argument */
-            if(f.xsiblings || condition.xsiblings)
+            if (f.xsiblings || condition.xsiblings)
                 localArgs->xsiblings_ptr = fval;
+
+            /* reset names */
+            if (fixedArgs->how == 9)
+                fixedArgs->ansnames_ptr = ansnames;
         }
 
         /* decrement current depth */
         (localArgs->depth)--;
+
+        /* update names */
+        if (fixedArgs->how == 9)
+            Rf_setAttrib(ans, R_NamesSymbol, ansnames);
 
         UNPROTECT(nprotect);
         return ans;
