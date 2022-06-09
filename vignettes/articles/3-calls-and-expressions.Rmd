@@ -10,11 +10,13 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-  
+
 ```{r, echo = FALSE}
 knitr::opts_chunk$set(
-collapse = TRUE,
-comment = "#>")
+  collapse = TRUE,
+  eval = FALSE,
+  comment = "#>"
+)
 ```
 
 # Expressions

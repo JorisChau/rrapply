@@ -201,7 +201,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 
 		/* override with user pivot depth */
 		int coldepth = INTEGER_ELT(VECTOR_ELT(options, 3), 0) - 1;
-		if (coldepth > -1 && coldepth < fixedArgs.ans_depthpivot)
+		if (coldepth > -1 && coldepth <= fixedArgs.depthmax)
 			fixedArgs.ans_depthpivot = coldepth;
 
 		/* detect maximum number of binding rows */
@@ -379,10 +379,14 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		/* update assignments how = 'bind' */
 		if (fixedArgs.how == 6 && fixedArgs.ans_depthpivot == 1)
 		{
-			/* assign binding name columns */
-			if (fixedArgs.ans_namecols && localArgs.ans_row < fixedArgs.ans_maxrows)
-				SET_STRING_ELT(VECTOR_ELT(fixedArgs.ansnamecols_ptr, 0), localArgs.ans_row, STRING_ELT(localArgs.xparent_ptr, 0));
-			localArgs.ans_row++;
+			/* bump row only if non-empty */
+			if (localArgs.ans_idx > 0 && (localArgs.xinfo_array)[localArgs.ans_idx - 1] == localArgs.ans_row)
+			{
+				/* assign binding name columns */
+				if (fixedArgs.ans_namecols && localArgs.ans_row < fixedArgs.ans_maxrows)
+					SET_STRING_ELT(VECTOR_ELT(fixedArgs.ansnamecols_ptr, 0), localArgs.ans_row, STRING_ELT(localArgs.xparent_ptr, 0));
+				localArgs.ans_row++;
+			}
 		}
 
 		/* reset names */

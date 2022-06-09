@@ -308,13 +308,17 @@ void C_recurse_flatten(
             /* update assignments how = 'bind' */
             if (fixedArgs->how == 6 && fixedArgs->ans_depthpivot == localArgs->depth + 1)
             {
-                /* assign binding name columns */
-                if (fixedArgs->ans_namecols && localArgs->ans_row < fixedArgs->ans_maxrows)
+                /* bump row only if non-empty */
+                if (localArgs->ans_idx > 0 && (localArgs->xinfo_array)[localArgs->ans_idx - 1] == localArgs->ans_row)
                 {
-                    for (R_len_t j = 0; j < fixedArgs->ans_depthpivot; j++)
-                        SET_STRING_ELT(VECTOR_ELT(fixedArgs->ansnamecols_ptr, j), localArgs->ans_row, STRING_ELT(localArgs->xparent_ptr, j));
+                    /* assign binding name columns */
+                    if (fixedArgs->ans_namecols && localArgs->ans_row < fixedArgs->ans_maxrows)
+                    {
+                        for (R_len_t j = 0; j < fixedArgs->ans_depthpivot; j++)
+                            SET_STRING_ELT(VECTOR_ELT(fixedArgs->ansnamecols_ptr, j), localArgs->ans_row, STRING_ELT(localArgs->xparent_ptr, j));
+                    }
+                    localArgs->ans_row++;
                 }
-                localArgs->ans_row++;
             }
         }
 

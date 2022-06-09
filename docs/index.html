@@ -4,14 +4,14 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="description" content="The minimal rrapply-package contains a single function rrapply(), providing an extended implementation of R-base rapply() by allowing to recursively apply a function to elements of a nested list based on a general condition function and including the possibility to prune or aggregate nested list elements from the result. In addition, special arguments can be supplied to access the name, location, parents and siblings in the nested list of the element under evaluation. The rrapply() function builds upon rapply()s native C' implementation and requires no other package dependencies.">
 <title>Revisiting Base Rapply • rrapply</title>
-<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script><!-- Bootstrap --><link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/flatly/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="bootstrap-toc.css">
-<script src="bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
+<script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link href="deps/bootstrap-5.1.0/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.1.0/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
-<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="pkgdown.css" rel="stylesheet">
-<script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
+<!-- bootstrap-toc --><script src="https://cdn.rawgit.com/afeld/bootstrap-toc/v1.0.1/dist/bootstrap-toc.min.js"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
 <meta property="og:title" content="Revisiting Base Rapply">
 <meta property="og:description" content="The minimal rrapply-package contains a single function rrapply(), providing an extended implementation of R-base rapply() by allowing to recursively apply a function to elements of a nested list based on a general condition function and including the possibility to prune or aggregate nested list elements from the result. In addition, special arguments can be supplied to access the name, location, parents and siblings in the nested list of the element under evaluation. The rrapply() function builds upon rapply()s native C' implementation and requires no other package dependencies.">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
@@ -19,107 +19,99 @@
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]-->
 </head>
-<body data-spy="scroll" data-target="#toc">
-    <div class="container template-home">
-      <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <span class="navbar-brand">
-        <a class="navbar-link" href="index.html">rrapply</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.3</span>
-      </span>
-    </div>
+<body>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
+    
 
-    <div id="navbar" class="navbar-collapse collapse">
-      <ul class="nav navbar-nav">
-<li>
-  <a href="index.html">
-    <span class="fas fa-home fa-lg"></span>
-     
-  </a>
+    <nav class="navbar fixed-top navbar-light navbar-expand-lg bg-light"><div class="container">
+    
+    <a class="navbar-brand me-2" href="index.html">rrapply</a>
+
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.5</small>
+
+    
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar" class="collapse navbar-collapse ms-3">
+      <ul class="navbar-nav me-auto">
+<li class="nav-item">
+  <a class="nav-link" href="reference/index.html">Reference</a>
 </li>
-<li>
-  <a href="reference/index.html">Reference</a>
-</li>
-<li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-    Articles
-     
-    <span class="caret"></span>
-  </a>
-  <ul class="dropdown-menu" role="menu">
-<li>
-      <a href="articles/articles/1-when-to-use-rrapply.html">Efficient list recursion with rrapply</a>
-    </li>
-    <li>
-      <a href="articles/articles/2-efficient-melting-unnesting.html">Efficient list melting and unnesting with rrapply</a>
-    </li>
-    <li>
-      <a href="articles/articles/3-calls-and-expressions.html">Recursive apply for call and expression objects</a>
-    </li>
-  </ul>
-</li>
-<li>
-  <a href="news/index.html">Changelog</a>
-</li>
-      </ul>
-<ul class="nav navbar-nav navbar-right">
-<li>
-  <a href="https://github.com/JorisChau/rrapply/">
-    <span class="fab fa-github fa-lg"></span>
-     
-  </a>
-</li>
-      </ul>
-</div>
-<!--/.nav-collapse -->
+<li class="nav-item dropdown">
+  <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
+  <div class="dropdown-menu" aria-labelledby="dropdown-articles">
+    <a class="dropdown-item" href="articles/1-when-to-use-rrapply.html">Efficient list recursion with rrapply</a>
+    <a class="dropdown-item" href="articles/2-efficient-melting-unnesting.html">Efficient list melting and unnesting with rrapply</a>
+    <a class="dropdown-item" href="articles/3-calls-and-expressions.html">Recursive apply for call and expression objects</a>
   </div>
-<!--/.container -->
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="news/index.html">Changelog</a>
+</li>
+      </ul>
+<form class="form-inline my-2 my-lg-0" role="search">
+        <input type="search" class="form-control me-sm-2" aria-label="Toggle navigation" name="search-input" data-search-index="search.json" id="search-input" placeholder="Search for" autocomplete="off">
+</form>
+
+      <ul class="navbar-nav">
+<li class="nav-item">
+  <a class="external-link nav-link" href="https://github.com/JorisChau/rrapply/" aria-label="github">
+    <span class="fab fa fab fa-github fa-lg"></span>
+     
+  </a>
+</li>
+      </ul>
 </div>
-<!--/.navbar -->
 
-      
-
-      </header><div class="row">
-  <div class="contents col-md-9">
-<div id="rrapply-revisiting-r-base-rapply" class="section level1">
-<div class="page-header"><h1 class="hasAnchor">
-<a href="#rrapply-revisiting-r-base-rapply" class="anchor"></a>rrapply: revisiting R-base rapply</h1></div>
+    
+  </div>
+</nav><div class="container template-home">
+<div class="row">
+  <main id="main" class="col-md-9"><div class="section level1">
+<div class="page-header"><h1 id="rrapply-revisiting-r-base-rapply-">{rrapply}: Revisiting R-base rapply() <img style="height: 150px;" src="reference/figures/sticker.svg" align="right"><a class="anchor" aria-label="anchor" href="#rrapply-revisiting-r-base-rapply-"></a>
+</h1></div>
 <!-- badges: start -->
-
-<p>The minimal rrapply-package contains a single function <code><a href="reference/rrapply.html">rrapply()</a></code>, providing an extended implementation of R-base’s <code><a href="https://rdrr.io/r/base/rapply.html">rapply()</a></code> function, which applies a function <code>f</code> to all elements of a nested list recursively and provides control in structuring the returned result. <code><a href="reference/rrapply.html">rrapply()</a></code> builds upon <code><a href="https://rdrr.io/r/base/rapply.html">rapply()</a></code>’s native C implementation and for this reason requires no external R-package dependencies.</p>
-<div id="installation" class="section level2">
-<h2 class="hasAnchor">
-<a href="#installation" class="anchor"></a>Installation</h2>
+<p>The minimal {rrapply}-package contains a single function <code><a href="reference/rrapply.html">rrapply()</a></code>, providing an extended implementation of R-base’s <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code> function, which applies a function <code>f</code> to all elements of a nested list recursively and controls how to structure the returned result. <code><a href="reference/rrapply.html">rrapply()</a></code> builds upon <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code>’s native C implementation and for this reason requires no external R-package dependencies.</p>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># Install latest release from CRAN:</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"rrapply"</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"rrapply"</span><span class="op">)</span>
 
 <span class="co"># Install the development version from GitHub:</span>
 <span class="co"># install.packages("devtools")</span>
-<span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org//reference/remote-reexports.html">install_github</a></span><span class="op">(</span><span class="st">"JorisChau/rrapply"</span><span class="op">)</span></code></pre></div>
+<span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/remote-reexports.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"JorisChau/rrapply"</span><span class="op">)</span></code></pre></div>
 </div>
-<div id="example-usage" class="section level2">
-<h2 class="hasAnchor">
-<a href="#example-usage" class="anchor"></a>Example usage</h2>
-<div id="list-pruning-and-unnesting" class="section level3">
-<h3 class="hasAnchor">
-<a href="#list-pruning-and-unnesting" class="anchor"></a>List pruning and unnesting</h3>
-<p>With base <code><a href="https://rdrr.io/r/base/rapply.html">rapply()</a></code>, there is no convenient way to prune or filter list elements from the input list. The <code><a href="reference/rrapply.html">rrapply()</a></code> function adds an option <code>how = "prune"</code> to prune all list elements not subject to application of <code>f</code> from a nested list,</p>
+<div class="section level2">
+<h2 id="cheat-sheet">Cheat sheet<a class="anchor" aria-label="anchor" href="#cheat-sheet"></a>
+</h2>
+<div><p><a href="reference/figures/cheatsheet.pdf"> <img src="reference/figures/cheatsheet.svg" align="center" height="600"></a></p></div>
+</div>
+<div class="section level2">
+<h2 id="when-to-use-rrapply">When to use <code>rrapply()</code>
+<a class="anchor" aria-label="anchor" href="#when-to-use-rrapply"></a>
+</h2>
+<div class="section level3">
+<h3 id="list-pruning-and-unnesting">List pruning and unnesting<a class="anchor" aria-label="anchor" href="#list-pruning-and-unnesting"></a>
+</h3>
+<div class="section level4">
+<h4 id="-how--prune">• <code>how = "prune"</code>
+<a class="anchor" aria-label="anchor" href="#-how--prune"></a>
+</h4>
+<p>With base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code>, there is no convenient way to prune or filter list elements from the input list object. The <code><a href="reference/rrapply.html">rrapply()</a></code> function adds an option <code>how = "prune"</code> to prune all list elements not subject to application of <code>f</code> from a nested list,</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://jorischau.github.io/rrapply/">rrapply</a></span><span class="op">)</span>
-<span class="co">## Nested list of renewable energy as a percentage of total energy consumption per country in 2016</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="st">"renewable_energy_by_country"</span><span class="op">)</span>
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://jorischau.github.io/rrapply/" class="external-link">rrapply</a></span><span class="op">)</span>
 
-<span class="co">## Subset values for countries and areas in Oceania</span>
+<span class="co">## data: renewable energy per country in 2016 (% of total energy consumption)</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"renewable_energy_by_country"</span><span class="op">)</span>
+
+<span class="co">## subset countries and areas in Oceania</span>
 <span class="va">renewable_oceania</span> <span class="op">&lt;-</span> <span class="va">renewable_energy_by_country</span><span class="op">[[</span><span class="st">"World"</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="st">"Oceania"</span><span class="op">]</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">renewable_oceania</span>, list.len <span class="op">=</span> <span class="fl">3</span>, give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">renewable_oceania</span>, list.len <span class="op">=</span> <span class="fl">3</span>, give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+
 <span class="co">#&gt; List of 1</span>
 <span class="co">#&gt;  $ Oceania:List of 4</span>
 <span class="co">#&gt;   ..$ Australia and New Zealand:List of 6</span>
@@ -137,16 +129,17 @@
 <span class="co">#&gt;   .. ..$ Kiribati                            : num 45.4</span>
 <span class="co">#&gt;   .. ..$ Marshall Islands                    : num 11.8</span>
 <span class="co">#&gt;   .. .. [list output truncated]</span>
-<span class="co">#&gt;   .. [list output truncated]</span>
-
-<span class="co">## Drop all logical NA's while preserving list structure </span>
-<span class="va">na_drop_oceania</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
+<span class="co">#&gt;   .. [list output truncated]</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co">## drop all logical NA's while preserving list structure </span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
   <span class="va">renewable_oceania</span>,
-  f <span class="op">=</span> <span class="va">identity</span>,
+  f <span class="op">=</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span>,
   classes <span class="op">=</span> <span class="st">"numeric"</span>,
   how <span class="op">=</span> <span class="st">"prune"</span>
-<span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">na_drop_oceania</span>, list.len <span class="op">=</span> <span class="fl">3</span>, give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+<span class="op">)</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span>list.len <span class="op">=</span> <span class="fl">3</span>, give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+
 <span class="co">#&gt; List of 1</span>
 <span class="co">#&gt;  $ Oceania:List of 4</span>
 <span class="co">#&gt;   ..$ Australia and New Zealand:List of 2</span>
@@ -163,32 +156,63 @@
 <span class="co">#&gt;   .. ..$ Marshall Islands                : num 11.8</span>
 <span class="co">#&gt;   .. .. [list output truncated]</span>
 <span class="co">#&gt;   .. [list output truncated]</span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="-how--flatten">• <code>how = "flatten"</code>
+<a class="anchor" aria-label="anchor" href="#-how--flatten"></a>
+</h4>
 <p>Instead, use <code>how = "flatten"</code> to return a flattened unnested version of the pruned list,</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">## Drop all logical NA's and return unnested list</span>
-<span class="va">na_drop_oceania2</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co">## drop all logical NA's and return unnested list</span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
   <span class="va">renewable_oceania</span>,
-  f <span class="op">=</span> <span class="va">identity</span>,
+  f <span class="op">=</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span>,
   classes <span class="op">=</span> <span class="st">"numeric"</span>,
   how <span class="op">=</span> <span class="st">"flatten"</span>
-<span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">na_drop_oceania2</span>, n <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>
+<span class="op">)</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>
+
 <span class="co">#&gt;        Australia      New Zealand             Fiji    New Caledonia </span>
 <span class="co">#&gt;             9.32            32.76            24.36             4.03 </span>
 <span class="co">#&gt; Papua New Guinea  Solomon Islands          Vanuatu             Guam </span>
 <span class="co">#&gt;            50.34            65.73            33.67             3.03 </span>
 <span class="co">#&gt;         Kiribati Marshall Islands </span>
 <span class="co">#&gt;            45.43            11.75</span></code></pre></div>
-<p>Or, use <code>how = "melt"</code> to return a melted data.frame of the pruned list similar in format to <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html">reshape2::melt()</a></code> applied to a nested list.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">## Drop all logical NA's and return melted data.frame</span>
-<span class="va">na_drop_oceania3</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
+<p><strong>Hint</strong>: the <code>options</code> argument allows to avoid coercion of the flattened list to a vector and/or to include all parent list names in the result.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co">## flatten to simple list with full names</span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
   <span class="va">renewable_oceania</span>,
-  f <span class="op">=</span> <span class="va">identity</span>,
+  f <span class="op">=</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span>,
+  classes <span class="op">=</span> <span class="st">"numeric"</span>,
+  how <span class="op">=</span> <span class="st">"flatten"</span>,
+  options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>namesep <span class="op">=</span> <span class="st">"."</span>, simplify <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+<span class="op">)</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span>list.len <span class="op">=</span> <span class="fl">5</span>, give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+
+<span class="co">#&gt; List of 29</span>
+<span class="co">#&gt;  $ Oceania.Australia and New Zealand.Australia        : num 9.32</span>
+<span class="co">#&gt;  $ Oceania.Australia and New Zealand.New Zealand      : num 32.8</span>
+<span class="co">#&gt;  $ Oceania.Melanesia.Fiji                             : num 24.4</span>
+<span class="co">#&gt;  $ Oceania.Melanesia.New Caledonia                    : num 4.03</span>
+<span class="co">#&gt;  $ Oceania.Melanesia.Papua New Guinea                 : num 50.3</span>
+<span class="co">#&gt;   [list output truncated]</span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="-how--melt">• <code>how = "melt"</code>
+<a class="anchor" aria-label="anchor" href="#-how--melt"></a>
+</h4>
+<p>Or, use <code>how = "melt"</code> to return a melted data.frame of the pruned list similar in format to <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> applied to a nested list.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co">## drop all logical NA's and return melted data.frame</span>
+<span class="va">oceania_melt</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
+  <span class="va">renewable_oceania</span>,
+  f <span class="op">=</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span>,
   classes <span class="op">=</span> <span class="st">"numeric"</span>,
   how <span class="op">=</span> <span class="st">"melt"</span>
 <span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">na_drop_oceania3</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">oceania_melt</span><span class="op">)</span>
+
 <span class="co">#&gt;        L1                        L2               L3 value</span>
 <span class="co">#&gt; 1 Oceania Australia and New Zealand        Australia  9.32</span>
 <span class="co">#&gt; 2 Oceania Australia and New Zealand      New Zealand 32.76</span>
@@ -197,13 +221,11 @@
 <span class="co">#&gt; 5 Oceania                 Melanesia Papua New Guinea 50.34</span>
 <span class="co">#&gt; 6 Oceania                 Melanesia  Solomon Islands 65.73</span></code></pre></div>
 <p>A melted data.frame can be used to reconstruct a nested list with <code>how = "unmelt"</code>,</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">## Reconstruct nested list from melted data.frame</span>
-<span class="va">na_drop_oceania4</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
-  <span class="va">na_drop_oceania3</span>, 
-  how <span class="op">=</span> <span class="st">"unmelt"</span>
-<span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">na_drop_oceania4</span>, list.len <span class="op">=</span> <span class="fl">3</span>, give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co">## reconstruct nested list from melted data.frame</span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">oceania_melt</span>, how <span class="op">=</span> <span class="st">"unmelt"</span><span class="op">)</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span>list.len <span class="op">=</span> <span class="fl">3</span>, give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+
 <span class="co">#&gt; List of 1</span>
 <span class="co">#&gt;  $ Oceania:List of 4</span>
 <span class="co">#&gt;   ..$ Australia and New Zealand:List of 2</span>
@@ -220,12 +242,17 @@
 <span class="co">#&gt;   .. ..$ Marshall Islands                : num 11.8</span>
 <span class="co">#&gt;   .. .. [list output truncated]</span>
 <span class="co">#&gt;   .. [list output truncated]</span></code></pre></div>
-<p>Nested lists containing repeated observations can be unnested with <code>how = "bind"</code>, which returns a wide data.frame similar in format to <code><a href="https://dplyr.tidyverse.org/reference/bind.html">dplyr::bind_rows()</a></code> applied to a list of data.frames or repeated application of <code><a href="https://tidyr.tidyverse.org/reference/hoist.html">tidyr::unnest_wider()</a></code> to a nested data.frame.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">## Nested list of Pokemon properties in Pokemon GO</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="st">"pokedex"</span><span class="op">)</span>
+</div>
+<div class="section level4">
+<h4 id="-how--bind">• <code>how = "bind"</code>
+<a class="anchor" aria-label="anchor" href="#-how--bind"></a>
+</h4>
+<p>Nested lists containing repeated observations can be unnested with <code>how = "bind"</code>, which returns a wide data.frame similar in format to <code><a href="https://dplyr.tidyverse.org/reference/bind.html" class="external-link">dplyr::bind_rows()</a></code> applied to a list of data.frames or repeated application of <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">tidyr::unnest_wider()</a></code> to a nested data.frame.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co">## data: nested list of Pokemon properties in Pokemon GO</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"pokedex"</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pokedex</span>, list.len <span class="op">=</span> <span class="fl">3</span><span class="op">)</span>
 
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">pokedex</span>, list.len <span class="op">=</span> <span class="fl">3</span><span class="op">)</span>
 <span class="co">#&gt; List of 1</span>
 <span class="co">#&gt;  $ pokemon:List of 151</span>
 <span class="co">#&gt;   ..$ :List of 16</span>
@@ -243,38 +270,51 @@
 <span class="co">#&gt;   .. ..$ num           : chr "003"</span>
 <span class="co">#&gt;   .. ..$ name          : chr "Venusaur"</span>
 <span class="co">#&gt;   .. .. [list output truncated]</span>
-<span class="co">#&gt;   .. [list output truncated]</span>
+<span class="co">#&gt;   .. [list output truncated]</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co">## unnest list to wide data.frame</span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">pokedex</span>, how <span class="op">=</span> <span class="st">"bind"</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, <span class="fl">5</span><span class="op">:</span><span class="fl">8</span><span class="op">)</span><span class="op">]</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">9</span><span class="op">)</span>
 
-<span class="co">## Unnest list as a wide data.frame</span>
-<span class="va">pokedex_wide</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">pokedex</span>, how <span class="op">=</span> <span class="st">"bind"</span><span class="op">)</span>
+<span class="co">#&gt;   id num       name          type height   weight            candy</span>
+<span class="co">#&gt; 1  1 001  Bulbasaur Grass, Poison 0.71 m   6.9 kg  Bulbasaur Candy</span>
+<span class="co">#&gt; 2  2 002    Ivysaur Grass, Poison 0.99 m  13.0 kg  Bulbasaur Candy</span>
+<span class="co">#&gt; 3  3 003   Venusaur Grass, Poison 2.01 m 100.0 kg  Bulbasaur Candy</span>
+<span class="co">#&gt; 4  4 004 Charmander          Fire 0.61 m   8.5 kg Charmander Candy</span>
+<span class="co">#&gt; 5  5 005 Charmeleon          Fire 1.09 m  19.0 kg Charmander Candy</span>
+<span class="co">#&gt; 6  6 006  Charizard  Fire, Flying 1.70 m  90.5 kg Charmander Candy</span>
+<span class="co">#&gt; 7  7 007   Squirtle         Water 0.51 m   9.0 kg   Squirtle Candy</span>
+<span class="co">#&gt; 8  8 008  Wartortle         Water 0.99 m  22.5 kg   Squirtle Candy</span>
+<span class="co">#&gt; 9  9 009  Blastoise         Water 1.60 m  85.5 kg   Squirtle Candy</span></code></pre></div>
+<p><strong>Hint</strong>: set <code>options = list(namecols = TRUE)</code> to include the parent list names associated to each row in the wide data.frame as individual columns <code>L1</code>, <code>L2</code>, etc.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co">## bind to data.frame including parent columns</span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">pokedex</span>, how <span class="op">=</span> <span class="st">"bind"</span>, options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>namecols <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="fl">7</span><span class="op">:</span><span class="fl">10</span><span class="op">)</span><span class="op">]</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">6</span><span class="op">)</span>
 
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">pokedex_wide</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, <span class="fl">5</span><span class="op">:</span><span class="fl">10</span><span class="op">)</span><span class="op">]</span>, n <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
-<span class="co">#&gt;   pokemon.id pokemon.num pokemon.name  pokemon.type pokemon.height</span>
-<span class="co">#&gt; 1          1         001    Bulbasaur Grass, Poison         0.71 m</span>
-<span class="co">#&gt; 2          2         002      Ivysaur Grass, Poison         0.99 m</span>
-<span class="co">#&gt; 3          3         003     Venusaur Grass, Poison         2.01 m</span>
-<span class="co">#&gt; 4          4         004   Charmander          Fire         0.61 m</span>
-<span class="co">#&gt; 5          5         005   Charmeleon          Fire         1.09 m</span>
-<span class="co">#&gt;   pokemon.weight    pokemon.candy pokemon.candy_count pokemon.egg</span>
-<span class="co">#&gt; 1         6.9 kg  Bulbasaur Candy                  25        2 km</span>
-<span class="co">#&gt; 2        13.0 kg  Bulbasaur Candy                 100 Not in Eggs</span>
-<span class="co">#&gt; 3       100.0 kg  Bulbasaur Candy                  NA Not in Eggs</span>
-<span class="co">#&gt; 4         8.5 kg Charmander Candy                  25        2 km</span>
-<span class="co">#&gt; 5        19.0 kg Charmander Candy                 100 Not in Eggs</span></code></pre></div>
+<span class="co">#&gt;        L1 L2 id num       name          type height   weight            candy</span>
+<span class="co">#&gt; 1 pokemon  1  1 001  Bulbasaur Grass, Poison 0.71 m   6.9 kg  Bulbasaur Candy</span>
+<span class="co">#&gt; 2 pokemon  2  2 002    Ivysaur Grass, Poison 0.99 m  13.0 kg  Bulbasaur Candy</span>
+<span class="co">#&gt; 3 pokemon  3  3 003   Venusaur Grass, Poison 2.01 m 100.0 kg  Bulbasaur Candy</span>
+<span class="co">#&gt; 4 pokemon  4  4 004 Charmander          Fire 0.61 m   8.5 kg Charmander Candy</span>
+<span class="co">#&gt; 5 pokemon  5  5 005 Charmeleon          Fire 1.09 m  19.0 kg Charmander Candy</span>
+<span class="co">#&gt; 6 pokemon  6  6 006  Charizard  Fire, Flying 1.70 m  90.5 kg Charmander Candy</span></code></pre></div>
 </div>
-<div id="condition-function" class="section level3">
-<h3 class="hasAnchor">
-<a href="#condition-function" class="anchor"></a>Condition function</h3>
-<p>Base <code><a href="https://rdrr.io/r/base/rapply.html">rapply()</a></code> allows to apply a function <code>f</code> to list elements of certain types or classes via the <code>classes</code> argument. <code><a href="reference/rrapply.html">rrapply()</a></code> generalizes this option via an additional <code>condition</code> argument, which accepts any function to use as a condition or predicate to apply <code>f</code> to a subset of list elements.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">## Drop all NA elements using condition function</span>
-<span class="va">na_drop_oceania3</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
+</div>
+<div class="section level3">
+<h3 id="condition-function">Condition function<a class="anchor" aria-label="anchor" href="#condition-function"></a>
+</h3>
+<p>Base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code> allows to apply a function <code>f</code> to list elements of certain types or classes via the <code>classes</code> argument. <code><a href="reference/rrapply.html">rrapply()</a></code> generalizes this option via an additional <code>condition</code> argument, which accepts any function to use as a condition or predicate to apply <code>f</code> to a subset of list elements.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co">## drop all NA elements using condition </span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
   <span class="va">renewable_oceania</span>,
-  condition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/funprog.html">Negate</a></span><span class="op">(</span><span class="va">is.na</span><span class="op">)</span>,
-  f <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span>,
+  condition <span class="op">=</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>,
+  f <span class="op">=</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span>,
   how <span class="op">=</span> <span class="st">"prune"</span>
-<span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">na_drop_oceania3</span>, list.len <span class="op">=</span> <span class="fl">3</span>, give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+<span class="op">)</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span>list.len <span class="op">=</span> <span class="fl">3</span>, give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+
 <span class="co">#&gt; List of 1</span>
 <span class="co">#&gt;  $ Oceania:List of 4</span>
 <span class="co">#&gt;   ..$ Australia and New Zealand:List of 2</span>
@@ -290,15 +330,16 @@
 <span class="co">#&gt;   .. ..$ Kiribati                        : num 45.4</span>
 <span class="co">#&gt;   .. ..$ Marshall Islands                : num 11.8</span>
 <span class="co">#&gt;   .. .. [list output truncated]</span>
-<span class="co">#&gt;   .. [list output truncated]</span>
-
-<span class="co">## Filter all countries with values above 85%</span>
-<span class="va">renewable_energy_above_85</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
+<span class="co">#&gt;   .. [list output truncated]</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co">## filter all countries with values &gt; 85%</span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
   <span class="va">renewable_energy_by_country</span>,
-  condition <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span> <span class="op">&gt;</span> <span class="fl">85</span>,
+  condition <span class="op">=</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span> <span class="op">&gt;</span> <span class="fl">85</span>,
   how <span class="op">=</span> <span class="st">"prune"</span>
-<span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">renewable_energy_above_85</span>, give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+<span class="op">)</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span>give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+
 <span class="co">#&gt; List of 1</span>
 <span class="co">#&gt;  $ World:List of 1</span>
 <span class="co">#&gt;   ..$ Africa:List of 1</span>
@@ -317,20 +358,31 @@
 <span class="co">#&gt;   .. .. ..$ Western Africa:List of 1</span>
 <span class="co">#&gt;   .. .. .. ..$ Guinea-Bissau: num 86.5</span></code></pre></div>
 </div>
-<div id="special-arguments-xname-xpos-xparents-and-xsiblings" class="section level3">
-<h3 class="hasAnchor">
-<a href="#special-arguments-xname-xpos-xparents-and-xsiblings" class="anchor"></a>Special arguments <code>.xname</code>, <code>.xpos</code>, <code>.xparents</code> and <code>.xsiblings</code>
+<div class="section level3">
+<h3 id="special-arguments-xname-xpos-xparents-and-xsiblings">Special arguments <code>.xname</code>, <code>.xpos</code>, <code>.xparents</code> and <code>.xsiblings</code>
+<a class="anchor" aria-label="anchor" href="#special-arguments-xname-xpos-xparents-and-xsiblings"></a>
 </h3>
-<p>In base <code><a href="https://rdrr.io/r/base/rapply.html">rapply()</a></code>, the <code>f</code> function only has access to the content of the list element under evaluation, and there is no convenient way to access its name or location in the nested list from inside the <code>f</code> function. <code><a href="reference/rrapply.html">rrapply()</a></code> allows the use of the special arguments <code>.xname</code>, <code>.xpos</code>,<code>.xparents</code> and <code>.xsiblings</code> inside the <code>f</code> and <code>condition</code> functions (in addition to the principal function argument). <code>.xname</code> evaluates to the name of the list element, <code>.xpos</code> evaluates to the position of the element in the nested list structured as an integer vector, <code>.xparents</code> evaluates to a vector of parent node names in the path to the current list element, and <code>.xsiblings</code> evaluates to the parent list containing the current list element and all of its direct siblings.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">## Apply a function using the name of the node</span>
-<span class="va">renewable_oceania4</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
+<p>With base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code>, the <code>f</code> function only has access to the <em>content</em> of the list element under evaluation, and there is no convenient way to access its name or location in the nested list from inside <code>f</code>. <code><a href="reference/rrapply.html">rrapply()</a></code> defines the special arguments <code>.xname</code>, <code>.xpos</code>, <code>.xparents</code>, <code>.xsiblings</code> inside the <code>f</code> and <code>condition</code> functions (in addition to the principal function argument):</p>
+<ul>
+<li>
+<code>.xname</code> evaluates to the name of the list element;</li>
+<li>
+<code>.xpos</code> evaluates to the position of the element in the nested list structured as an integer vector;</li>
+<li>
+<code>.xparents</code> evaluates to a vector of parent list names in the path to the current list element;</li>
+<li>
+<code>.xsiblings</code> evaluates to the parent list containing the current list element and its direct siblings.</li>
+</ul>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co">## apply f based on element's name</span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
   <span class="va">renewable_oceania</span>,
-  f <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">.xname</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html">sprintf</a></span><span class="op">(</span><span class="st">"Renewable energy in %s: %.2f%%"</span>, <span class="va">.xname</span>, <span class="va">x</span><span class="op">)</span>,
-  condition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/funprog.html">Negate</a></span><span class="op">(</span><span class="va">is.na</span><span class="op">)</span>,
+  condition <span class="op">=</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>,
+  f <span class="op">=</span> \<span class="op">(</span><span class="va">x</span>, <span class="va">.xname</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"Renewable energy in %s: %.2f%%"</span>, <span class="va">.xname</span>, <span class="va">x</span><span class="op">)</span>,
   how <span class="op">=</span> <span class="st">"flatten"</span>
-<span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">renewable_oceania4</span>, n <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
+<span class="op">)</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
+
 <span class="co">#&gt;                                      Australia </span>
 <span class="co">#&gt;         "Renewable energy in Australia: 9.32%" </span>
 <span class="co">#&gt;                                    New Zealand </span>
@@ -342,13 +394,14 @@
 <span class="co">#&gt;                               Papua New Guinea </span>
 <span class="co">#&gt; "Renewable energy in Papua New Guinea: 50.34%"</span>
 
-<span class="co">## Extract values based on country names</span>
-<span class="va">renewable_benelux</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
+<span class="co">## filter elements by name </span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
   <span class="va">renewable_energy_by_country</span>,
-  condition <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">.xname</span><span class="op">)</span> <span class="va">.xname</span> <span class="op">%in%</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"Belgium"</span>, <span class="st">"Netherlands"</span>, <span class="st">"Luxembourg"</span><span class="op">)</span>,
+  condition <span class="op">=</span> \<span class="op">(</span><span class="va">x</span>, <span class="va">.xname</span><span class="op">)</span> <span class="va">.xname</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Belgium"</span>, <span class="st">"Netherlands"</span>, <span class="st">"Luxembourg"</span><span class="op">)</span>,
   how <span class="op">=</span> <span class="st">"prune"</span>
-<span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">renewable_benelux</span>, give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+<span class="op">)</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span>give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+
 <span class="co">#&gt; List of 1</span>
 <span class="co">#&gt;  $ World:List of 1</span>
 <span class="co">#&gt;   ..$ Europe:List of 1</span>
@@ -357,13 +410,14 @@
 <span class="co">#&gt;   .. .. ..$ Luxembourg : num 13.5</span>
 <span class="co">#&gt;   .. .. ..$ Netherlands: num 5.78</span>
 
-<span class="co">## Filter European countries &gt; 50% using .xpos</span>
-<span class="va">renewable_europe_above_50</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
+<span class="co">## filter European countries &gt; 50% using .xpos</span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
   <span class="va">renewable_energy_by_country</span>,
-  condition <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">.xpos</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/identical.html">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">.xpos</span>, <span class="fl">2</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">5L</span><span class="op">)</span><span class="op">)</span> <span class="op">&amp;</span> <span class="va">x</span> <span class="op">&gt;</span> <span class="fl">50</span>,
+  condition <span class="op">=</span> \<span class="op">(</span><span class="va">x</span>, <span class="va">.xpos</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">.xpos</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">5L</span><span class="op">)</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="va">x</span> <span class="op">&gt;</span> <span class="fl">50</span>,
   how <span class="op">=</span> <span class="st">"prune"</span>
-<span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">renewable_europe_above_50</span>, give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+<span class="op">)</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span>give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+
 <span class="co">#&gt; List of 1</span>
 <span class="co">#&gt;  $ World:List of 1</span>
 <span class="co">#&gt;   ..$ Europe:List of 2</span>
@@ -374,13 +428,14 @@
 <span class="co">#&gt;   .. ..$ Western Europe :List of 1</span>
 <span class="co">#&gt;   .. .. ..$ Liechtenstein: num 62.9</span>
 
-<span class="co">## Filter European countries &gt; 50% using .xparents</span>
-<span class="va">renewable_europe_above_50</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
+<span class="co">## filter European countries &gt; 50% using .xparents</span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
   <span class="va">renewable_energy_by_country</span>, 
-  condition <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">.xparents</span><span class="op">)</span> <span class="st">"Europe"</span> <span class="op">%in%</span> <span class="va">.xparents</span> <span class="op">&amp;</span> <span class="va">x</span> <span class="op">&gt;</span> <span class="fl">50</span>,
+  condition <span class="op">=</span> \<span class="op">(</span><span class="va">x</span>, <span class="va">.xparents</span><span class="op">)</span> <span class="st">"Europe"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">.xparents</span> <span class="op">&amp;&amp;</span> <span class="va">x</span> <span class="op">&gt;</span> <span class="fl">50</span>,
   how <span class="op">=</span> <span class="st">"prune"</span>
-<span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">renewable_europe_above_50</span>, give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+<span class="op">)</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span>give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+
 <span class="co">#&gt; List of 1</span>
 <span class="co">#&gt;  $ World:List of 1</span>
 <span class="co">#&gt;   ..$ Europe:List of 2</span>
@@ -391,72 +446,71 @@
 <span class="co">#&gt;   .. ..$ Western Europe :List of 1</span>
 <span class="co">#&gt;   .. .. ..$ Liechtenstein: num 62.9</span>
 
-<span class="co">## Return position of Sweden in list</span>
-<span class="op">(</span><span class="va">xpos_sweden</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
+<span class="co">## return position of element in list</span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
   <span class="va">renewable_energy_by_country</span>,
-  condition <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">.xname</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/identical.html">identical</a></span><span class="op">(</span><span class="va">.xname</span>, <span class="st">"Sweden"</span><span class="op">)</span>,
-  f <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">.xpos</span><span class="op">)</span> <span class="va">.xpos</span>,
+  condition <span class="op">=</span> \<span class="op">(</span><span class="va">x</span>, <span class="va">.xname</span><span class="op">)</span> <span class="va">.xname</span> <span class="op">==</span> <span class="st">"Sweden"</span>,
+  f <span class="op">=</span> \<span class="op">(</span><span class="va">x</span>, <span class="va">.xpos</span><span class="op">)</span> <span class="va">.xpos</span>,
   how <span class="op">=</span> <span class="st">"flatten"</span>
-<span class="op">)</span><span class="op">)</span>
+<span class="op">)</span>
+
 <span class="co">#&gt; $Sweden</span>
 <span class="co">#&gt; [1]  1  5  2 14</span>
-<span class="va">renewable_energy_by_country</span><span class="op">[[</span><span class="va">xpos_sweden</span><span class="op">$</span><span class="va">Sweden</span><span class="op">]</span><span class="op">]</span>
-<span class="co">#&gt; [1] 51.35</span>
-<span class="co">#&gt; attr(,"M49-code")</span>
-<span class="co">#&gt; [1] "752"</span>
 
-<span class="co">## Return siblings of Sweden in list</span>
-<span class="va">siblings_sweden</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
+<span class="co">## return siblings of element in list</span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
   <span class="va">renewable_energy_by_country</span>,
-  condition <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">.xsiblings</span><span class="op">)</span> <span class="st">"Sweden"</span> <span class="op">%in%</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">.xsiblings</span><span class="op">)</span>,
+  condition <span class="op">=</span> \<span class="op">(</span><span class="va">x</span>, <span class="va">.xsiblings</span><span class="op">)</span> <span class="st">"Sweden"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">.xsiblings</span><span class="op">)</span>,
   how <span class="op">=</span> <span class="st">"flatten"</span>
-<span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">siblings_sweden</span>, n <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
+<span class="op">)</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
+
 <span class="co">#&gt; Aland Islands       Denmark       Estonia Faroe Islands       Finland </span>
 <span class="co">#&gt;            NA         33.06         26.55          4.24         42.03</span>
 
-<span class="co">## Parse only Pokemon number, name and type columns </span>
-<span class="va">pokedex_small</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
+<span class="co">## filter elements and unnest list  </span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
   <span class="va">pokedex</span>,
-  condition <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">.xpos</span>, <span class="va">.xname</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">.xpos</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fl">4</span> <span class="op">&amp;</span> <span class="va">.xname</span> <span class="op">%in%</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"num"</span>, <span class="st">"name"</span>, <span class="st">"type"</span><span class="op">)</span>,
+  condition <span class="op">=</span> \<span class="op">(</span><span class="va">x</span>, <span class="va">.xpos</span>, <span class="va">.xname</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">.xpos</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fl">4</span> <span class="op">&amp;</span> <span class="va">.xname</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"num"</span>, <span class="st">"name"</span>, <span class="st">"type"</span><span class="op">)</span>,
   how <span class="op">=</span> <span class="st">"bind"</span>
-<span class="op">)</span>
+<span class="op">)</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="op">)</span>
 
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">pokedex_small</span><span class="op">)</span>
-<span class="co">#&gt;   pokemon.num pokemon.name  pokemon.type</span>
-<span class="co">#&gt; 1         001    Bulbasaur Grass, Poison</span>
-<span class="co">#&gt; 2         002      Ivysaur Grass, Poison</span>
-<span class="co">#&gt; 3         003     Venusaur Grass, Poison</span>
-<span class="co">#&gt; 4         004   Charmander          Fire</span>
-<span class="co">#&gt; 5         005   Charmeleon          Fire</span>
-<span class="co">#&gt; 6         006    Charizard  Fire, Flying</span></code></pre></div>
+<span class="co">#&gt;   num       name          type</span>
+<span class="co">#&gt; 1 001  Bulbasaur Grass, Poison</span>
+<span class="co">#&gt; 2 002    Ivysaur Grass, Poison</span>
+<span class="co">#&gt; 3 003   Venusaur Grass, Poison</span>
+<span class="co">#&gt; 4 004 Charmander          Fire</span>
+<span class="co">#&gt; 5 005 Charmeleon          Fire</span>
+<span class="co">#&gt; 6 006  Charizard  Fire, Flying</span></code></pre></div>
 </div>
-<div id="modifying-list-elements" class="section level3">
-<h3 class="hasAnchor">
-<a href="#modifying-list-elements" class="anchor"></a>Modifying list elements</h3>
-<p>By default, both base <code><a href="https://rdrr.io/r/base/rapply.html">rapply()</a></code> and <code><a href="reference/rrapply.html">rrapply()</a></code> recurse into any list-like element. Using <code><a href="reference/rrapply.html">rrapply()</a></code>, we can set <code>classes = "list"</code> to override this behavior and apply <code>f</code> to any list element (i.e. a sublist) that satisfies the <code>condition</code> argument. This is useful to collapse sublists or calculate summary statistics of sublists of a nested list. Together with e.g. the <code>.xname</code> and <code>.xpos</code> arguments, we have a flexible way in deciding which sublists to summarize through the <code>condition</code> function.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">## Calculate mean value of Europe</span>
+<div class="section level3">
+<h3 id="modifying-list-elements">Modifying list elements<a class="anchor" aria-label="anchor" href="#modifying-list-elements"></a>
+</h3>
+<p>By default, both base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code> and <code><a href="reference/rrapply.html">rrapply()</a></code> recurse into any “list-like” element. Set <code>classes = "list"</code> in <code><a href="reference/rrapply.html">rrapply()</a></code> to override and apply <code>f</code> to any list element (i.e. a sublist) that satisfies the <code>condition</code> argument. This can be useful to e.g. collapse sublists or calculate summary statistics across elements in a nested list:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co">## calculate mean value of Europe</span>
 <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
   <span class="va">renewable_energy_by_country</span>,  
+  condition <span class="op">=</span> \<span class="op">(</span><span class="va">x</span>, <span class="va">.xname</span><span class="op">)</span> <span class="va">.xname</span> <span class="op">==</span> <span class="st">"Europe"</span>,
+  f <span class="op">=</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,
   classes <span class="op">=</span> <span class="st">"list"</span>,
-  condition <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">.xname</span><span class="op">)</span> <span class="va">.xname</span> <span class="op">==</span> <span class="st">"Europe"</span>,
-  f <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html">unlist</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,
   how <span class="op">=</span> <span class="st">"flatten"</span>
 <span class="op">)</span>
+
 <span class="co">#&gt;   Europe </span>
 <span class="co">#&gt; 22.36565</span>
 
-<span class="co">## Calculate mean value for each continent</span>
-<span class="va">renewable_continent_summary</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
+<span class="co">## calculate mean value for each continent</span>
+<span class="co">## (Antartica's value is missing)</span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
   <span class="va">renewable_energy_by_country</span>, 
-  classes <span class="op">=</span> <span class="st">"list"</span>,
-  condition <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">.xpos</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">.xpos</span><span class="op">)</span> <span class="op">==</span> <span class="fl">2</span>,
-  f <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html">unlist</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
-<span class="op">)</span>
+  condition <span class="op">=</span> \<span class="op">(</span><span class="va">x</span>, <span class="va">.xpos</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">.xpos</span><span class="op">)</span> <span class="op">==</span> <span class="fl">2</span>,
+  f <span class="op">=</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,
+  classes <span class="op">=</span> <span class="st">"list"</span>
+<span class="op">)</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span>give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
 
-<span class="co">## Antarctica's value is missing</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">renewable_continent_summary</span>, give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
 <span class="co">#&gt; List of 1</span>
 <span class="co">#&gt;  $ World:List of 6</span>
 <span class="co">#&gt;   ..$ Africa    : num 54.3</span>
@@ -466,135 +520,120 @@
 <span class="co">#&gt;   ..$ Europe    : num 22.4</span>
 <span class="co">#&gt;   ..$ Oceania   : num 17.8</span>
 
-<span class="co">## Simplify Pokemon evolution sublists to character vectors </span>
-<span class="va">pokedex_wide2</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
+<span class="co">## simplify pokemon evolutions to character vectors </span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
   <span class="va">pokedex</span>,
-  classes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"character"</span>, <span class="st">"list"</span><span class="op">)</span>,
-  condition <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">.xname</span><span class="op">)</span> <span class="va">.xname</span> <span class="op">%in%</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"name"</span>, <span class="st">"next_evolution"</span>, <span class="st">"prev_evolution"</span><span class="op">)</span>, 
-  f <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html">is.list</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">sapply</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">`[[`</span>, <span class="st">"name"</span><span class="op">)</span> <span class="kw">else</span> <span class="va">x</span>,
+  condition <span class="op">=</span> \<span class="op">(</span><span class="va">x</span>, <span class="va">.xname</span><span class="op">)</span> <span class="va">.xname</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"name"</span>, <span class="st">"next_evolution"</span>, <span class="st">"prev_evolution"</span><span class="op">)</span>, 
+  f <span class="op">=</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">is.list</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">`[[`</span>, <span class="st">"name"</span><span class="op">)</span> <span class="kw">else</span> <span class="va">x</span>,
+  classes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"character"</span>, <span class="st">"list"</span><span class="op">)</span>,
   how <span class="op">=</span> <span class="st">"bind"</span>
-<span class="op">)</span>
-    
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">pokedex_wide2</span>, n <span class="op">=</span> <span class="fl">9</span><span class="op">)</span>
-<span class="co">#&gt;   pokemon.name pokemon.next_evolution pokemon.prev_evolution</span>
-<span class="co">#&gt; 1    Bulbasaur      Ivysaur, Venusaur                     NA</span>
-<span class="co">#&gt; 2      Ivysaur               Venusaur              Bulbasaur</span>
-<span class="co">#&gt; 3     Venusaur                     NA     Bulbasaur, Ivysaur</span>
-<span class="co">#&gt; 4   Charmander  Charmeleon, Charizard                     NA</span>
-<span class="co">#&gt; 5   Charmeleon              Charizard             Charmander</span>
-<span class="co">#&gt; 6    Charizard                     NA Charmander, Charmeleon</span>
-<span class="co">#&gt; 7     Squirtle   Wartortle, Blastoise                     NA</span>
-<span class="co">#&gt; 8    Wartortle              Blastoise               Squirtle</span>
-<span class="co">#&gt; 9    Blastoise                     NA    Squirtle, Wartortle</span></code></pre></div>
-</div>
-<div id="recursive-list-updating" class="section level3">
-<h3 class="hasAnchor">
-<a href="#recursive-list-updating" class="anchor"></a>Recursive list updating</h3>
-<p>If <code>classes = "list"</code> and <code>how = "recurse"</code>, <code><a href="reference/rrapply.html">rrapply()</a></code> applies the <code>f</code> function to any list element that satisfies the <code>condition</code> argument similar to the previous section, but recurses further into any <em>updated</em> list-like element after application of the <code>f</code> function. Using <code>how = "recurse"</code>, we can for instance recursively update all node names in a nested list:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">## Replace country names by M-49 attributes</span>
-<span class="va">renewable_M49</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
-  <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="va">renewable_energy_by_country</span><span class="op">)</span>, 
-  classes <span class="op">=</span> <span class="st">"list"</span>,
-  f <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">{</span>
-    <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">vapply</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">attr</span>, <span class="fu"><a href="https://rdrr.io/r/base/character.html">character</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span>, which <span class="op">=</span> <span class="st">"M49-code"</span><span class="op">)</span>
-    <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>
-  <span class="op">}</span>,
-  how <span class="op">=</span> <span class="st">"recurse"</span>
-<span class="op">)</span>
+<span class="op">)</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">9</span><span class="op">)</span>
 
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">renewable_M49</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, max.level <span class="op">=</span> <span class="fl">3</span>, list.len <span class="op">=</span> <span class="fl">3</span>, give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+<span class="co">#&gt;         name        next_evolution         prev_evolution</span>
+<span class="co">#&gt; 1  Bulbasaur     Ivysaur, Venusaur                     NA</span>
+<span class="co">#&gt; 2    Ivysaur              Venusaur              Bulbasaur</span>
+<span class="co">#&gt; 3   Venusaur                    NA     Bulbasaur, Ivysaur</span>
+<span class="co">#&gt; 4 Charmander Charmeleon, Charizard                     NA</span>
+<span class="co">#&gt; 5 Charmeleon             Charizard             Charmander</span>
+<span class="co">#&gt; 6  Charizard                    NA Charmander, Charmeleon</span>
+<span class="co">#&gt; 7   Squirtle  Wartortle, Blastoise                     NA</span>
+<span class="co">#&gt; 8  Wartortle             Blastoise               Squirtle</span>
+<span class="co">#&gt; 9  Blastoise                    NA    Squirtle, Wartortle</span></code></pre></div>
+<p><strong>Hint</strong>: as data.frames are also list-like objects, <code><a href="reference/rrapply.html">rrapply()</a></code> applies <code>f</code> to individual data.frame columns by default. Set <code>classes = "data.frame"</code> to avoid this behavior and apply the <code>f</code> and <code>condition</code> functions to complete data.frame objects instead of individual data.frame columns.</p>
+</div>
+<div class="section level3">
+<h3 id="recursive-list-updating">Recursive list updating<a class="anchor" aria-label="anchor" href="#recursive-list-updating"></a>
+</h3>
+<div class="section level4">
+<h4 id="-how--recurse">• <code>how = "recurse"</code>
+<a class="anchor" aria-label="anchor" href="#-how--recurse"></a>
+</h4>
+<p>If <code>classes = "list"</code> and <code>how = "recurse"</code>, <code><a href="reference/rrapply.html">rrapply()</a></code> applies the <code>f</code> function to any list element that satisfies the <code>condition</code> argument similar to the previous section, but recurses further into any <em>updated</em> list-like element after application of <code>f</code>. This can be useful to e.g. recursively update the class or other attributes of all elements in a nested list:</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co">## recursively remove all list attributes</span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
+  <span class="va">renewable_oceania</span>,
+  f <span class="op">=</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>,
+  classes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"list"</span>, <span class="st">"ANY"</span><span class="op">)</span>,
+  how <span class="op">=</span> <span class="st">"recurse"</span>
+<span class="op">)</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span>list.len <span class="op">=</span> <span class="fl">3</span>, give.attr <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
+
 <span class="co">#&gt; List of 1</span>
-<span class="co">#&gt;  $ 001:List of 6</span>
-<span class="co">#&gt;   ..$ 002:List of 2</span>
-<span class="co">#&gt;   .. ..$ 015:List of 7</span>
-<span class="co">#&gt;   .. ..$ 202:List of 4</span>
-<span class="co">#&gt;   ..$ 019:List of 2</span>
-<span class="co">#&gt;   .. ..$ 419:List of 3</span>
-<span class="co">#&gt;   .. ..$ 021:List of 5</span>
-<span class="co">#&gt;   ..$ 010: logi NA</span>
+<span class="co">#&gt;  $ Oceania:List of 4</span>
+<span class="co">#&gt;   ..$ Australia and New Zealand:List of 6</span>
+<span class="co">#&gt;   .. ..$ Australia                        : num 9.32</span>
+<span class="co">#&gt;   .. ..$ Christmas Island                 : logi NA</span>
+<span class="co">#&gt;   .. ..$ Cocos (Keeling) Islands          : logi NA</span>
+<span class="co">#&gt;   .. .. [list output truncated]</span>
+<span class="co">#&gt;   ..$ Melanesia                :List of 5</span>
+<span class="co">#&gt;   .. ..$ Fiji            : num 24.4</span>
+<span class="co">#&gt;   .. ..$ New Caledonia   : num 4.03</span>
+<span class="co">#&gt;   .. ..$ Papua New Guinea: num 50.3</span>
+<span class="co">#&gt;   .. .. [list output truncated]</span>
+<span class="co">#&gt;   ..$ Micronesia               :List of 8</span>
+<span class="co">#&gt;   .. ..$ Guam                                : num 3.03</span>
+<span class="co">#&gt;   .. ..$ Kiribati                            : num 45.4</span>
+<span class="co">#&gt;   .. ..$ Marshall Islands                    : num 11.8</span>
+<span class="co">#&gt;   .. .. [list output truncated]</span>
 <span class="co">#&gt;   .. [list output truncated]</span></code></pre></div>
 </div>
-<div id="using-rrapply-on-dataframes" class="section level3">
-<h3 class="hasAnchor">
-<a href="#using-rrapply-on-dataframes" class="anchor"></a>Using <code>rrapply()</code> on data.frames</h3>
-<p>Since base <code><a href="https://rdrr.io/r/base/rapply.html">rapply()</a></code> recurses into all list-like objects, and data.frames are list-like objects, <code><a href="https://rdrr.io/r/base/rapply.html">rapply()</a></code> always descends into the individual columns of a data.frame. To avoid this behavior using <code><a href="reference/rrapply.html">rrapply()</a></code>, set <code>classes = "data.frame"</code>, in which case the <code>f</code> and <code>condition</code> functions are applied to complete data.frame objects instead of individual data.frame columns.</p>
-<p>However, it can also be useful to exploit the property that a data.frame is a list-like object and use base <code><a href="https://rdrr.io/r/base/rapply.html">rapply()</a></code> to apply a function <code>f</code> to data.frame columns of certain classes via the <code>classes</code> argument. Using the <code>condition</code> argument in <code><a href="reference/rrapply.html">rrapply()</a></code>, we can apply a function <code>f</code> to a subset of data.frame columns using a general predicate function,</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">## Scale only Sepal columns in iris dataset</span>
-<span class="va">iris_standard_sepal</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
-  <span class="va">iris</span>,
-  condition <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">.xname</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">grepl</a></span><span class="op">(</span><span class="st">"Sepal"</span>, <span class="va">.xname</span><span class="op">)</span>,
-  f <span class="op">=</span> <span class="va">scale</span>
-<span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">iris_standard_sepal</span><span class="op">)</span>
-<span class="co">#&gt;   Sepal.Length Sepal.Width Petal.Length Petal.Width Species</span>
-<span class="co">#&gt; 1   -0.8976739  1.01560199          1.4         0.2  setosa</span>
-<span class="co">#&gt; 2   -1.1392005 -0.13153881          1.4         0.2  setosa</span>
-<span class="co">#&gt; 3   -1.3807271  0.32731751          1.3         0.2  setosa</span>
-<span class="co">#&gt; 4   -1.5014904  0.09788935          1.5         0.2  setosa</span>
-<span class="co">#&gt; 5   -1.0184372  1.24503015          1.4         0.2  setosa</span>
-<span class="co">#&gt; 6   -0.5353840  1.93331463          1.7         0.4  setosa</span>
+<div class="section level4">
+<h4 id="-how--names">• <code>how = "names"</code>
+<a class="anchor" aria-label="anchor" href="#-how--names"></a>
+</h4>
+<p>The option <code>how = "names"</code> is a special case of <code>how = "recurse"</code>, where the value of <code>f</code> is used to replace the <em>name</em> of the evaluated list element instead of its <em>content</em> (as with all other <code>how</code> options). By default, <code>how = "names"</code> uses <code>classes = c("list", "ANY")</code> in order to allow updating of all names in the nested list.</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co">## recursively replace all names by M49-codes</span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
+  <span class="va">renewable_oceania</span>,
+  f <span class="op">=</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">x</span>, <span class="st">"M49-code"</span><span class="op">)</span>,
+  how <span class="op">=</span> <span class="st">"names"</span>
+<span class="op">)</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span>list.len <span class="op">=</span> <span class="fl">3</span>, give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
 
-<span class="co">## Scale and keep only numeric columns</span>
-<span class="va">iris_standard_transmute</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
-  <span class="va">iris</span>,
-  f <span class="op">=</span> <span class="va">scale</span>,
-  classes <span class="op">=</span> <span class="st">"numeric"</span>,
-  how <span class="op">=</span> <span class="st">"prune"</span>
-<span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">iris_standard_transmute</span><span class="op">)</span>
-<span class="co">#&gt;   Sepal.Length Sepal.Width Petal.Length Petal.Width</span>
-<span class="co">#&gt; 1   -0.8976739  1.01560199    -1.335752   -1.311052</span>
-<span class="co">#&gt; 2   -1.1392005 -0.13153881    -1.335752   -1.311052</span>
-<span class="co">#&gt; 3   -1.3807271  0.32731751    -1.392399   -1.311052</span>
-<span class="co">#&gt; 4   -1.5014904  0.09788935    -1.279104   -1.311052</span>
-<span class="co">#&gt; 5   -1.0184372  1.24503015    -1.335752   -1.311052</span>
-<span class="co">#&gt; 6   -0.5353840  1.93331463    -1.165809   -1.048667</span>
-
-<span class="co">## Summarize only numeric columns with how = "flatten"</span>
-<span class="va">iris_standard_summarize</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span>
-  <span class="va">iris</span>,
-  f <span class="op">=</span> <span class="va">summary</span>,
-  classes <span class="op">=</span> <span class="st">"numeric"</span>,
-  how <span class="op">=</span> <span class="st">"flatten"</span>
-<span class="op">)</span>
-<span class="va">iris_standard_summarize</span>
-<span class="co">#&gt; $Sepal.Length</span>
-<span class="co">#&gt;    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. </span>
-<span class="co">#&gt;   4.300   5.100   5.800   5.843   6.400   7.900 </span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; $Sepal.Width</span>
-<span class="co">#&gt;    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. </span>
-<span class="co">#&gt;   2.000   2.800   3.000   3.057   3.300   4.400 </span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; $Petal.Length</span>
-<span class="co">#&gt;    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. </span>
-<span class="co">#&gt;   1.000   1.600   4.350   3.758   5.100   6.900 </span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; $Petal.Width</span>
-<span class="co">#&gt;    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. </span>
-<span class="co">#&gt;   0.100   0.300   1.300   1.199   1.800   2.500</span></code></pre></div>
+<span class="co">#&gt; List of 1</span>
+<span class="co">#&gt;  $ 009:List of 4</span>
+<span class="co">#&gt;   ..$ 053:List of 6</span>
+<span class="co">#&gt;   .. ..$ 036: num 9.32</span>
+<span class="co">#&gt;   .. ..$ 162: logi NA</span>
+<span class="co">#&gt;   .. ..$ 166: logi NA</span>
+<span class="co">#&gt;   .. .. [list output truncated]</span>
+<span class="co">#&gt;   ..$ 054:List of 5</span>
+<span class="co">#&gt;   .. ..$ 242: num 24.4</span>
+<span class="co">#&gt;   .. ..$ 540: num 4.03</span>
+<span class="co">#&gt;   .. ..$ 598: num 50.3</span>
+<span class="co">#&gt;   .. .. [list output truncated]</span>
+<span class="co">#&gt;   ..$ 057:List of 8</span>
+<span class="co">#&gt;   .. ..$ 316: num 3.03</span>
+<span class="co">#&gt;   .. ..$ 296: num 45.4</span>
+<span class="co">#&gt;   .. ..$ 584: num 11.8</span>
+<span class="co">#&gt;   .. .. [list output truncated]</span>
+<span class="co">#&gt;   .. [list output truncated]</span></code></pre></div>
 </div>
-<div id="using-rrapply-on-expressions" class="section level3">
-<h3 class="hasAnchor">
-<a href="#using-rrapply-on-expressions" class="anchor"></a>Using <code>rrapply()</code> on expressions</h3>
-<p>In contrast to base <code><a href="https://rdrr.io/r/base/rapply.html">rapply()</a></code>, <code><a href="reference/rrapply.html">rrapply()</a></code> supports recursion of call objects and expression vectors, which are treated as nested lists based on their internal abstract syntax trees. As such, all functionality that applies to nested lists extends directly to call objects and expression vectors.</p>
+</div>
+<div class="section level3">
+<h3 id="expression-objects">Expression objects<a class="anchor" aria-label="anchor" href="#expression-objects"></a>
+</h3>
+<p>Base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code> does not include recursion for expression objects. In contrast <code><a href="reference/rrapply.html">rrapply()</a></code> supports recursion of call objects and expression vectors, which are treated as nested lists based on their abstract syntax trees. As such, all functionality that applies to nested lists extends directly to call objects and expression vectors.</p>
 <p>To update the abstract syntax tree of a call object, use <code>how = "replace"</code>:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">call_old</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/substitute.html">quote</a></span><span class="op">(</span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">x</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">+</span> <span class="cn">TRUE</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">call_old</span><span class="op">)</span>
-<span class="co">#&gt;  language y &lt;- x &lt;- 1 + TRUE</span>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co">## language object</span>
+<span class="op">(</span><span class="va">lang</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/substitute.html" class="external-link">quote</a></span><span class="op">(</span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">x</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">+</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span>
 
-<span class="co">## Replace logicals by integers </span>
-<span class="va">call_new</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">call_old</span>, classes <span class="op">=</span> <span class="st">"logical"</span>, f <span class="op">=</span> <span class="va">as.numeric</span>, how <span class="op">=</span> <span class="st">"replace"</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">call_new</span><span class="op">)</span>
-<span class="co">#&gt;  language y &lt;- x &lt;- 1 + 1</span></code></pre></div>
+<span class="co">#&gt; y &lt;- x &lt;- 1 + TRUE</span>
+
+<span class="co">## replace logicals by integers </span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">lang</span>, classes <span class="op">=</span> <span class="st">"logical"</span>, f <span class="op">=</span> <span class="va">as.numeric</span>, how <span class="op">=</span> <span class="st">"replace"</span><span class="op">)</span>
+
+<span class="co">#&gt; y &lt;- x &lt;- 1 + 1</span></code></pre></div>
 <p>To update the abstract syntax tree and return it as a nested list, use <code>how = "list"</code>:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">## Update and decompose call object</span>
-<span class="va">call_ast</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">call_old</span>, f <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/logical.html">is.logical</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, <span class="va">x</span><span class="op">)</span>, how <span class="op">=</span> <span class="st">"list"</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">call_ast</span><span class="op">)</span>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co">## update and decompose call object</span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">lang</span>, f <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/logical.html" class="external-link">is.logical</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, <span class="va">x</span><span class="op">)</span>, how <span class="op">=</span> <span class="st">"list"</span><span class="op">)</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="op">)</span>
+
 <span class="co">#&gt; List of 3</span>
 <span class="co">#&gt;  $ : symbol &lt;-</span>
 <span class="co">#&gt;  $ : symbol y</span>
@@ -605,14 +644,17 @@
 <span class="co">#&gt;   .. ..$ : symbol +</span>
 <span class="co">#&gt;   .. ..$ : num 1</span>
 <span class="co">#&gt;   .. ..$ : num 1</span></code></pre></div>
-<p>The choices <code>how = "prune"</code>, <code>how = "flatten"</code> and <code>how = "melt"</code> return the pruned abstract syntax tree as: a nested list, a flattened list and a melted data.frame respectively. This is identical to application of <code><a href="reference/rrapply.html">rrapply()</a></code> to the abstract syntax tree formatted as a nested list. To illustrate, we return all names (i.e. symbols) in the abstract syntax tree that are not part of base R:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">expr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html">expression</a></span><span class="op">(</span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">x</span> <span class="op">&lt;-</span> <span class="fl">1</span>, <span class="fu">f</span><span class="op">(</span><span class="fu">g</span><span class="op">(</span><span class="fl">2</span> <span class="op">*</span> <span class="va">pi</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
-<span class="va">is_new_name</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/exists.html">exists</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/character.html">as.character</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, envir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html">baseenv</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
+<p>The modes <code>how = "prune"</code>, <code>how = "flatten"</code> and <code>how = "melt"</code> return the pruned abstract syntax tree as: a nested list, a flattened list and a melted data.frame respectively. This is identical to application of <code><a href="reference/rrapply.html">rrapply()</a></code> to the abstract syntax tree formatted as a nested list.</p>
+<p>To illustrate, we return all names (i.e. symbols) in the abstract syntax tree that not part of base R:</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co">## expression vector</span>
+<span class="va">expr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">x</span> <span class="op">&lt;-</span> <span class="fl">1</span>, <span class="fu">f</span><span class="op">(</span><span class="fu">g</span><span class="op">(</span><span class="fl">2</span> <span class="op">*</span> <span class="va">pi</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
+<span class="va">is_new_name</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/exists.html" class="external-link">exists</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, envir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">baseenv</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
 
-<span class="co">## Prune and decompose expression</span>
-<span class="va">expr_prune</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">expr</span>, classes <span class="op">=</span> <span class="st">"name"</span>, condition <span class="op">=</span> <span class="va">is_new_name</span>, how <span class="op">=</span> <span class="st">"prune"</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">expr_prune</span><span class="op">)</span>
+<span class="co">## prune and decompose expression</span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">expr</span>, classes <span class="op">=</span> <span class="st">"name"</span>, condition <span class="op">=</span> <span class="va">is_new_name</span>, how <span class="op">=</span> <span class="st">"prune"</span><span class="op">)</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="op">)</span>
+
 <span class="co">#&gt; List of 2</span>
 <span class="co">#&gt;  $ :List of 2</span>
 <span class="co">#&gt;   ..$ : symbol y</span>
@@ -623,106 +665,90 @@
 <span class="co">#&gt;   ..$ :List of 1</span>
 <span class="co">#&gt;   .. ..$ : symbol g</span>
 
-<span class="co">## Prune and flatten expression</span>
-<span class="va">expr_flatten</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">expr</span>, classes <span class="op">=</span> <span class="st">"name"</span>, condition <span class="op">=</span> <span class="va">is_new_name</span>, how <span class="op">=</span> <span class="st">"flatten"</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">expr_flatten</span><span class="op">)</span>
+<span class="co">## prune and flatten expression</span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">expr</span>, classes <span class="op">=</span> <span class="st">"name"</span>, condition <span class="op">=</span> <span class="va">is_new_name</span>, how <span class="op">=</span> <span class="st">"flatten"</span><span class="op">)</span> |&gt;
+  <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="op">)</span>
+
 <span class="co">#&gt; List of 4</span>
 <span class="co">#&gt;  $ : symbol y</span>
 <span class="co">#&gt;  $ : symbol x</span>
 <span class="co">#&gt;  $ : symbol f</span>
 <span class="co">#&gt;  $ : symbol g</span>
 
-<span class="co">## Prune and melt expression</span>
-<span class="va">expr_melt</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">expr</span>, classes <span class="op">=</span> <span class="st">"name"</span>, condition <span class="op">=</span> <span class="va">is_new_name</span>, f <span class="op">=</span> <span class="va">as.character</span>, how <span class="op">=</span> <span class="st">"melt"</span><span class="op">)</span>
-<span class="va">expr_melt</span>
+<span class="co">## prune and melt expression</span>
+<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">expr</span>, classes <span class="op">=</span> <span class="st">"name"</span>, condition <span class="op">=</span> <span class="va">is_new_name</span>, f <span class="op">=</span> <span class="va">as.character</span>, how <span class="op">=</span> <span class="st">"melt"</span><span class="op">)</span>
+
 <span class="co">#&gt;   L1 L2   L3 value</span>
 <span class="co">#&gt; 1  1  2 &lt;NA&gt;     y</span>
 <span class="co">#&gt; 2  1  3    2     x</span>
 <span class="co">#&gt; 3  2  1 &lt;NA&gt;     f</span>
 <span class="co">#&gt; 4  2  2    1     g</span></code></pre></div>
-<p>Additional demonstrating examples from <a href="https://jorischau.github.io/rrapply/articles/articles/3-calls-and-expressions.html" class="uri">https://jorischau.github.io/rrapply/articles/articles/3-calls-and-expressions.html</a> include replacing any logical abbreviations in an expression by their non-abbreviated counterparts:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">## Expand logical abbreviation</span>
-<span class="va">logical_abbr_expand</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">{</span>
-  <span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html">identical</a></span><span class="op">(</span><span class="va">x</span>, <span class="fu"><a href="https://rdrr.io/r/base/substitute.html">quote</a></span><span class="op">(</span><span class="cn">T</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
-    <span class="cn">TRUE</span>
-  <span class="op">}</span> <span class="kw">else</span> <span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html">identical</a></span><span class="op">(</span><span class="va">x</span>, <span class="fu"><a href="https://rdrr.io/r/base/substitute.html">quote</a></span><span class="op">(</span><span class="cn">F</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
-    <span class="cn">FALSE</span>
-  <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span>
-    <span class="va">x</span>
-  <span class="op">}</span>
-<span class="op">}</span>
-
-<span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/expression.html">expression</a></span><span class="op">(</span><span class="fu">f</span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="cn">T</span>, <span class="cn">F</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/any.html">any</a></span><span class="op">(</span><span class="cn">T</span>, <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span>, f <span class="op">=</span> <span class="va">logical_abbr_expand</span>, how <span class="op">=</span> <span class="st">"replace"</span><span class="op">)</span>
-<span class="co">#&gt; expression(f(x = c(TRUE, FALSE)), any(TRUE, FALSE))</span></code></pre></div>
-<p>Or, collecting all names created by assignment and returning them as a character vector:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">## Check if variable is created by assignment</span>
-<span class="va">is_assign</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">.xpos</span>, <span class="va">.xsiblings</span><span class="op">)</span> <span class="op">{</span>
-    <span class="fu"><a href="https://rdrr.io/r/base/identical.html">identical</a></span><span class="op">(</span><span class="va">.xpos</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">.xpos</span><span class="op">)</span><span class="op">]</span>, <span class="fl">2L</span><span class="op">)</span> <span class="op">&amp;&amp;</span>
-    <span class="fu"><a href="https://rdrr.io/r/base/character.html">as.character</a></span><span class="op">(</span><span class="va">.xsiblings</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">%in%</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"&lt;-"</span>, <span class="st">"="</span>, <span class="st">"for"</span>, <span class="st">"assign"</span>, <span class="st">"delayedAssign"</span><span class="op">)</span>
-<span class="op">}</span>
-
-<span class="fu"><a href="https://rdrr.io/r/base/unique.html">unique</a></span><span class="op">(</span><span class="fu"><a href="reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/body.html">body</a></span><span class="op">(</span><span class="va">lm</span><span class="op">)</span>, condition <span class="op">=</span> <span class="va">is_assign</span>, f <span class="op">=</span> <span class="va">as.character</span>, how <span class="op">=</span> <span class="st">"unlist"</span><span class="op">)</span><span class="op">)</span>
-<span class="co">#&gt;  [1] "ret.x"  "ret.y"  "cl"     "mf"     "m"      "mt"     "y"      "w"     </span>
-<span class="co">#&gt;  [9] "offset" "mlm"    "ny"     "x"      "z"</span></code></pre></div>
-<p>For more details and examples on how to use the <code><a href="reference/rrapply.html">rrapply()</a></code> function see the accompanying package vignette in the vignettes folder or the Articles section at <a href="https://jorischau.github.io/rrapply/" class="uri">https://jorischau.github.io/rrapply/</a>.</p>
+<p>For more details and examples on how to use the <code><a href="reference/rrapply.html">rrapply()</a></code> function see the accompanying package vignette in the vignettes folder or the Articles section at <a href="https://jorischau.github.io/rrapply/" class="external-link uri">https://jorischau.github.io/rrapply/</a>.</p>
 </div>
 </div>
 </div>
-  </div>
-
-  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
-    <div class="links">
-<h2>Links</h2>
+  </main><aside class="col-md-3"><div class="links">
+<h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
-<li>Download from CRAN at <br><a href="https://cloud.r-project.org/package=rrapply">https://​cloud.r-project.org/​package=rrapply</a>
-</li>
-<li>Browse source code at <br><a href="https://github.com/JorisChau/rrapply/">https://​github.com/​JorisChau/​rrapply/​</a>
-</li>
-<li>Report a bug at <br><a href="https://github.com/JorisChau/rrapply/issues">https://​github.com/​JorisChau/​rrapply/​issues</a>
-</li>
+<li><a href="https://cloud.r-project.org/package=rrapply" class="external-link">View on CRAN</a></li>
+<li><a href="https://github.com/JorisChau/rrapply/" class="external-link">Browse source code</a></li>
+<li><a href="https://github.com/JorisChau/rrapply/issues" class="external-link">Report a bug</a></li>
 </ul>
 </div>
+
 <div class="license">
-<h2>License</h2>
+<h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
-<li><a href="https://www.r-project.org/Licenses/GPL-3">GPL-3</a></li>
+<li><a href="https://www.r-project.org/Licenses/GPL-3" class="external-link">GPL-3</a></li>
 </ul>
 </div>
+
+
+<div class="citation">
+<h2 data-toc-skip>Citation</h2>
+<ul class="list-unstyled">
+<li><a href="authors.html#citation">Citing rrapply</a></li>
+</ul>
+</div>
+
 <div class="developers">
-<h2>Developers</h2>
+<h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
 <li>Joris Chau <br><small class="roles"> Author, maintainer </small>  </li>
 </ul>
 </div>
 
-  <div class="dev-status">
-<h2>Dev status</h2>
+<div class="dev-status">
+<h2 data-toc-skip>Dev status</h2>
 <ul class="list-unstyled">
-<li><a href="https://cran.r-project.org/package=rrapply"><img src="http://www.r-pkg.org/badges/version/rrapply" alt="CRAN version"></a></li>
-<li><a href="https://travis-ci.org/JorisChau/rrapply"><img src="https://travis-ci.org/JorisChau/rrapply.svg?branch=master" alt="Build Status"></a></li>
-<li><a href="https://codecov.io/gh/JorisChau/rrapply"><img src="https://codecov.io/gh/JorisChau/rrapply/branch/master/graph/badge.svg" alt="codecov"></a></li>
-<li><a href="https://ci.appveyor.com/project/JorisChau/rrapply"><img src="https://ci.appveyor.com/api/projects/status/github/JorisChau/rrapply?branch=master&amp;svg=true" alt="AppVeyor build status"></a></li>
+<li><a href="https://cran.r-project.org/package=rrapply" class="external-link"><img src="http://www.r-pkg.org/badges/version/rrapply" alt="CRAN version"></a></li>
+<li><a href="https://github.com/JorisChau/rrapply/actions" class="external-link"><img src="https://github.com/JorisChau/rrapply/workflows/R-CMD-check/badge.svg" alt="R-CMD-check"></a></li>
+<li><a href="https://app.codecov.io/gh/JorisChau/rrapply" class="external-link"><img src="https://codecov.io/gh/JorisChau/rrapply/branch/master/graph/badge.svg" alt="codecov"></a></li>
+<li><a href="https://CRAN.R-project.org/package=rrapply" class="external-link"><img src="https://tinyverse.netlify.com/badge/rrapply" alt="status"></a></li>
+<li><a href="https://cran.r-project.org/package=rrapply" class="external-link"><img src="https://cranlogs.r-pkg.org/badges/grand-total/rrapply" alt="Total Downloads"></a></li>
 </ul>
 </div>
-</div>
-</div>
 
-
-      <footer><div class="copyright">
-  <p>Developed by Joris Chau.</p>
+  </aside>
 </div>
 
-<div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+
+    <footer><div class="pkgdown-footer-left">
+  <p></p>
+<p>Developed by Joris Chau.</p>
 </div>
 
-      </footer>
+<div class="pkgdown-footer-right">
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
+</div>
+
+    </footer>
 </div>
 
   
 
+  
 
   </body>
 </html>

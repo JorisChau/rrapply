@@ -1,5 +1,6 @@
 destination: "docs"
 
 template:
-  params:
-    bootswatch: flatly
+  bootstrap: 5
+  bslib:
+    headings-line-height: 2
