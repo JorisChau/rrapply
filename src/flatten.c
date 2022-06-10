@@ -42,10 +42,15 @@ void C_recurse_flatten(
         if (Rf_isSymbol(Xi))
             emptysymbol = strlen(CHAR(PRINTNAME(Xi))) < 1;
 
+        /* skip if current how = 'bind' and depth < coldepth */
+        if (fixedArgs->how == 6 && localArgs->depth < fixedArgs->ans_depthpivot)
+            eval = FALSE;
+
         if (((condition.evaluate && condition.nargs > 0) ||
              (f.evaluate && f.nargs > 0)) && // valid condition or f functions
             matched &&                       // matches classes argument
-            !emptysymbol)                    // Xi not an empty symbol
+            !emptysymbol &&                  // Xi not an empty symbol
+            eval)
         {
             /* avoid unitialized warning */
             SEXP xname_val = NULL, xpos_val = NULL, xparents_val = NULL, xsiblings_val = NULL;
@@ -162,8 +167,8 @@ void C_recurse_flatten(
             UNPROTECT(nargprotect);
         }
 
-        /* evaluate condiiton call */
-        if (condition.evaluate && condition.nargs > 0 && matched && !emptysymbol)
+        /* evaluate condition call */
+        if (condition.evaluate && condition.nargs > 0 && matched && !emptysymbol && eval)
         {
             /* set default to FALSE */
             eval = FALSE;
@@ -228,13 +233,7 @@ void C_recurse_flatten(
             }
             else if (fixedArgs->how == 6)
             {
-                int start = (fixedArgs->ans_depthpivot <= localArgs->depth) ? fixedArgs->ans_depthpivot : 0;
-
-                if (fixedArgs->ans_sep)
-                    SET_STRING_ELT(fixedArgs->ansnames_ptr, localArgs->ans_idx, PROTECT(C_strcat(localArgs->xparent_ptr, start, localArgs->depth, fixedArgs->ans_sep)));
-                else
-                    SET_STRING_ELT(fixedArgs->ansnames_ptr, localArgs->ans_idx, PROTECT(C_strcat(localArgs->xparent_ptr, start, localArgs->depth, ".")));
-
+                SET_STRING_ELT(fixedArgs->ansnames_ptr, localArgs->ans_idx, PROTECT(C_strcat(localArgs->xparent_ptr, fixedArgs->ans_depthpivot, localArgs->depth, fixedArgs->ans_sep)));
                 UNPROTECT(1);
 
                 (localArgs->xinfo_array)[localArgs->ans_idx] = localArgs->ans_row;
