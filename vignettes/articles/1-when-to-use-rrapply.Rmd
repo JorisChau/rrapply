@@ -10,30 +10,26 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-  
-```{r, echo = FALSE}
-knitr::opts_chunk$set(
-collapse = TRUE,
-eval = FALSE,
-comment = "#>"
-)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, eval = TRUE, comment = "#>", out.width = "100%")
 ```
 
 # List recursion in R
 
-The nested list below outlines the genealogy of several famous mathematicians. Each list element contains an additional `"given"` attribute with the mathematician's given name. The numeric values at the leaf elements are the total number of descendants according to the [Mathematics Genealogy Project](https://www.genealogy.math.ndsu.nodak.edu/) as of June 2020. If no descendants are available there is a missing value present at the leaf node. 
+The nested list below shows a small extract from the [Mathematics Genealogy Project](https://www.genealogy.math.ndsu.nodak.edu/) highlighting the advisor/student genealogy of several famous mathematicians. The mathematician's given names are present in the `"given"` attribute of each list element. The numeric values at the leaf elements are the total number of student descendants according to the website as of June 2022. If no descendants are available there is a missing value present at the leaf element.
 
 ```{r}
 students <- list(
   Bernoulli = structure(list(
     Bernoulli = structure(list(
-      Bernoulli = structure(1, given = "Daniel"),
+      Bernoulli = structure(1L, given = "Daniel"),
       Euler = structure(list(
         Euler = structure(NA, given = "Johann"),
         Lagrange = structure(list(
-          Fourier = structure(68679, given = "Jean-Baptiste"), 
+          Fourier = structure(73788L, given = "Jean-Baptiste"), 
           Plana = structure(NA, given = "Giovanni"),
-          Poisson = structure(113435, given = "Simeon")
+          Poisson = structure(128235L, given = "Simeon")
         ), given = "Joseph")
       ), given = "Leonhard")
     ), given = "Johann"),
@@ -44,20 +40,18 @@ students <- list(
 str(students, give.attr = FALSE)
 ```
 
-Consider the following exercise in list recursion: 
+As an exercise in list recursion, consider the following simple data exploration question:
 
-<div class="bs-callout bs-callout-primary">
-  Filter all descendants of 'Leonhard Euler' while keeping the original list structure and replace all missing values by zero.
-</div>
+> Filter all descendants of 'Leonhard Euler' and replace all missing values by zero while maintaining the list structure.
 
-Here is a possible (not so efficient) solution using recursion with the `Recall()` function: 
+Here is a possible (not so efficient) base R solution using recursion with the `Recall()` function: 
 
 ```{r}
-prune_replace_Euler <- function(x) {
+filter_desc_euler <- function(x) {
   i <- 1
   while(i <= length(x)) {
     if(identical(names(x)[i], "Euler") & identical(attr(x[[i]], "given"), "Leonhard")) {
-      x[[i]] <- rapply(x[[i]], f = function(x) replace(x, is.na(x), 0), how = "replace")
+      x[[i]] <- rapply(x[[i]], f = \(x) replace(x, is.na(x), 0), how = "replace")
       i <- i + 1
     } else {
       if(is.list(x[[i]])) {
@@ -75,20 +69,18 @@ prune_replace_Euler <- function(x) {
   return(x)
 }
 
-str(prune_replace_Euler(students), give.attr = FALSE)
+str(filter_desc_euler(students), give.attr = FALSE)
 ```
 
-This works, but is hardly the kind of code we would like to write for such a seemingly simple data exploration question. Moreover, this code is not very easy to follow or reason about, which makes it time-consuming to update or modify for future tasks.
+This works, but is hardly the kind of convoluted code we would like to write for such a seemingly simple question. Moreover, this code is not very easy to follow, which can make updating or modifying it quite a time-consuming and error-prone task.
 
-Another approach would be to unnest the list in a more manageable (e.g. rectangular) format or use specialized packages such as [igraph](https://igraph.org/r/) or [data.tree](https://CRAN.R-project.org/package=data.tree) to make pruning or modifying node entries more straightforward. Note that attention must be paid to correctly include the node attributes in the transformed object as the node names themselves are not unique in the given example. This is a sensible approach for more extensive data analysis, but ideally we would like to keep the list in its original format for simple data exploration to reduce the number of processing steps and minimize the possibility of introducing mistakes in the code.
+An alternative approach would be to unnest the list into a more manageable (e.g. rectangular) format or use specialized packages, such as [igraph](https://igraph.org/r/) or [data.tree](https://CRAN.R-project.org/package=data.tree), to make pruning or modifying node entries more straightforward. Note that attention must be paid to correctly include the node attributes in the transformed object as the node names themselves are not unique in this example. This is a sensible approach and usually the way to go when cleaning or tidying up the data, but for fast prototyping and data exploration tasks we may want to keep the list in its original format to reduce the number of processing steps and minimize the code complexity. Sometimes it is also required to maintain a nested data structure as this can be for instance the expected input format for some data visualization or data exporting function.
 
-The recursive function above makes use of `rapply()`, a member of the base-R **apply**-family of functions, that allows to apply a function recursively to the elements of a nested list and decide how the returned result is structured. If you are not familiar with the `rapply()` function it might be useful to first read the function documentation `help("rapply")` or check out the first section of the `rrapply`-package vignette (`browseVignettes(package = "rrapply")`).
-
-Although quite useful, the `rapply()`-function is not always sufficiently flexible in practice, e.g. for pruning elements of a nested list (as demonstrated above). The `rrapply()` function is an attempt to enhance and update base `rapply()` to make it more generally applicable in the context of list recursion. The `rrapply()` function builds on the native implementation of base `rapply()` in R's C-interface and for this reason requires no other external dependencies. 
+The recursive function above makes use of base `rapply()`, a member of the [apply](https://rdrr.io/r/base/lapply.html)-family of functions in R, that allows to apply a function recursively to the elements of a nested list and decide how the returned result is structured. Although sometimes useful, the existing `rapply()` function is often not sufficiently flexible for list recursion tasks in practice, for instance for pruning elements of a nested list (as demonstrated above). In this context, the `rrapply()` function in the minimal `rrapply`-package attempts to enhance and update base `rapply()` to make it more generally applicable for list recursion in the wild. The `rrapply()` function builds upon R's native C implementation of`rapply()` and for this reason requires no other external dependencies. 
 
 # When to use `rrapply()`
 
-For illustration purposes, we will use the datasets `renewable_energy_by_country` and `pokedex` included in the `rrapply`-package. `renewable_energy_by_country` is a nested list containing the shares of renewable energy as a percentage in the total energy consumption per country in 2016. The data is publicly available at the United Nations Open SDG Data Hub [UNSD-SDG07](https://unstats-undesa.opendata.arcgis.com/datasets/indicator-7-2-1-renewable-energy-share-in-the-total-final-energy-consumption-percent-3). The 249 countries and areas are structured based on their geographical location according to the United Nations M49 standard [UNSD-M49](https://unstats.un.org/unsd/methodology/m49/) The numeric values listed for each country are percentages, if no data is available the value of the country is `NA`. `pokedex` is a nested list containing various property values for each of the 151 original Pok&#233;mon.
+For demonstrational purposes, we make use of the two datasets `renewable_energy_by_country` and `pokedex` included in the `rrapply`-package. `renewable_energy_by_country` is a nested list containing the renewable energy shares per country (% of total energy consumption) in 2016. The data is publicly available at the [United Nations Open SDG Data Hub](https://unstats-undesa.opendata.arcgis.com/datasets/). The 249 countries and areas are structured based on their geographical locations according to the [United Nations M49 standard](https://unstats.un.org/unsd/methodology/m49/). The numeric values listed for each country are percentages, if no data is available the value of the country is `NA`. `pokedex` is a nested list containing various property values for each of the 151 original Pok&#233;mon available (in .json) from https://github.com/Biuni/PokemonGO-Pokedex.
 
 ```{r}
 library(rrapply)
@@ -104,141 +96,189 @@ str(renewable_oceania, list.len = 3, give.attr = FALSE)
 
 ## List pruning and unnesting
 
-With base `rapply()`, there is no convenient way to prune or filter elements from the input list. The `rrapply()` function adds an option `how = "prune"` to prune all list elements not subject to application of the function `f` from a nested list. The original list structure is retained, similar to the non-pruned versions `how = "replace"` and `how = "list"`. 
-Using `how = "prune"`, we can for instance drop all `NA` elements from the list while preserving the original list structure:
+### `how = "prune"`
+
+With base `rapply()`, there is no convenient way to prune or filter elements from the input list. The `rrapply()` function adds an option `how = "prune"` to prune all list elements not subject to application of the function `f` from a nested list. The original list structure is retained, similar to the non-pruned versions `how = "replace"` and `how = "list"`. Using `how = "prune"` and the same syntax as in `rapply()`, we can easily drop all missing values from the list while preserving the nested list structure:
 
 ```{r}
-## Drop all logical NA's while preserving list structure 
-na_drop_oceania <- rrapply(
+## drop all logical NA's while preserving list structure 
+rrapply(
   renewable_oceania,
-  f = identity,
+  f = \(x) x,  
   classes = "numeric",
   how = "prune"
-)
-str(na_drop_oceania, list.len = 3, give.attr = FALSE)
+) |>
+  str(list.len = 3, give.attr = FALSE)
 ```
 
-Instead, set `how = "flatten"` to return a flattened unnested version of the pruned list. This is more efficient than first returning the pruned list with `how = "prune"` and unlisting or flattening the list in a subsequent step. 
+**Remark**: if the `f` function is missing, it defaults to the identity function. That is, the `f` argument can be dropped when no (non-trivial) function is applied to the list elements.
+
+### `how = "flatten"`
+
+Instead, we can set `how = "flatten"` to return a *flattened* unnested version of the pruned list. This is more efficient than first returning the pruned list with `how = "prune"` and unlisting or flattening the list in a subsequent step. 
 
 ```{r}
-## Drop all logical NA's and return unnested list
-na_drop_oceania2 <- rrapply(
+## drop all logical NA's and return unnested list
+rrapply(
   renewable_oceania,
-  f = identity,
   classes = "numeric",
   how = "flatten"
-)
-head(na_drop_oceania2, n = 10)
+) |>
+  head(n = 10)
 ```
 
-Or, use `how = "melt"` to return a melted data.frame of the pruned list similar in format to `reshape2::melt()` applied to a nested list. The rows of the melted data.frame contain the node paths of the elements in the pruned list. The `"value"` column contains the values of the terminal nodes analogous to the flattened list returned by `how = "flatten"`. 
+**Hint**: the `options` argument allows to tune several options specific to certain choices of `how`. With `how = "flatten"`, we can choose to not coerce the flattened list to a vector and/or to include all parent list names in the result similar to `how = "unlist"` but then with a custom name separator.
 
 ```{r}
-## Drop all logical NA's and return melted data.frame
-na_drop_oceania3 <- rrapply(
+## flatten to simple list with full names
+rrapply(
   renewable_oceania,
-  f = identity,
+  classes = "numeric",
+  how = "flatten",
+  options = list(namesep = ".", simplify = FALSE)
+) |>
+  str(list.len = 10, give.attr = FALSE)
+```
+
+### `how = "melt"`
+
+Using `how = "melt"`, we can return a melted data.frame of the pruned list similar in format to `reshape2::melt()` applied to a nested list. The rows of the melted data.frame contain the parent node paths of the elements in the pruned list. The `"value"` column contains the values of the terminal or leaf nodes analogous to the flattened list returned by `how = "flatten"`. 
+
+```{r}
+## drop all logical NA's and return melted data.frame
+oceania_melt <- rrapply(
+  renewable_oceania,
   classes = "numeric",
   how = "melt"
-)
-head(na_drop_oceania3)
+) 
+head(oceania_melt, n = 10)
 ```
-If no names are present in a sublist of the input list, `how = "melt"` replaces the names in the melted data.frame by list element indices `"1"`, `"2"`, etc.:
+
+**Remark**: if no names are present in a certain sublist of the input list, `how = "melt"` replaces the names in the melted data.frame by list element indices `"1"`, `"2"`, etc.
 
 ```{r}
-## Remove all names at L2 
-## (skip this for now, these arguments are explained in the following sections)
-oceania_unnamed <- rrapply(
-  renewable_oceania,
-  classes = "list",
-  condition = function(x, .xname) .xname == "Oceania",
-  f = unname
-)
+## drop some area names 
+renewable_oceania1 <- renewable_oceania
+renewable_oceania1[[1]] <- unname(renewable_oceania[[1]])
 
-## Drop all logical NA's and return melted data.frame
-na_drop_oceania4 <- rrapply(
-  oceania_unnamed,
-  f = identity,
+## drop all logical NA's and return melted data.frame
+rrapply(
+  renewable_oceania1,
   classes = "numeric",
   how = "melt"
-)
-head(na_drop_oceania4)
+) |>
+  head(n = 10)
 ```
-Nested lists containing repeated observations, such as `pokedex`, can be unnested with `how = "bind"`, which expands and binds the repeated observations (i.e. sublists) as individual rows in a wide data.frame. This is similar in format to repeated application of `tidyr::unnest_wider()` to a nested data.frame.
+
+A melted data.frame can be used to reconstruct a nested list with `how = "unmelt"`. No skeleton object as e.g. required by `relist()` is needed, only an ordinary data.frame in the format returned by `how = "melt"`. This option can be convenient to construct nested lists from a rectangular data.frame format without having to resort to recursive function definitions.    
 
 ```{r}
-## Nested list of Pokemon properties in Pokemon GO
+## reconstruct nested list from melted data.frame
+rrapply(oceania_melt, how = "unmelt") |>
+  str(list.len = 3, give.attr = FALSE)
+```
+
+### `how = "bind"`
+
+Nested lists containing repeated observations can be unnested  with `how = "bind"`. Each repeated sublist is expanded 
+as a single row in a wide data.frame and identical sublist component names are aligned as individual columns. By default, the list layer containing the repeated observations is identified by the minimal depth detected across leaf elements, but this can also be overridden using the `coldepth` option in the `options` argument. Note that the returned data.frame is similar in format to repeated application of `tidyr::unnest_wider()` to a nested data.frame, with the same coercion rules applied to the individual columns as `how = "unlist".
+
+```{r}
 data("pokedex")
-
 str(pokedex, list.len = 3)
-
-## Unnest list as a wide data.frame
-pokedex_wide <- rrapply(pokedex, how = "bind")
-
-head(pokedex_wide[, c(1:3, 5:10)], n = 5)
 ```
+```{r}
+## unnest list to wide data.frame
+rrapply(pokedex, how = "bind")[, c(1:3, 5:8)] |>
+  head(n = 10)
+```
+
+**Hint**: setting `namecols = TRUE` in the `options` argument includes the parent list names associated to each row in the wide data.frame as individual columns `L1`, `L2`, etc.
+
+```{r}
+## bind to data.frame including parent columns
+pokemon_evolutions <- rrapply(
+  pokedex, 
+  how = "bind", 
+  options = list(namecols = TRUE, coldepth = 5)
+) 
+head(pokemon_evolutions, n = 10)
+```
+
+This can be useful to unnest repeated list elements at multiple nested list levels and join the results into a single data.frame:
+
+```{r}
+## merge pokemon evolutions with pokemon names
+rrapply(
+  pokedex,
+  how = "bind",
+  options = list(namecols = TRUE)
+)[, c("L1", "L2", "name")] |>
+  merge(
+    pokemon_evolutions[, c("L1", "L2", "L3", "name")],
+    by = c("L1", "L2"),
+    suffixes = c("", ".evolution")
+  ) |>
+  head(n = 10)
+```
+
 ## Condition function
 
-Base `rapply()` allows to apply a function `f` to list elements of certain types or classes via the `classes` argument. `rrapply()` generalizes this concept via the `condition` argument, which accepts any principal argument function to use as a condition or predicate to apply `f` to a subset of list elements. Conceptually, the `f` function is applied to all leaf elements for which the `condition` function exactly evaluates to `TRUE` similar to `isTRUE()`. If the `condition` argument is missing, `f` is applied to all leaf elements. In combination with `how = "prune"`, the `condition` function provides additional flexibility in selecting and filtering elements from a nested list.
-Using the `condition` argument, we can update the above function call to drop all `NA`'s from the list to better reflect our purpose:
+Base `rapply()` allows to apply a function `f` to list elements of certain types or classes via the `classes` argument. `rrapply()` generalizes this concept via an additional `condition` argument, which accepts any function to use as a condition or predicate to apply `f` to a subset of list elements. Conceptually, the `f` function is applied to all leaf elements for which the `condition` function exactly evaluates to `TRUE` similar to `isTRUE()`. If the `condition` argument is missing, `f` is applied to all leaf elements. In combination with `how = "prune"`, the `condition` function provides additional flexibility in selecting and filtering elements from a nested list,
 
 ```{r}
-## drop all NA elements using condition function
-na_drop_oceania3 <- rrapply(
+## drop all NA's using condition function
+rrapply(
   renewable_oceania,
-  condition = Negate(is.na),
-  f = identity,
+  condition = \(x) !is.na(x),
   how = "prune"
-)
-str(na_drop_oceania3, list.len = 3, give.attr = FALSE)
+) |>
+  str(list.len = 3, give.attr = FALSE)
 ```
 
 More interesting is to consider a `condition` that cannot also be defined using the `classes` argument. For instance, we can filter all countries with values that satisfy a certain numeric condition: 
 
 ```{r}
 ## filter all countries with values above 85%
-renewable_energy_above_85 <- rrapply(
+rrapply(
   renewable_energy_by_country, 
-  condition = function(x) x > 85, 
+  condition = \(x) x > 85, 
   how = "prune"
-)
-str(renewable_energy_above_85, give.attr = FALSE)
+) |>
+  str(give.attr = FALSE)
 
 ## or by passing arguments to condition via ...
-renewable_energy_equal_0 <- rrapply(
+rrapply(
   renewable_energy_by_country, 
   condition = "==", 
   e2 = 0, 
   how = "prune"
-)
-str(renewable_energy_equal_0, give.attr = FALSE)
+) |>
+  str(give.attr = FALSE)
 ```
 
-**Remark**: Note that the `NA` elements are not returned, as the `condition` function does not evaluate to `TRUE` for `NA` values. Also, the `f` argument is allowed to be missing, in which case no function is applied to the leaf elements.
+Note that the `NA` elements are not returned, as the `condition` function does not evaluate to `TRUE` for `NA` values.
 
-As the `condition` function is a generalization of the `classes` argument to have more
-flexible control of the predicate, it is also possible to use the `deflt` argument
-together with `how = "list"` or `how = "unlist"` to set a default value to all
-leaf elements for which the `condition` does not evaluate to `TRUE`:
+As the `condition` function is a generalization of the `classes` argument, it remains possible to use `deflt` together with `how = "list"` or `how = "unlist"` to set a default value to all leaf elements for which the `condition` is not `TRUE`:
 
 ```{r}
 ## replace all NA elements by zero
-na_zero_oceania_list <- rrapply(
+rrapply(
   renewable_oceania, 
   condition = Negate(is.na), 
   deflt = 0, 
   how = "list"
-)
-str(na_zero_oceania_list, list.len = 3, give.attr = FALSE)
+) |>
+  str(list.len = 3, give.attr = FALSE)
 ```
 
-To be consistent with base `rapply()`, the `deflt` argument can still only be used together with `how = "list"` or `how = "unlist"`. 
+To be consistent with base `rapply()`, the `deflt` argument can still only be used in combination with `how = "list"` or `how = "unlist"`. 
 
 ### Using the `...` argument
 
-The first argument to `f` always evaluates to the content of the leaf element to which `f` is applied. Any further arguments (besides the special arguments `.xname`, `.xpos`, `.xparents` and `.xsiblings` discussed below) that are independent of the node content can be supplied via the `...` argument. Since `rrapply()` accepts a function in two of its arguments `f` and `condition`, any further arguments defined via the `...` also need to be defined as function arguments in **both** the `f` and `condition` function (if existing), even if they are not used in the function itself.
+The first argument to `f` always evaluates to the content of the list element to which `f` is applied. Any further arguments, (besides the special arguments `.xname`, `.xpos`, `.xparents` and `.xsiblings` discussed below), that are independent of the list content can be supplied via the `...` argument. Since `rrapply()` accepts a function in two of its arguments `f` and `condition`, any arguments defined via the `...` need to be defined as function arguments in *both* the `f` and `condition` functions (if existing), even if they are not used in the function itself.
 
-To clarify, consider the following example where we replace all `NA` elements by a value defined in a separate argument `newvalue`:
+To clarify, consider the following example which replaces all missing values by a value defined in a separate argument `newvalue`:
 
 ```{r}
 ## this is not ok!
@@ -246,240 +286,204 @@ tryCatch({
   rrapply(
     renewable_oceania, 
     condition = is.na, 
-    f = function(x, newvalue) newvalue, 
+    f = \(x, newvalue) newvalue, 
     newvalue = 0, 
     how = "replace"
   )
 }, error = function(error) error$message)
 
 ## this is ok
-na_zero_oceania_replace3 <- rrapply(
+rrapply(
   renewable_oceania, 
-  condition = function(x, newvalue) is.na(x), 
-  f = function(x, newvalue) newvalue, 
+  condition = \(x, newvalue) is.na(x), 
+  f = \(x, newvalue) newvalue, 
   newvalue = 0, 
   how = "replace"
-)
-str(na_zero_oceania_replace3, list.len = 3, give.attr = FALSE)
+) |>
+  str(list.len = 3, give.attr = FALSE)
 ```
 
 ## Special arguments `.xname`, `.xpos`, `.xparents` and `.xsiblings`
 
-In base `rapply()`, the `f` function only has access to the content of the list element under evaluation through its principal argument, and there is no convenient way to access its name or location in the nested list from inside the `f` function. This makes `rapply()` impractical if we want to apply a function `f` that relies on e.g. the name or position of a node as in the `students` example above. To overcome this limitation, `rrapply()` allows the use of the special arguments `.xname`, `.xpos`, `.xparents` and `.xsiblings` inside the `f` and `condition` functions (in addition to the principal function argument). `.xname` evaluates to the name of the list element, `.xpos` evaluates to the position of the element in the nested list structured as an integer vector, `.xparents` evaluates to a vector of all parent node names in the path to the current list element, and `.xsiblings` evaluates to the parent list containing the current list element and all of its direct siblings.
+With base `rapply()`, the `f` function only has access to the *content* of the list element under evaluation, and there is no convenient way to access its name or location in the nested list from inside the `f` function. To overcome this limitation, `rrapply()` defines the special arguments `.xname`, `.xpos`, `.xparents` and `.xsiblings` inside the `f` and `condition` functions (in addition to the principal function argument):
 
-Using the `.xname` and `.xpos` arguments, we can transform or filter list elements based on their names or positions in the nested list:
+* `.xname` evaluates to the name of the list element;
+* `.xpos` evaluates to the position of the element in the nested list structured as an integer vector;
+* `.xparents` evaluates to a vector of parent list names in the path to the current list element;
+* `.xsiblings` evaluates to the parent list containing the current list element and its direct siblings.
+
+Using the `.xname` and `.xpos` arguments, we can transform or filter list elements based on their names and/or positions in the nested list:
 
 ```{r}
-## apply a function using the name of the node
-renewable_oceania_text <- rrapply(
+## apply f based on element's name
+rrapply(
   renewable_oceania,
-  f = function(x, .xname) sprintf("Renewable energy in %s: %.2f%%", .xname, x),
-  condition = Negate(is.na),
+  condition = \(x) !is.na(x),
+  f = \(x, .xname) sprintf("Renewable energy in %s: %.2f%%", .xname, x),
+  how = "flatten"
+) |>
+  head(n = 5)
+
+## filter elements by name
+rrapply(
+  renewable_energy_by_country,
+  condition = \(x, .xname) .xname %in% c("Belgium", "Netherlands", "Luxembourg"),
+  how = "prune"
+) |>
+  str(give.attr = FALSE)
+```
+
+Knowing that Europe is located at `renewable_energy_by_country[[c(1, 5)]]`, we can filter all European countries with a renewable energy share above 50% using the `.xpos` argument as follows,
+
+```{r}
+## filter European countries > 50% using .xpos
+rrapply(
+  renewable_energy_by_country,
+  condition = \(x, .xpos) identical(.xpos[1:2], c(1L, 5L)) && x > 50,
+  how = "prune"
+) |>
+  str(give.attr = FALSE)
+```
+
+This can be done more conveniently using the `.xparents` argument, which this does not require looking up the location of Europe in the nested list,
+
+```{r}
+## filter European countries > 50% using .xparents
+rrapply(
+  renewable_energy_by_country,
+  condition = function(x, .xparents) "Europe" %in% .xparents && x > 50,
+  how = "prune"
+) |>
+  str(give.attr = FALSE)
+```
+
+Using the `.xpos` argument, we can quickly look up the position of a specific element in the nested list,
+
+```{r}
+## return position of Sweden in list
+rrapply(
+  renewable_energy_by_country,
+  condition = \(x, .xname) .xname == "Sweden",
+  f = \(x, .xpos) .xpos,
   how = "flatten"
 )
-head(renewable_oceania_text, n = 5)
-
-## extract values based on country names
-renewable_benelux <- rrapply(
-  renewable_energy_by_country,
-  condition = function(x, .xname) .xname %in% c("Belgium", "Netherlands", "Luxembourg"),
-  how = "prune"
-)
-str(renewable_benelux, give.attr = FALSE)
 ```
 
-Knowing that Europe is located under the node `renewable_energy_by_country[[c(1, 5)]]`, we can filter all European countries with a renewable energy share above 50 percent by using the `.xpos` argument,
+Using the `.xsiblings` argument, we can look up the direct neighbors of an element in the nested list,
 
 ```{r}
-## filter European countries with value above 50%
-renewable_europe_above_50 <- rrapply(
+## look up neighbors of Sweden in list
+rrapply(
   renewable_energy_by_country,
-  condition = function(x, .xpos) identical(head(.xpos, 2), c(1L, 5L)) & x > 50,
-  how = "prune"
-)
-str(renewable_europe_above_50, give.attr = FALSE)
-```
-
-This can be done more conveniently using the `.xparents` argument, as this does not require us to look up the location of Europe in the list beforehand,
-
-```{r}
-## filter European countries with value above 50%
-renewable_europe_above_50 <- rrapply(
-  renewable_energy_by_country,
-  condition = function(x, .xparents) "Europe" %in% .xparents & x > 50,
-  how = "prune"
-)
-str(renewable_europe_above_50, give.attr = FALSE)
-```
-
-Using the `.xpos` argument, we could look up the location of a particular country in the nested list,
-
-```{r}
-## look up position of Sweden in list
-(xpos_sweden <- rrapply(
-  renewable_energy_by_country,
-  condition = function(x, .xname) identical(.xname, "Sweden"),
-  f = function(x, .xpos) .xpos,
+  condition = \(x, .xsiblings) "Sweden" %in% names(.xsiblings),
   how = "flatten"
-))
-renewable_energy_by_country[[xpos_sweden$Sweden]]
+) |>
+  head(n = 10)
 ```
-Instead, using the `.xsiblings` argument we could look up the direct neighbors of a particular country in the nested list,
 
-```{r}
-## look up sibling countries of Sweden in list
-siblings_sweden <- rrapply(
-  renewable_energy_by_country,
-  condition = function(x, .xsiblings) "Sweden" %in% names(.xsiblings),
-  how = "flatten"
-)
-head(siblings_sweden, n = 10)
-```
-We could also use the `.xpos` argument to determine the maximum depth of the list or the length of the longest sublist as follows,
+We can also use the `.xpos` argument to determine the maximum depth of the list or the length of the longest sublist as follows,
 
 ```{r}
 ## maximum list depth
-depth_all <- rrapply(
+rrapply(
   renewable_energy_by_country, 
-  f = function(x, .xpos) length(.xpos), 
+  f = \(x, .xpos) length(.xpos), 
   how = "unlist"
-)
-max(depth_all) 
+) |>
+  max()
 
 ## longest sublist length
-sublist_count <- rrapply(
+rrapply(
   renewable_energy_by_country, 
-  f = function(x, .xpos) max(.xpos), 
+  f = \(x, .xpos) max(.xpos), 
   how = "unlist"
-)
-max(sublist_count)
+) |>
+  max()
 ```
-When unnesting nested lists with `how = "bind"`, the `.xname`, `.xpos` or `.xparents` arguments can be useful to parse only a particular set of data.frame columns:
+
+When unnesting nested lists with `how = "bind"`, the `.xname`, `.xpos` or `.xparents` arguments can be useful to decide which list elements to include in the unnested data.frame:
 
 ```{r}
-## parse only Pokemon number, name and type columns 
-pokedex_small <- rrapply(
+## filter elements and unnest list  
+rrapply(
   pokedex,
-  condition = function(x, .xpos, .xname) {
-    length(.xpos) < 4 & .xname %in% c("num", "name", "type")
-    },
+  condition = \(x, .xpos, .xname) length(.xpos) < 4 & .xname %in% c("num", "name", "type"),
   how = "bind"
-)
-
-head(pokedex_small)
+) |>
+  head()
 ```
 
-## Avoid recursing into list nodes
+## Modifying list elements
 
-By default, if `classes = "ANY"` both base `rapply()` and `rrapply()` recurse into any list-like element. Using `classes = "list"` in base `rapply()` has no effect as the function descends into any list node before evaluating the `classes` argument. In contrast, `rrapply()` does detect `classes = "list"`, in which case the `f` function is applied to list elements that satisfy the `condition` function. If the `condition` is not satisfied for a list element, `rrapply()` will recurse further into the sublist, apply the `f` function to the nodes that satisfy `condition` and so on. The use of `classes = "list"` tells `rrapply()` to not descend into list objects by default. For this reason this behavior can only be triggered with the `classes` argument and *not* through the use of e.g. `condition = is.list`. 
+By default, both base `rapply()` and `rrapply()` recurse into any *list-like* element. Setting `classes = "list"` in `rrapply()` overrides this behavior and applies the `f` function to any list element (i.e. a sublist) that satisfies the `condition` argument. If the `condition` is not satisfied for a list element, `rrapply()` recurses further into the sublist, applies `f` to the elements that satisfy `condition` and so on. The use of `classes = "list"` signals the `rrapply()` function not to descend into list objects by default. For this reason this behavior can only be triggered via the `classes` argument and *not* through the use of e.g. `condition = is.list`. 
 
-The choice `classes = "list"` is useful to calculate summary statistics across nodes or to look up the position of intermediate nodes in a nested list. To illustrate, we can return the mean and standard deviation of the renewable energy share in Europe as follows:
+The mode `classes = "list"` can be useful to e.g. collapse sublists or calculate summary statistics across elements in a nested list:
 
 ```{r}
-## compute mean value of Europe
+## calculate mean value of Europe
 rrapply(
   renewable_energy_by_country,  
+  condition = \(x, .xname) .xname == "Europe",
+  f = \(x) mean(unlist(x), na.rm = TRUE),
   classes = "list",
-  condition = function(x, .xname) .xname == "Europe",
-  f = function(x) list(
-    mean = mean(unlist(x), na.rm = TRUE), 
-    sd = sd(unlist(x), na.rm = TRUE)
-  ),
   how = "flatten"
 )
 ```
 
-**Remark**: Note that the principal `x` argument in the `f` function now evaluates to a list for the node satisfying the `condition`. For this reason, we first `unlist` the sublist before passing it to `mean` and `sd`.
+Note that the principal argument in the `f` function now evaluates to a list. For this reason, we first have to `unlist` the sublist before calculating the mean.
 
-We can use the `.xpos` argument to apply the `f` function only at specific locations or depths in the nested list. For instance, we could return the mean renewable energy shares for each continent by making use of the fact that the `.xpos` vector of each continent has length (i.e. depth) 2:
+To calculate the mean renewable energy shares for each continent, we can make use of the fact that the `.xpos` vector of each continent has length (i.e. depth) 2:
 
 ```{r}
-## compute mean value of each continent
-renewable_continent_summary <- rrapply(
-  renewable_energy_by_country,  
-  classes = "list",
-  condition = function(x, .xpos) length(.xpos) == 2,
-  f = function(x) mean(unlist(x), na.rm = TRUE)
-)
-
-## Antarctica has a missing value
-str(renewable_continent_summary, give.attr = FALSE)
+## calculate mean value for each continent
+## (Antartica's value is missing)
+rrapply(
+  renewable_energy_by_country, 
+  condition = \(x, .xpos) length(.xpos) == 2,
+  f = \(x) mean(unlist(x), na.rm = TRUE),
+  classes = "list"
+) |>
+  str(give.attr = FALSE)
 ```
-If `classes = "list"`, the `f` function is only applied to the (non-terminal) list nodes. If `classes = "ANY"`, the `f` function is only applied to any (terminal) non-list node. To apply `f` to any terminal *and* non-terminal node of the nested list, we should combine `classes = c("list", "ANY")`. This is illustrated by searching both terminal and non-terminal nodes for the country or region with M49-code `"155"` (Western Europe):
+
+**Remark**: if `classes = "list"`, the `f` function is only applied to the (non-terminal) list elements. To apply `f` to both terminal and non-terminal elements in the nested list, we can include additional classes, such as `classes = c("list", "numeric", "character")`. To apply `f` to *any* terminal and non-terminal element in the nested list, we can even combine `classes = c("list", "ANY")`. To illustrate, we search across all list elements for the country or region with M49-code `"155"`:
 
 ```{r}
-## Filter country or region by M49-code
+## filter country or region by M49-code
 rrapply(
   renewable_energy_by_country,
+  condition = \(x) attr(x, "M49-code") == "155",
+  f = \(x, .xname) .xname,
   classes = c("list", "ANY"), 
-  condition = function(x) attr(x, "M49-code") == "155",
-  f = function(x, .xname) .xname,
   how = "unlist"
 )
 ```
-Another illustrating example is to preprocess certain list nodes before unnesting the nested list. 
-Here, we extract the Pok&#233;mon evolutions in `pokedex` with and without pre-processing of the Pok&#233;mon evolution list nodes:
+
+As a more complex example, we unnest the Pok&#233;mon evolutions in `pokedex` into a wide data.frame by returning the sublists with Pok&#233;mon evolutions as character vectors:
+
 ```{r}
-## Pokemon evolution columns without pre-processing
-pokedex_wide1 <- rrapply(
+## simplify pokemon evolutions to character vectors 
+rrapply(
   pokedex,
-  condition = function(x, .xparents) any(grepl("name|evolution", .xparents)),
+  condition = \(x, .xname) .xname %in% c("name", "next_evolution", "prev_evolution"), 
+  f = \(x) if(is.list(x)) sapply(x, `[[`, "name") else x,
+  classes = c("list", "character"),
   how = "bind"
-)
+) |>
+  head(n = 9)
 
-head(pokedex_wide1, n = 3)
-
-## Pokemon evolution columns simplified to character vectors 
-pokedex_wide2 <- rrapply(
-  pokedex,
-  classes = c("character", "list"),
-  condition = function(x, .xparents) any(grepl("name|evolution", .xparents)),
-  f = function(x) if(is.list(x)) sapply(x, `[[`, "name") else x,
-  how = "bind"
-)
-    
-head(pokedex_wide2, n = 9)
 ```
 
-## Recursive list node modification
-
-If `classes = "list"`, `rrapply()` applies the `f` function to any list element that satisfies the `condition` function, but will not recurse further into these list elements. This makes it for instance impossible to recursively update the name of each list element in a nested list, as `rrapply()` stops recursing after updating the first list layer. For this purpose, set `classes = "list"` combined with `how = "recurse"`, in which case `rrapply()` recurses further into any *updated* list element after application of the `f` function (using `how = "replace"`). In this context, the `condition` argument is interpreted as a passing criterion: as long as the `condition` and `classes` arguments are satisfied, `rrapply()` will try to recurse further into any list-like element. 
-
-Using `how = "recurse"`, we can recursively replace all names in `renewable_energy_by_country` by their M49-codes:
+**Hint:** as data.frames are also list-like objects, `rrapply()` applies `f` to individual data.frame columns by default. Set `classes = "data.frame"` to avoid this behavior and apply the `f` and `condition` functions to complete data.frame objects instead of individual data.frame columns.
 
 ```{r}
-## replace country names by M-49 codes
-renewable_M49 <- rrapply(
-  list(renewable_energy_by_country), 
+## create a nested list of data.frames
+oceania_df <- rrapply(
+  renewable_oceania,
+  condition = \(x, .xpos) length(.xpos) == 2,
+  f = \(x) data.frame(name = names(x), value = unlist(x)),
   classes = "list",
-  f = function(x) {
-    names(x) <- vapply(x, attr, character(1L), which = "M49-code")
-    return(x)
-  },
-  how = "recurse"
-)
-
-str(renewable_M49[[1]], max.level = 3, list.len = 3, give.attr = FALSE)
-```
-**Remark**: Here we passed `list(renewable_energy_by_country)` to the call of `rrapply()` in order to start application of the `f` function at the level of the list `renewable_energy_by_country` itself, instead of starting at its list elements. 
-
-## Miscellaneous
-
-### Avoid recursing into data.frames
-
-If `classes = "ANY"`, `rrapply()` recurses into any list-like object equivalent to base `rapply()`. Since data.frames are list-like objects, the `f` function is applied to the individual columns instead of the data.frame object as a whole. To avoid this behavior, set `classes = "data.frame"`, in which case the `f` and `condition` functions are applied directly to the data.frame object itself and not its columns. Note that with base `rapply()` using `classes = "data.frame"` has no effect as `rapply()` descends into the columns of any data.frame object before evaluating the `classes` argument.
-
-```{r}
-## create a list of data.frames
-oceania_df <- list(
-  Oceania = lapply(
-    renewable_oceania[["Oceania"]], 
-    FUN = function(x) data.frame(
-      Name = names(x), 
-      value = unlist(x), 
-      stringsAsFactors = FALSE
-    )
-  )
+  how = "replace"
 )
 
 ## this does not work!
@@ -494,132 +498,99 @@ tryCatch({
 ## this does work
 rrapply(
   oceania_df,
+  f = function(x) subset(x, !is.na(value)),
   classes = "data.frame",
-  f = function(x) subset(x, !is.na(value)),
   how = "replace"
-)
+)[[1]][1:2]
 ```
 
-**Remark**: Note that the same result can also be obtained using `classes = "list"` and checking that the list element under evaluation is a data.frame:
+## Recursive list updating
 
-```{r, eval=FALSE}
+### `how = "recurse"`
+
+If `classes = "list"` and `how = "recurse"`, `rrapply()` applies the `f` function to any list element that satisfies the `condition` argument, but recurses further into any *updated* list element after application of `f`. This can be useful to e.g. recursively update the class or other attributes of all elements in a nested list:
+
+```{r}
+## recursively remove all list attributes
 rrapply(
-  oceania_df,
-  classes = "list",
-  condition = is.data.frame,
-  f = function(x) subset(x, !is.na(value)),
-  how = "replace"
-)
+  renewable_oceania,
+  f = \(x) c(x),
+  classes = c("list", "ANY"),
+  how = "recurse"
+) |>
+  str(list.len = 3, give.attr = TRUE)
 ```
 
-#### List attributes
+### `how = "names"`
 
-Base `rapply()` may produce different results when using `how = "replace"` or `how = "list"` when working with list attributes. The former preserves intermediate list attributes whereas the latter does not. To avoid unexpected behavior, `rrapply()` always preserves intermediate list attributes when using `how = "replace"`, `how = "list"` or `how = "prune"`.  If `how = "flatten"`, `how = "melt"`, `how = "bind"` or `how = "unlist"` intermediate list attributes cannot be preserved as the result is no longer a nested list.
-
-```{r}
-## how = "list" now preserves all list attributes
-na_drop_oceania_list_attr2 <- rrapply(
-  renewable_oceania, 
-  f = function(x) replace(x, is.na(x), 0), 
-  how = "list"
-)
-
-str(na_drop_oceania_list_attr2, max.level = 2)
-
-## how = "prune" also preserves list attributes
-na_drop_oceania_attr <- rrapply(
-  renewable_oceania, 
-  condition = Negate(is.na), 
-  how = "prune"
-)
-str(na_drop_oceania_attr, max.level = 2)
-```
-
-### Using `rrapply()` on data.frames
-
-The previous sections explained how to avoid recursing into list-like elements using `rrapply()`. However, it can also be useful to exploit the property that a data.frame is a list-like object and use base `rapply()` to apply a function `f` to data.frame columns of certain classes. For instance, it is straightforward to standardize all `numeric` columns in the `iris`
-dataset by their sample mean and standard deviation:
+The option `how = "names"` is a special case of `how = "recurse"`, where the value of `f` is used to replace the *name* of the evaluated list element instead of its *content* (as with all other `how` options). By default, `how = "names"` uses `classes = c("list", "ANY")` in order to allow updating of all names in the nested list.
 
 ```{r}
-iris_standard <- rapply(iris, f = scale, classes = "numeric", how = "replace")
-head(iris_standard)
-```
-
-Using the `condition` argument in `rrapply()`, we gain additional flexibility in selecting the columns to which `f` is applied. For instance, we can apply the `f` function only to the `Sepal` columns using the `.xname` argument:
-
-```{r}
-iris_standard_sepal <- rrapply(
-  iris,                    
-  condition = function(x, .xname) grepl("Sepal", .xname), 
-  f = scale
-)
-head(iris_standard_sepal)
-```
-
-Instead of *mutating* columns, we can also *transmute* columns (i.e. keeping only the columns to which `f` is applied) by setting `how = "prune"`: 
-
-```{r}
-iris_standard_transmute <- rrapply(
-  iris, 
-  f = scale, 
-  classes = "numeric", 
-  how = "prune"
-)
-head(iris_standard_transmute)
-```
-
-In order to *summarize* a set of selected columns, use `how = "flatten"` instead of `how = "prune"`, as the latter preserves list attributes --including data.frame dimensions-- which should not be kept. 
-
-```{r}
-## summarize columns with how = "flatten"
-iris_standard_summarize <- rrapply(
-  iris, 
-  f = summary, 
-  classes = "numeric", 
-  how = "flatten"
-)
-iris_standard_summarize
+## recursively replace all names by M49-codes
+rrapply(
+  renewable_oceania,
+  f = \(x) attr(x, "M49-code"),
+  how = "names"
+) |>
+  str(list.len = 3, give.attr = FALSE)
 ```
 
 # Conclusion
 
-To conclude, let us return to the list recursion exercise in the first section. Using `rrapply()`, we can solve the task in a more readable and less error-prone fashion. A possible approach is to split up the question in two steps as follows:
+To conclude, we return to the list recursion exercise in the first section. Using `rrapply()`, one possible solution is to split the question into two steps as follows:
 
 ```{r}
-## look up the position of Euler (Leonhard)
-xpos_Euler <- rrapply(
-  students, 
+## look up position of Euler (Leonhard)
+euler <- rrapply(
+  students,
+  condition = \(x, .xname) .xname == "Euler" && attr(x, "given") == "Leonhard",
+  f = \(x, .xpos) .xpos,
   classes = "list",
-  condition = function(x, .xname) .xname == "Euler" && attr(x, "given") == "Leonhard",
-  f = function(x, .xpos) .xpos,
   how = "flatten"
-)[[1]]
-
-xpos_Euler 
+)[["Euler"]]
 
 ## filter descendants of Euler (Leonhard) and replace missing values by zero
-students_Euler <- rrapply(
+rrapply(
   students,
-  condition = function(x, .xpos) identical(.xpos[seq_along(xpos_Euler)], xpos_Euler), 
-  f = function(x) replace(x, is.na(x), 0),
+  condition = \(x, .xpos) identical(.xpos[seq_along(euler)], euler), 
+  f = \(x) replace(x, is.na(x), 0),
   how = "prune"
-)
-
-str(students_Euler, give.attr = FALSE)
+) |>
+  str(give.attr = FALSE)
 ```
 
 Knowing that Johann Euler is a descendant of Leonhard Euler, we can further simplify this into a single function call using the `.xparents` argument:
 
 ```{r}
 ## filter descendants of Euler (Leonhard) and replace missing values by zero
-students_Euler <- rrapply(
+rrapply(
   students,
-  condition = function(x, .xparents) "Euler" %in% .xparents,
-  f = function(x) replace(x, is.na(x), 0),
+  condition = \(x, .xparents) "Euler" %in% .xparents,
+  f = \(x) replace(x, is.na(x), 0),
   how = "prune"
-)
-
-str(students_Euler, give.attr = FALSE)
+) |>
+  str(give.attr = FALSE)
 ```
 
-For additional information and details check out the package vignette (`browseVignettes(package = "rrapply")`) or the other articles in the **Articles** section.
+Or alternatively, we could first update the names of the elements in the nested list to include both first and last names and then prune the list in a second step:
+
+```{r}
+## include first names in list element names
+students_fullnames <- rrapply(
+  students, 
+  f = \(x, .xname) paste(attr(x, "given"), .xname),
+  how = "names"
+)
+
+## filter descendants of Euler (Leonhard) and replace missing values by zero
+rrapply(
+  students_fullnames,
+  condition = \(x, .xparents) "Leonhard Euler" %in% .xparents,
+  f = \(x) replace(x, is.na(x), 0),
+  how = "prune"
+) |>
+  str(give.attr = FALSE)
+```
+
+
+
