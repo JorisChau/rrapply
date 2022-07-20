@@ -54,9 +54,7 @@ jobs:
       
       - name: Install LaTeX packages
         run: |
-          tlmgr install pdfpages
+          tlmgr install pdfpages pdflscape
 
       - uses: r-lib/actions/check-r-package@v2
-        with:
-          upload-snapshots: true
           
