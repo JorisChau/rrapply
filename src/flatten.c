@@ -63,7 +63,7 @@ void C_recurse_flatten(
             /* update current .xname value */
             if (f.xname || condition.xname)
             {
-                if (f.xparents || condition.xparents || fixedArgs->how > 4)
+                if (f.xparents || condition.xparents || fixedArgs->ans_sep || fixedArgs->how > 4)
                     xname_val = PROTECT(Rf_ScalarString(STRING_ELT(localArgs->xparent_ptr, localArgs->depth)));
                 else
                     xname_val = PROTECT(Rf_duplicate(localArgs->xparent_ptr));
@@ -277,7 +277,6 @@ void C_recurse_flatten(
                 (localArgs->xpos_vec)[localArgs->depth] = i + 1;
 
             /* update .xparents and/or .xname arguments */
-
             iname = PROTECT(Rf_isNull(names) ? C_int2char(i + 1, FALSE) : STRING_ELT(names, i));
             SET_STRING_ELT(localArgs->xparent_ptr, (f.xparents || condition.xparents || fixedArgs->how != 4 || fixedArgs->ans_sep) ? localArgs->depth : 0, iname);
             UNPROTECT(1);

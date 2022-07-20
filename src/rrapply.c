@@ -151,6 +151,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		.anynames = FALSE,
 		.anysymbol = FALSE,
 		.ans_flags = 0,
+		.ans_namecols = FALSE,
 		.ans_sep = NULL,
 		.ans_depthmax = 0,
 		.ans_depthpivot = -1,
@@ -280,19 +281,12 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 			nprotect++;
 		}
 	}
-	else if ((Rf_isVectorList(X) && (fixedArgs.how == 1 || fixedArgs.how == 2)) || (Rf_isPairList(X) && fixedArgs.how > 0))
+	else if ((Rf_isVectorList(X) && (fixedArgs.how == 1 || fixedArgs.how == 2 || fixedArgs.how == 9)) || (Rf_isPairList(X) && fixedArgs.how > 0))
 	{
 		ans = PROTECT(Rf_allocVector(VECSXP, n));
 		C_copyAttrs(X, ans, names, !Rf_isPairList(X));
 		if (Rf_isPairList(X))
 			Rf_copyMostAttrib(X, ans);
-		nprotect++;
-	}
-	else
-	{
-		ans = PROTECT(Rf_shallow_duplicate(X));
-		if (Rf_isPairList(X))
-			ansptr = ans;
 		nprotect++;
 
 		if (fixedArgs.how == 9)
@@ -305,6 +299,13 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 			fixedArgs.ansnames_ptr = ansnames;
 			nprotect++;
 		}
+	}
+	else
+	{
+		ans = PROTECT(Rf_shallow_duplicate(X));
+		if (Rf_isPairList(X))
+			ansptr = ans;
+		nprotect++;
 	}
 
 	/* traverse list to evaluate function calls */
@@ -437,12 +438,10 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 	}
 	else if (fixedArgs.how == 4 || fixedArgs.how == 5) // unlist, flatten or melt list
 	{
-		SEXP newans = ans;
-
+		/* coerce type */
+		SEXPTYPE mode = VECSXP;
 		if (LOGICAL_ELT(VECTOR_ELT(options, 1), 0))
 		{
-			/* coerce type */
-			SEXPTYPE mode = VECSXP;
 			if (fixedArgs.ans_flags & 256)
 				mode = VECSXP;
 			else if (fixedArgs.ans_flags & 128)
@@ -455,14 +454,14 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 				mode = INTSXP;
 			else if (fixedArgs.ans_flags & 2)
 				mode = LGLSXP;
-
-			/* create return object */
-			newans = PROTECT(Rf_allocVector(mode, localArgs.ans_idx));
-			nprotect++;
-
-			/* populate  return object and coerce to flagged type */
-			C_coerceList(ans, newans, localArgs.ans_idx, mode);
 		}
+
+		/* create return object */
+		SEXP newans = PROTECT(Rf_allocVector(mode, localArgs.ans_idx));
+		nprotect++;
+
+		/* populate  return object and coerce to flagged type */
+		C_coerceList(ans, newans, localArgs.ans_idx, mode);
 
 		if (fixedArgs.how == 4)
 		{

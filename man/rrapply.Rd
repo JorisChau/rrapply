@@ -80,9 +80,9 @@ only applies to data.frames in the same format as returned by \code{how = "melt"
 a nested list from the melted data.frame and second uses the same functional framework as \code{how = "replace"}.
 \item \code{how = "recurse"} is a specialized option that is only useful in combination with e.g. \code{classes = "list"} to recurse further 
 into updated \dQuote{list-like} elements. This is explained in more detail below.
-\item \code{how = "names"} modifies the \emph{names} of the nested list elements instead of the list content. \code{how = "names"} internally works   
-the same as \code{how = "replace"}, except that the value of \code{f} is used to replace the name of the list element under consideration 
-instead of its content.
+\item \code{how = "names"} modifies the \emph{names} of the nested list elements instead of the list content. \code{how = "names"} internally works  
+similar to \code{how = "list"}, except that the value of \code{f} is used to replace the name of the list element under consideration 
+instead of its content. 
 }
 }
 
@@ -182,18 +182,18 @@ minimal depth detected across all leaf nodes. This option only applies to \code{
 \examples{
 # Example data
 
-## Nested list of renewable energy (\%) of total energy consumption per country in 2016
+## Renewable energy shares per country (\% of total consumption) in 2016
 data("renewable_energy_by_country")
 
-## Subset values for countries and areas in Oceania
+## Renewable energy shares in Oceania
 renewable_oceania <- renewable_energy_by_country[["World"]]["Oceania"]
 
-## Nested list of Pokemon properties in Pokemon GO
+## Pokemon properties in Pokemon GO
 data("pokedex")
 
 # List pruning and unnesting
 
-## Drop all logical NA's while preserving list structure 
+## Drop logical NA's while preserving list structure 
 na_drop_oceania <- rrapply(
   renewable_oceania,
   f = function(x) x,
@@ -202,49 +202,59 @@ na_drop_oceania <- rrapply(
 )
 str(na_drop_oceania, list.len = 3, give.attr = FALSE)
 
-## Drop all logical NA's and return unnested list
+## Drop logical NA's and return unnested list
 na_drop_oceania2 <- rrapply(
   renewable_oceania,
-  f = function(x) x,
   classes = "numeric",
   how = "flatten"
 )
-
 head(na_drop_oceania2, n = 10)
 
-## Drop all logical NA's and return melted data.frame
+## Flatten to simple list with full names
 na_drop_oceania3 <- rrapply(
   renewable_oceania,
-  f = identity,
+  classes = "numeric",
+  how = "flatten",
+  options = list(namesep = ".", simplify = FALSE)
+) 
+str(na_drop_oceania3, list.len = 10, give.attr = FALSE)
+
+## Drop logical NA's and return melted data.frame
+na_drop_oceania4 <- rrapply(
+  renewable_oceania,
   classes = "numeric",
   how = "melt"
 )
-
-head(na_drop_oceania3)
+head(na_drop_oceania4)
 
 ## Reconstruct nested list from melted data.frame
-na_drop_oceania4 <- rrapply(
-  na_drop_oceania3,
+na_drop_oceania5 <- rrapply(
+  na_drop_oceania4,
   how = "unmelt"
 )
+str(na_drop_oceania5, list.len = 3, give.attr = FALSE)
 
-str(na_drop_oceania4, list.len = 3, give.attr = FALSE)
-
-## Convert nested list to wide data.frame
+## Unnest list to wide data.frame
 pokedex_wide <- rrapply(pokedex, how = "bind")
-
 head(pokedex_wide)
+
+## Unnest to data.frame including parent columns
+pokemon_evolutions <- rrapply(
+  pokedex, 
+  how = "bind", 
+  options = list(namecols = TRUE, coldepth = 5)
+) 
+head(pokemon_evolutions, n = 10)
 
 # Condition function
 
 ## Drop all NA elements using condition function
-na_drop_oceania3 <- rrapply(
+na_drop_oceania6 <- rrapply(
   renewable_oceania,
   condition = Negate(is.na),
-  f = function(x) x,
   how = "prune"
 )
-str(na_drop_oceania3, list.len = 3, give.attr = FALSE)
+str(na_drop_oceania6, list.len = 3, give.attr = FALSE)
 
 ## Replace NA elements by a new value via the ... argument
 ## NB: the 'newvalue' argument should be present as function 
@@ -271,8 +281,8 @@ str(renewable_energy_above_85, give.attr = FALSE)
 ## Apply a function using the name of the node
 renewable_oceania_text <- rrapply(
   renewable_oceania,
-  f = function(x, .xname) sprintf("Renewable energy in \%s: \%.2f\%\%", .xname, x),
   condition = Negate(is.na),
+  f = function(x, .xname) sprintf("Renewable energy in \%s: \%.2f\%\%", .xname, x),
   how = "flatten"
 )
 head(renewable_oceania_text, n = 10)
@@ -310,7 +320,7 @@ str(renewable_europe_above_50, give.attr = FALSE)
 ))
 renewable_energy_by_country[[xpos_sweden$Sweden]]
 
-## Return siblings of Sweden in list
+## Return neighbors of Sweden in list
 siblings_sweden <- rrapply(
   renewable_energy_by_country,
   condition = function(x, .xsiblings) "Sweden" \%in\% names(.xsiblings),
@@ -318,13 +328,12 @@ siblings_sweden <- rrapply(
 )
 head(siblings_sweden, n = 10)
 
-## Return wide Pokedex data.frame without evolutions 
+## Unnest selected columns in Pokedex list 
 pokedex_small <- rrapply(
    pokedex,
-   condition = function(x, .xparents) !any(grepl("evolution", .xparents)),
+   condition = function(x, .xpos, .xname) length(.xpos) < 4 & .xname \%in\% c("num", "name", "type"),
    how = "bind"
 )  
-
 head(pokedex_small)
 
 # Modifying list elements
@@ -332,37 +341,49 @@ head(pokedex_small)
 ## Calculate mean value of Europe
 rrapply(
   renewable_energy_by_country,  
-  classes = "list",
   condition = function(x, .xname) .xname == "Europe",
   f = function(x) mean(unlist(x), na.rm = TRUE),
+  classes = "list",
   how = "flatten"
 )
 
 ## Calculate mean value for each continent
+## (Antarctica's value is missing)
 renewable_continent_summary <- rrapply(
   renewable_energy_by_country,  
-  classes = "list",
   condition = function(x, .xpos) length(.xpos) == 2,
-  f = function(x) mean(unlist(x), na.rm = TRUE)
+  f = function(x) mean(unlist(x), na.rm = TRUE),
+  classes = "list"
 )
-
-## Antarctica's value is missing
 str(renewable_continent_summary, give.attr = FALSE)
 
-# List node updating
-
-## replace country names by M-49 codes
-renewable_M49 <- rrapply(
-  list(renewable_energy_by_country), 
-  classes = "list",
-  f = function(x) {
-    names(x) <- vapply(x, attr, character(1L), which = "M49-code")
-    return(x)
-  },
-  how = "recurse"
+## Filter country or region by M49-code
+rrapply(
+  renewable_energy_by_country,
+  condition = function(x) attr(x, "M49-code") == "155",
+  f = function(x, .xname) .xname,
+  classes = c("list", "ANY"), 
+  how = "unlist"
 )
 
-str(renewable_M49[[1]], max.level = 3, list.len = 3, give.attr = FALSE)
+# Recursive list updating
+
+## Recursively remove list attributes
+renewable_no_attrs <- rrapply(
+  renewable_oceania,
+  f = \(x) c(x),
+  classes = c("list", "ANY"),
+  how = "recurse"
+) 
+str(renewable_no_attrs, list.len = 3, give.attr = TRUE)
+
+## recursively replace all names by M49-codes
+renewable_m49_names <- rrapply(
+  renewable_oceania,
+  f = \(x) attr(x, "M49-code"),
+  how = "names"
+) 
+str(renewable_m49_names, list.len = 3, give.attr = FALSE)
 
 # List attributes
 
@@ -387,9 +408,9 @@ str(na_drop_oceania_attr2, max.level = 2)
 ## Replace logicals by integers
 call_old <- quote(y <- x <- 1 + TRUE)
 call_new <- rrapply(call_old, 
-  classes = "logical", 
   f = as.numeric, 
-  how = "replace"
+  how = "replace",
+  classes = "logical"
 )
 str(call_new)
 
@@ -419,13 +440,12 @@ expr_flatten <- rrapply(expr,
 str(expr_flatten)
 
 ## Prune and melt expression
-expr_melt <- rrapply(expr, 
+rrapply(expr, 
   classes = "name", 
   condition = is_new_name, 
   f = as.character,
   how = "melt"
 )
-expr_melt
 
 ## Avoid recursing into call objects
 rrapply(
