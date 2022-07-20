@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     steps:
       - uses: actions/checkout@v2
@@ -27,6 +28,6 @@ jobs:
           needs: coverage
 
       - name: Test coverage
-        run: covr::codecov(token = "${{ secrets.CODECOV_TOKEN }}", quiet = FALSE)
+        run: covr::codecov(quiet = FALSE)
         shell: Rscript {0}
         
