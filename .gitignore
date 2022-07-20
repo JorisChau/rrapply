@@ -19,3 +19,4 @@ README.Rmd
 /docs/
 /Meta/
 !vignettes/cheatsheet.pdf
+.github/workflows/test-coverage.yaml

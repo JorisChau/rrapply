@@ -371,7 +371,7 @@ rrapply(
 ## Recursively remove list attributes
 renewable_no_attrs <- rrapply(
   renewable_oceania,
-  f = \(x) c(x),
+  f = function(x) c(x),
   classes = c("list", "ANY"),
   how = "recurse"
 ) 
@@ -380,7 +380,7 @@ str(renewable_no_attrs, list.len = 3, give.attr = TRUE)
 ## recursively replace all names by M49-codes
 renewable_m49_names <- rrapply(
   renewable_oceania,
-  f = \(x) attr(x, "M49-code"),
+  f = function(x) attr(x, "M49-code"),
   how = "names"
 ) 
 str(renewable_m49_names, list.len = 3, give.attr = FALSE)
