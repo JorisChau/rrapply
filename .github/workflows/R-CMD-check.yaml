@@ -54,7 +54,7 @@ jobs:
       
       - name: Install LaTeX packages
         run: |
-          tlmgr install pdfpages pdflscape
+          tlmgr install ae grfext pdfpages pdflscape
 
       - uses: r-lib/actions/check-r-package@v2
           
