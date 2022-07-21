@@ -37,7 +37,7 @@ devtools::install_github("JorisChau/rrapply")
 <div>
 
 <a href='vignettes/cheatsheet.pdf'>
-<img src='cheatsheet.svg' align="center" height="600" /> </a>
+<img src='cheatsheet.webp' align="center" height="600" /> </a>
 
 </div>
 
@@ -148,7 +148,7 @@ rrapply(
 ) |>
   str(list.len = 5, give.attr = FALSE)
 
-#> List of 29
+#> List of 22
 #>  $ Oceania.Australia and New Zealand.Australia        : num 9.32
 #>  $ Oceania.Australia and New Zealand.New Zealand      : num 32.8
 #>  $ Oceania.Melanesia.Fiji                             : num 24.4

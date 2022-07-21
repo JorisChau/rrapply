@@ -26,7 +26,7 @@
 #' \item \code{how = "recurse"} is a specialized option that is only useful in combination with e.g. \code{classes = "list"} to recurse further 
 #' into updated \dQuote{list-like} elements. This is explained in more detail below.
 #' \item \code{how = "names"} modifies the \emph{names} of the nested list elements instead of the list content. \code{how = "names"} internally works  
-#' similar to \code{how = "list"}, except that the value of \code{f} is used to replace the name of the list element under consideration 
+#' similar to \code{how = "list"}, except that the value of \code{f} is used to replace the name of the list element under evaluation 
 #' instead of its content. 
 #' }
 #' 
@@ -53,7 +53,7 @@
 #' location of \code{c(1, 2)} corresponds to the list element \code{x[[c(1, 2)]]}. The \code{.xparents} argument evaluates to a vector of all parent 
 #' node names in the path to the list element. The \code{.xsiblings} argument evaluates to the complete (sub)list that includes the list element as a direct child.
 #' The names \code{.xname}, \code{.xpos}, \code{.xparents} or \code{.xsiblings} need to be explicitly included as function arguments in \code{f} and 
-#' \code{condition} (in addition to the principal argument). See the package vignette for example uses of these special variables.
+#' \code{condition} (in addition to the principal argument). See also the \sQuote{Examples} section.
 #' 
 #' @section Avoid recursing into list nodes:
 #' By default, \code{rrapply} recurses into any \dQuote{list-like} element. If \code{classes = "list"}, this behavior is overridden and the 
@@ -67,7 +67,7 @@
 #' If \code{classes = "list"} and \code{how = "recurse"}, \code{rrapply} applies the \code{f} function to any list element of \code{object} that satisfies 
 #' \code{condition} similar to the previous section using \code{how = "replace"}, but recurses further into the \emph{updated} list-like element 
 #' after application of the \code{f} function. A primary use of \code{how = "recurse"} in combination with \code{classes = "list"} is to 
-#' recursively update for instance the class or other attributes of all nodes in a nested list. Additional examples are found in the package vignette.
+#' recursively update for instance the class or other attributes of all nodes in a nested list.
 #' 
 #' @section Avoid recursing into data.frames:
 #' If \code{classes = "ANY"} (default), \code{rrapply} recurses into all \dQuote{list-like} objects equivalent to \code{\link{rapply}}. 

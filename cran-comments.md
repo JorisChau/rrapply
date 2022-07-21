@@ -1,4 +1,4 @@
-## CRAN package version 1.2.4
+## CRAN package version 1.2.5
 
 ### Test environments
 
@@ -11,10 +11,10 @@
 * macos-big-sur R-release (rhub)
 * solaris10 R-release (rhub)
 * solaris10 ods R-release (rhub)
-* windows-server R-release, R-devel (UCRT), R-oldrel 
+* windows-server R-release, R-devel (UCRT), R-oldrel, R-patched
 
 ### Compiled code checks
 
-* ubuntu-rchk
+* ubuntu-rchk R-devel 
 * ubuntu gcc R-release --use-valgrind 
 * ubuntu gcc R-release --use-gct
