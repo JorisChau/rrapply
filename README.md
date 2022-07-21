@@ -37,7 +37,7 @@ devtools::install_github("JorisChau/rrapply")
 <div>
 
 <a href='vignettes/cheatsheet.pdf'>
-<img src='cheatsheet.webp' align="center" height="600" /> </a>
+<img src='cheatsheet.svg' align="center" height="600" /> </a>
 
 </div>
 

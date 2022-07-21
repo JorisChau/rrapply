@@ -3,9 +3,12 @@
 ^doc$
 ^docs$
 ^Meta$
-^README.Rmd$
-^cran-comments.md$
+^README\.Rmd$
+^README\.md$
+^cran-comments\.md$
 ^CRAN-RELEASE$
 ^\.gitignore$
 ^\.github$
 ^CRAN-SUBMISSION$
+^sticker\.svg$
+^cheatsheet\.svg$
