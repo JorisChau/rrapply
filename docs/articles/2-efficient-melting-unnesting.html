@@ -69,9 +69,6 @@
   </div>
 </nav><div class="container template-article">
 
-
-
-
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="" class="logo" alt=""><h1>Efficient list melting and unnesting with rrapply</h1>
@@ -88,20 +85,7 @@
 <div class="section level2">
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
-<p>The previous article <code><a href="../articles/1-when-to-use-rrapply.html">vignette("1-when-to-use-rrapply")</a></code>
-describes the principal use of the <code><a href="../reference/rrapply.html">rrapply()</a></code> function as a
-revised and extended version of base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code> in the
-context of nested list recursion. For quick data exploration of a nested
-list it can make sense to keep the list in its original nested format to
-reduce the number of processing steps and minimize code complexity. As
-part of a more elaborate data analysis, if there is no specific reason
-to keep the nested data structure, it is often more practical to
-transform the nested list into a more convenient rectangular format and
-work with the unnested object (e.g. a data.frame) instead. In this
-follow-up article, we review the available (<code>how</code>) options in
-<code><a href="../reference/rrapply.html">rrapply()</a></code> to unnest or melt nested lists into a rectangular
-format in more detail and highlight the similarities and differences
-with respect to several common alternatives in R.</p>
+<p>The previous article <code><a href="../articles/1-when-to-use-rrapply.html">vignette("1-when-to-use-rrapply")</a></code> describes the principal use of the <code><a href="../reference/rrapply.html">rrapply()</a></code> function as a revised and extended version of base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code> in the context of nested list recursion. For quick data exploration of a nested list it can make sense to keep the list in its original nested format to reduce the number of processing steps and minimize code complexity. As part of a more elaborate data analysis, if there is no specific reason to keep the nested data structure, it is often more practical to transform the nested list into a more convenient rectangular format and work with the unnested object (e.g. a data.frame) instead. In this follow-up article, we review the available (<code>how</code>) options in <code><a href="../reference/rrapply.html">rrapply()</a></code> to unnest or melt nested lists into a rectangular format in more detail and highlight the similarities and differences with respect to several common alternatives in R.</p>
 </div>
 <div class="section level2">
 <h2 id="nested-list-to-data-frame">Nested list to data.frame<a class="anchor" aria-label="anchor" href="#nested-list-to-data-frame"></a>
@@ -109,25 +93,8 @@ with respect to several common alternatives in R.</p>
 <div class="section level3">
 <h3 id="melt-to-long-data-frame">Melt to long data.frame<a class="anchor" aria-label="anchor" href="#melt-to-long-data-frame"></a>
 </h3>
-<p>The option <code>how = "melt"</code> in <code><a href="../reference/rrapply.html">rrapply()</a></code>
-unnests a nested list to a <em>long</em> or melted data.frame similar in
-format to the retired <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> function applied to
-a nested list. The rows of the melted data.frame contain the individual
-node paths of the elements in the nested list after pruning (based on
-the <code>condition</code> and/or <code>classes</code> arguments). The
-<code>"value"</code> column is a vector- or list-column containing the
-values of the leaf elements identical to the object returned by
-<code>how = "flatten"</code>.</p>
-<p>To demonstrate, we use the <code>renewable_energy_by_country</code>
-dataset included in the <code>rrapply</code>-package, a nested list
-containing the renewable energy shares per country (% of total energy
-consumption) in 2016<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;The &lt;code&gt;renewable_energy_by_country&lt;/code&gt; dataset is
-publicly available at the &lt;a href="https://unstats-undesa.opendata.arcgis.com/datasets/" class="external-link"&gt;United
-Nations Open SDG Data Hub&lt;/a&gt;&lt;/p&gt;'><sup>1</sup></a>. The 249 countries and areas are structured
-based on their geographical locations according to the <a href="https://unstats.un.org/unsd/methodology/m49/" class="external-link">United Nations M49
-standard</a>. The numeric values listed for each country are
-percentages, if no data is available the value of the country is
-<code>NA</code>.</p>
+<p>The option <code>how = "melt"</code> in <code><a href="../reference/rrapply.html">rrapply()</a></code> unnests a nested list to a <em>long</em> or melted data.frame similar in format to the retired <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> function applied to a nested list. The rows of the melted data.frame contain the individual node paths of the elements in the nested list after pruning (based on the <code>condition</code> and/or <code>classes</code> arguments). The <code>"value"</code> column is a vector- or list-column containing the values of the leaf elements identical to the object returned by <code>how = "flatten"</code>.</p>
+<p>To demonstrate, we use the <code>renewable_energy_by_country</code> dataset included in the <code>rrapply</code>-package, a nested list containing the renewable energy shares per country (% of total energy consumption) in 2016<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;The &lt;code&gt;renewable_energy_by_country&lt;/code&gt; dataset is publicly available at the &lt;a href="https://unstats-undesa.opendata.arcgis.com/datasets/" class="external-link"&gt;United Nations Open SDG Data Hub&lt;/a&gt;&lt;/p&gt;'><sup>1</sup></a>. The 249 countries and areas are structured based on their geographical locations according to the <a href="https://unstats.un.org/unsd/methodology/m49/" class="external-link">United Nations M49 standard</a>. The numeric values listed for each country are percentages, if no data is available the value of the country is <code>NA</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://jorischau.github.io/rrapply/" class="external-link">rrapply</a></span><span class="op">)</span></span>
 <span></span>
@@ -185,20 +152,7 @@ percentages, if no data is available the value of the country is
 <span><span class="co">#&gt; 7 World Europe Western Europe        Monaco    NA</span></span>
 <span><span class="co">#&gt; 8 World Europe Western Europe   Netherlands  5.78</span></span>
 <span><span class="co">#&gt; 9 World Europe Western Europe   Switzerland 25.49</span></span></code></pre></div>
-<p>As shown in the above examples, in comparison to
-<code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code>, <code><a href="../reference/rrapply.html">rrapply()</a></code> allows to filter
-or transform list elements before melting the nested list through the
-<code>f</code>, <code>classes</code> and <code>condition</code>
-arguments<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;Note that &lt;code&gt;&lt;a href="../reference/rrapply.html"&gt;rrapply()&lt;/a&gt;&lt;/code&gt; imposes a different
-column order than &lt;code&gt;&lt;a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link"&gt;reshape2::melt()&lt;/a&gt;&lt;/code&gt; and the
-&lt;code&gt;"value"&lt;/code&gt; column may follow slightly different coercion
-rules, but other than that the melted data.frames are the same.&lt;/p&gt;'><sup>2</sup></a>. More importantly, <code><a href="../reference/rrapply.html">rrapply()</a></code>
-is optimized specifically for handling nested lists, whereas
-<code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> was aimed primarily at melting data.frames
-before being superseded by <code><a href="https://tidyr.tidyverse.org/reference/gather.html" class="external-link">tidyr::gather()</a></code> and more
-recently <code><a href="https://tidyr.tidyverse.org/reference/pivot_longer.html" class="external-link">tidyr::pivot_longer()</a></code>. For this reason,
-<code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> can be quite slow when applied to large
-nested lists:</p>
+<p>As shown in the above examples, in comparison to <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code>, <code><a href="../reference/rrapply.html">rrapply()</a></code> allows to filter or transform list elements before melting the nested list through the <code>f</code>, <code>classes</code> and <code>condition</code> arguments<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;Note that &lt;code&gt;&lt;a href="../reference/rrapply.html"&gt;rrapply()&lt;/a&gt;&lt;/code&gt; imposes a different column order than &lt;code&gt;&lt;a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link"&gt;reshape2::melt()&lt;/a&gt;&lt;/code&gt; and the &lt;code&gt;"value"&lt;/code&gt; column may follow slightly different coercion rules, but other than that the melted data.frames are the same.&lt;/p&gt;'><sup>2</sup></a>. More importantly, <code><a href="../reference/rrapply.html">rrapply()</a></code> is optimized specifically for handling nested lists, whereas <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> was aimed primarily at melting data.frames before being superseded by <code><a href="https://tidyr.tidyverse.org/reference/gather.html" class="external-link">tidyr::gather()</a></code> and more recently <code><a href="https://tidyr.tidyverse.org/reference/pivot_longer.html" class="external-link">tidyr::pivot_longer()</a></code>. For this reason, <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> can be quite slow when applied to large nested lists:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## melt to long data.frame (reshape2)</span></span>
 <span><span class="fu">reshape2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">melt</a></span><span class="op">(</span><span class="va">renewable_energy_by_country</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -224,12 +178,9 @@ nested lists:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression                                       min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>                                  <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> rrapply(renewable_energy_by_country)          13.4µs   15.2µs   <span style="text-decoration: underline;">63</span>947.         0B     25.6</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> reshape2::melt(renewable_energy_by_country)   48.1ms   49.9ms      20.0    73.1KB     80.1</span></span></code></pre></div>
-<p>For a medium-sized list as used in this example, the computation time
-of <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> is not a bottleneck for practical
-usage. However, the computational effort quickly increases when melting
-larger or more deeply nested lists:</p>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> rrapply(renewable_energy_by_country)          11.7µs   14.2µs   <span style="text-decoration: underline;">69</span>286.         0B     34.7</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> reshape2::melt(renewable_energy_by_country)   43.9ms   43.9ms      22.8    73.1KB    228.</span></span></code></pre></div>
+<p>For a medium-sized list as used in this example, the computation time of <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> is not a bottleneck for practical usage. However, the computational effort quickly increases when melting larger or more deeply nested lists:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## helper function to generate large nested list</span></span>
 <span><span class="va">new_list</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span>, <span class="va">d</span><span class="op">)</span> <span class="op">{</span></span>
@@ -243,28 +194,31 @@ larger or more deeply nested lists:</p>
 <span>  <span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
+<span><span class="co">## random seed</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<span></span>
 <span><span class="co">## generate large shallow list (10^6 elements)</span></span>
 <span><span class="va">shallow_list</span> <span class="op">&lt;-</span> <span class="fu">new_list</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">100</span>, d <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">shallow_list</span>, list.len <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 100</span></span>
 <span><span class="co">#&gt;  $ :List of 100</span></span>
 <span><span class="co">#&gt;   ..$ :List of 100</span></span>
-<span><span class="co">#&gt;   .. ..$ : num 0.905</span></span>
-<span><span class="co">#&gt;   .. ..$ : num 0.45</span></span>
+<span><span class="co">#&gt;   .. ..$ : num 0.266</span></span>
+<span><span class="co">#&gt;   .. ..$ : num 0.372</span></span>
 <span><span class="co">#&gt;   .. .. [list output truncated]</span></span>
 <span><span class="co">#&gt;   ..$ :List of 100</span></span>
-<span><span class="co">#&gt;   .. ..$ : num 0.617</span></span>
-<span><span class="co">#&gt;   .. ..$ : num 0.661</span></span>
+<span><span class="co">#&gt;   .. ..$ : num 0.655</span></span>
+<span><span class="co">#&gt;   .. ..$ : num 0.353</span></span>
 <span><span class="co">#&gt;   .. .. [list output truncated]</span></span>
 <span><span class="co">#&gt;   .. [list output truncated]</span></span>
 <span><span class="co">#&gt;  $ :List of 100</span></span>
 <span><span class="co">#&gt;   ..$ :List of 100</span></span>
-<span><span class="co">#&gt;   .. ..$ : num 0.0803</span></span>
-<span><span class="co">#&gt;   .. ..$ : num 0.648</span></span>
+<span><span class="co">#&gt;   .. ..$ : num 0.0647</span></span>
+<span><span class="co">#&gt;   .. ..$ : num 0.677</span></span>
 <span><span class="co">#&gt;   .. .. [list output truncated]</span></span>
 <span><span class="co">#&gt;   ..$ :List of 100</span></span>
-<span><span class="co">#&gt;   .. ..$ : num 0.386</span></span>
-<span><span class="co">#&gt;   .. ..$ : num 0.142</span></span>
+<span><span class="co">#&gt;   .. ..$ : num 0.266</span></span>
+<span><span class="co">#&gt;   .. ..$ : num 0.66</span></span>
 <span><span class="co">#&gt;   .. .. [list output truncated]</span></span>
 <span><span class="co">#&gt;   .. [list output truncated]</span></span>
 <span><span class="co">#&gt;   [list output truncated]</span></span>
@@ -272,28 +226,28 @@ larger or more deeply nested lists:</p>
 <span><span class="co">## benchmark timing with rrapply</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">shallow_melt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">shallow_list</span>, how <span class="op">=</span> <span class="st">"melt"</span><span class="op">)</span><span class="op">)</span> </span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;   1.070   0.024   1.094</span></span>
+<span><span class="co">#&gt;   0.933   0.016   0.949</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">shallow_melt</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   L1 L2 L3     value</span></span>
-<span><span class="co">#&gt; 1  1  1  1 0.9053252</span></span>
-<span><span class="co">#&gt; 2  1  1  2 0.4502085</span></span>
-<span><span class="co">#&gt; 3  1  1  3 0.8994272</span></span>
-<span><span class="co">#&gt; 4  1  1  4 0.1495881</span></span>
-<span><span class="co">#&gt; 5  1  1  5 0.9045653</span></span>
-<span><span class="co">#&gt; 6  1  1  6 0.2190834</span></span>
+<span><span class="co">#&gt; 1  1  1  1 0.2655087</span></span>
+<span><span class="co">#&gt; 2  1  1  2 0.3721239</span></span>
+<span><span class="co">#&gt; 3  1  1  3 0.5728534</span></span>
+<span><span class="co">#&gt; 4  1  1  4 0.9082078</span></span>
+<span><span class="co">#&gt; 5  1  1  5 0.2016819</span></span>
+<span><span class="co">#&gt; 6  1  1  6 0.8983897</span></span>
 <span></span>
 <span><span class="co">## benchmark timing with reshape2::melt</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">shallow_melt_reshape2</span> <span class="op">&lt;-</span> <span class="fu">reshape2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">melt</a></span><span class="op">(</span><span class="va">shallow_list</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt; 169.650   0.047 169.739</span></span>
+<span><span class="co">#&gt; 134.507   0.059 134.573</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">shallow_melt_reshape2</span><span class="op">)</span></span>
 <span><span class="co">#&gt;       value L3 L2 L1</span></span>
-<span><span class="co">#&gt; 1 0.9053252  1  1  1</span></span>
-<span><span class="co">#&gt; 2 0.4502085  2  1  1</span></span>
-<span><span class="co">#&gt; 3 0.8994272  3  1  1</span></span>
-<span><span class="co">#&gt; 4 0.1495881  4  1  1</span></span>
-<span><span class="co">#&gt; 5 0.9045653  5  1  1</span></span>
-<span><span class="co">#&gt; 6 0.2190834  6  1  1</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 0.2655087  1  1  1</span></span>
+<span><span class="co">#&gt; 2 0.3721239  2  1  1</span></span>
+<span><span class="co">#&gt; 3 0.5728534  3  1  1</span></span>
+<span><span class="co">#&gt; 4 0.9082078  4  1  1</span></span>
+<span><span class="co">#&gt; 5 0.2016819  5  1  1</span></span>
+<span><span class="co">#&gt; 6 0.8983897  6  1  1</span></span></code></pre></div>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## generate large deeply nested list (2^18 elements)</span></span>
 <span><span class="va">deep_list</span> <span class="op">&lt;-</span> <span class="fu">new_list</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">2</span>, d <span class="op">=</span> <span class="fl">18</span><span class="op">)</span></span>
@@ -301,42 +255,34 @@ larger or more deeply nested lists:</p>
 <span><span class="co">## benchmark timing with rrapply</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">deep_melt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">deep_list</span>, how <span class="op">=</span> <span class="st">"melt"</span><span class="op">)</span><span class="op">)</span> </span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;   0.643   0.008   0.651</span></span>
+<span><span class="co">#&gt;   0.605   0.020   0.625</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">deep_melt</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   L1 L2 L3 L4 L5 L6 L7 L8 L9 L10 L11 L12 L13 L14 L15 L16 L17 L18     value</span></span>
-<span><span class="co">#&gt; 1  1  1  1  1  1  1  1  1  1   1   1   1   1   1   1   1   1   1 0.6780994</span></span>
-<span><span class="co">#&gt; 2  1  1  1  1  1  1  1  1  1   1   1   1   1   1   1   1   1   2 0.6604063</span></span>
-<span><span class="co">#&gt; 3  1  1  1  1  1  1  1  1  1   1   1   1   1   1   1   1   2   1 0.4734945</span></span>
-<span><span class="co">#&gt; 4  1  1  1  1  1  1  1  1  1   1   1   1   1   1   1   1   2   2 0.8969230</span></span>
-<span><span class="co">#&gt; 5  1  1  1  1  1  1  1  1  1   1   1   1   1   1   1   2   1   1 0.8322423</span></span>
-<span><span class="co">#&gt; 6  1  1  1  1  1  1  1  1  1   1   1   1   1   1   1   2   1   2 0.2993607</span></span>
+<span><span class="co">#&gt;   L1 L2 L3 L4 L5 L6 L7 L8 L9 L10 L11 L12 L13 L14 L15 L16 L17 L18      value</span></span>
+<span><span class="co">#&gt; 1  1  1  1  1  1  1  1  1  1   1   1   1   1   1   1   1   1   1 0.14011775</span></span>
+<span><span class="co">#&gt; 2  1  1  1  1  1  1  1  1  1   1   1   1   1   1   1   1   1   2 0.69562066</span></span>
+<span><span class="co">#&gt; 3  1  1  1  1  1  1  1  1  1   1   1   1   1   1   1   1   2   1 0.72888445</span></span>
+<span><span class="co">#&gt; 4  1  1  1  1  1  1  1  1  1   1   1   1   1   1   1   1   2   2 0.09164734</span></span>
+<span><span class="co">#&gt; 5  1  1  1  1  1  1  1  1  1   1   1   1   1   1   1   2   1   1 0.06661200</span></span>
+<span><span class="co">#&gt; 6  1  1  1  1  1  1  1  1  1   1   1   1   1   1   1   2   1   2 0.61285721</span></span>
 <span></span>
 <span><span class="co">## benchmark timing with reshape2::melt</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">deep_melt_reshape2</span> <span class="op">&lt;-</span> <span class="fu">reshape2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">melt</a></span><span class="op">(</span><span class="va">deep_list</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt; 133.664   0.052 133.730</span></span>
+<span><span class="co">#&gt; 108.998   0.067 109.195</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">deep_melt_reshape2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;       value L18 L17 L16 L15 L14 L13 L12 L11 L10 L9 L8 L7 L6 L5 L4 L3 L2 L1</span></span>
-<span><span class="co">#&gt; 1 0.6780994   1   1   1   1   1   1   1   1   1  1  1  1  1  1  1  1  1  1</span></span>
-<span><span class="co">#&gt; 2 0.6604063   2   1   1   1   1   1   1   1   1  1  1  1  1  1  1  1  1  1</span></span>
-<span><span class="co">#&gt; 3 0.4734945   1   2   1   1   1   1   1   1   1  1  1  1  1  1  1  1  1  1</span></span>
-<span><span class="co">#&gt; 4 0.8969230   2   2   1   1   1   1   1   1   1  1  1  1  1  1  1  1  1  1</span></span>
-<span><span class="co">#&gt; 5 0.8322423   1   1   2   1   1   1   1   1   1  1  1  1  1  1  1  1  1  1</span></span>
-<span><span class="co">#&gt; 6 0.2993607   2   1   2   1   1   1   1   1   1  1  1  1  1  1  1  1  1  1</span></span></code></pre></div>
-<p>Although unlikely to encounter such large or deeply nested lists in
-practice, these artificial examples serve to illustrate that
-<code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> is not particularly efficient in unnesting
-large nested lists to data.frames.</p>
+<span><span class="co">#&gt;        value L18 L17 L16 L15 L14 L13 L12 L11 L10 L9 L8 L7 L6 L5 L4 L3 L2 L1</span></span>
+<span><span class="co">#&gt; 1 0.14011775   1   1   1   1   1   1   1   1   1  1  1  1  1  1  1  1  1  1</span></span>
+<span><span class="co">#&gt; 2 0.69562066   2   1   1   1   1   1   1   1   1  1  1  1  1  1  1  1  1  1</span></span>
+<span><span class="co">#&gt; 3 0.72888445   1   2   1   1   1   1   1   1   1  1  1  1  1  1  1  1  1  1</span></span>
+<span><span class="co">#&gt; 4 0.09164734   2   2   1   1   1   1   1   1   1  1  1  1  1  1  1  1  1  1</span></span>
+<span><span class="co">#&gt; 5 0.06661200   1   1   2   1   1   1   1   1   1  1  1  1  1  1  1  1  1  1</span></span>
+<span><span class="co">#&gt; 6 0.61285721   2   1   2   1   1   1   1   1   1  1  1  1  1  1  1  1  1  1</span></span></code></pre></div>
+<p>Although unlikely to encounter such large or deeply nested lists in practice, these artificial examples serve to illustrate that <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> is not particularly efficient in unnesting large nested lists to data.frames.</p>
 </div>
 <div class="section level3">
 <h3 id="bind-to-wide-data-frame">Bind to wide data.frame<a class="anchor" aria-label="anchor" href="#bind-to-wide-data-frame"></a>
 </h3>
-<p>The option <code>how = "bind"</code> unnests a nested list to a
-<em>wide</em> data.frame and is used to unnest nested lists containing
-repeated entries of the same variables. To illustrate, we consider the
-<code>pokedex</code> dataset included in the
-<code>rrapply</code>-package, a nested list containing various property
-values for each of the 151 original Pokémon available (in .json) from <a href="https://github.com/Biuni/PokemonGO-Pokedex" class="external-link uri">https://github.com/Biuni/PokemonGO-Pokedex</a>.</p>
+<p>The option <code>how = "bind"</code> unnests a nested list to a <em>wide</em> data.frame and is used to unnest nested lists containing repeated entries of the same variables. To illustrate, we consider the <code>pokedex</code> dataset included in the <code>rrapply</code>-package, a nested list containing various property values for each of the 151 original Pokémon available (in .json) from <a href="https://github.com/Biuni/PokemonGO-Pokedex" class="external-link uri">https://github.com/Biuni/PokemonGO-Pokedex</a>.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## all 151 Pokemon</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pokedex</span>, list.len <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
@@ -384,16 +330,7 @@ values for each of the 151 original Pokémon available (in .json) from <a href="
 <span><span class="co">#&gt;   ..$ :List of 2</span></span>
 <span><span class="co">#&gt;   .. ..$ num : chr "003"</span></span>
 <span><span class="co">#&gt;   .. ..$ name: chr "Venusaur"</span></span></code></pre></div>
-<p>Calling <code><a href="../reference/rrapply.html">rrapply()</a></code> with <code>how = "bind</code> expands
-each Pokémon sublist as a single row in a wide data.frame. The 151 rows
-are stacked and aligned by matching variable names, with missing entries
-replaced by <code>NA</code>’s (similar to
-<code>data.table::rbindlist(..., fill = TRUE)</code>). Note that any
-nested variables, such as <code>next_evolution</code> and
-<code>prev_evolution</code>, are unnested as wide as possible into
-individual data.frame columns similar to repeated application of
-<code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">tidyr::unnest_wider()</a></code> to a data.frame with nested
-list-columns.</p>
+<p>Calling <code><a href="../reference/rrapply.html">rrapply()</a></code> with <code>how = "bind</code> expands each Pokémon sublist as a single row in a wide data.frame. The 151 rows are stacked and aligned by matching variable names, with missing entries replaced by <code>NA</code>’s (similar to <code>data.table::rbindlist(..., fill = TRUE)</code>). Note that any nested variables, such as <code>next_evolution</code> and <code>prev_evolution</code>, are unnested as wide as possible into individual data.frame columns similar to repeated application of <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">tidyr::unnest_wider()</a></code> to a data.frame with nested list-columns.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">pokedex</span>, how <span class="op">=</span> <span class="st">"bind"</span><span class="op">)</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">9</span><span class="op">]</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -404,16 +341,7 @@ list-columns.</p>
 <span><span class="co">#&gt; 4  4 004 Charmander http://www.serebii.net/pokemongo/pokemon/004.png          Fire 0.61 m   8.5 kg Charmander Candy          25</span></span>
 <span><span class="co">#&gt; 5  5 005 Charmeleon http://www.serebii.net/pokemongo/pokemon/005.png          Fire 1.09 m  19.0 kg Charmander Candy         100</span></span>
 <span><span class="co">#&gt; 6  6 006  Charizard http://www.serebii.net/pokemongo/pokemon/006.png  Fire, Flying 1.70 m  90.5 kg Charmander Candy          NA</span></span></code></pre></div>
-<p>By default, the list layer containing the repeated observations is
-identified by the minimal depth detected across leaf elements. This
-option can be overridden by the <code>coldepth</code> parameter in the
-<code>options</code> argument, which can be useful to unnest nested
-sublists, such as <code>next_evolution</code> or
-<code>prev_evolution</code>. In addition, setting
-<code>namecols = TRUE</code> in the <code>options</code> argument
-includes the parent list names associated to each row in the wide
-data.frame as individual columns <code>L1</code>, <code>L2</code>,
-etc.</p>
+<p>By default, the list layer containing the repeated observations is identified by the minimal depth detected across leaf elements. This option can be overridden by the <code>coldepth</code> parameter in the <code>options</code> argument, which can be useful to unnest nested sublists, such as <code>next_evolution</code> or <code>prev_evolution</code>. In addition, setting <code>namecols = TRUE</code> in the <code>options</code> argument includes the parent list names associated to each row in the wide data.frame as individual columns <code>L1</code>, <code>L2</code>, etc.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## bind prev/next evolution columns</span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -436,14 +364,8 @@ etc.</p>
 <div class="section level4">
 <h4 id="common-alternatives">Common alternatives<a class="anchor" aria-label="anchor" href="#common-alternatives"></a>
 </h4>
-<p>Several common alternatives used to unnest lists containing repeated
-entries include <code><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html" class="external-link">data.table::rbindlist()</a></code>,
-<code><a href="https://dplyr.tidyverse.org/reference/bind.html" class="external-link">dplyr::bind_rows()</a></code>, and <code>tidyr</code>’s dedicated
-rectangling functions <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_longer()</a></code>,
-<code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider()</a></code> and <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">hoist()</a></code>.</p>
-<p>The first two functions are primarily aimed at binding lists of
-data.frames or lists of lists, but are not meant for nested lists
-containing multiple levels of nesting, such as <code>pokedex</code>:</p>
+<p>Several common alternatives used to unnest lists containing repeated entries include <code><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html" class="external-link">data.table::rbindlist()</a></code>, <code><a href="https://dplyr.tidyverse.org/reference/bind.html" class="external-link">dplyr::bind_rows()</a></code>, and <code>tidyr</code>’s dedicated rectangling functions <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_longer()</a></code>, <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider()</a></code> and <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">hoist()</a></code>.</p>
+<p>The first two functions are primarily aimed at binding lists of data.frames or lists of lists, but are not meant for nested lists containing multiple levels of nesting, such as <code>pokedex</code>:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
@@ -481,10 +403,7 @@ containing multiple levels of nesting, such as <code>pokedex</code>:</p>
 <span><span class="co">## complex nested list (error)</span></span>
 <span><span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html" class="external-link">rbindlist</a></span><span class="op">(</span><span class="va">pokedex</span><span class="op">[[</span><span class="st">"pokemon"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error in data.table::rbindlist(pokedex[["pokemon"]]): Column 5 of item 1 is length 2 inconsistent with column 15 which is length 4. Only length-1 columns are recycled.</span></span></code></pre></div>
-<p>The rectangling functions in the <code>tidyr</code>-package offer a
-lot more flexibility. A similar data.frame as returned by
-<code>rrapply(pokedex, how = "bind")</code> can be obtained by repeated
-application of <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">tidyr::unnest_wider()</a></code>:</p>
+<p>The rectangling functions in the <code>tidyr</code>-package offer a lot more flexibility. A similar data.frame as returned by <code>rrapply(pokedex, how = "bind")</code> can be obtained by repeated application of <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">tidyr::unnest_wider()</a></code>:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyr.tidyverse.org" class="external-link">tidyr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tibble.tidyverse.org/" class="external-link">tibble</a></span><span class="op">)</span></span>
@@ -512,12 +431,7 @@ application of <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" 
 <span><span class="co">#&gt; <span style="color: #949494;">#   prev_evolution.2.name &lt;chr&gt;, and abbreviated variable names ¹​candy_count, ²​spawn_chance, ³​avg_spawns, ⁴​spawn_time, ⁵​multipliers, ⁶​weaknesses,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   ⁷​next_evolution.1.num, ⁸​next_evolution.1.name, ⁹​next_evolution.2.num, ˟​next_evolution.2.name, ˟​next_evolution.3.num</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ Use `colnames()` to see all variable names</span></span></span></code></pre></div>
-<p>The option <code>how = "bind"</code> in <code><a href="../reference/rrapply.html">rrapply()</a></code> is
-less flexible as it always expands the nested list to a data.frame that
-is <em>as wide as possible</em>. On the other hand, the flexibility and
-interpretability in <code>tidyr</code>’s rectangling functions come at
-the cost of increased computational effort, which can become a
-bottleneck when unnesting large nested lists:</p>
+<p>The option <code>how = "bind"</code> in <code><a href="../reference/rrapply.html">rrapply()</a></code> is less flexible as it always expands the nested list to a data.frame that is <em>as wide as possible</em>. On the other hand, the flexibility and interpretability in <code>tidyr</code>’s rectangling functions come at the cost of increased computational effort, which can become a bottleneck when unnesting large nested lists:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## large replicated pokedex list </span></span>
 <span><span class="va">pokedex_large</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>pokemon <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">c</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">replicate</a></span><span class="op">(</span><span class="fl">1500</span>, <span class="va">pokedex</span><span class="op">[[</span><span class="st">"pokemon"</span><span class="op">]</span><span class="op">]</span>, simplify <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
@@ -526,7 +440,7 @@ bottleneck when unnesting large nested lists:</p>
 <span>  <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">pokedex_large</span>, how <span class="op">=</span> <span class="st">"bind"</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;   2.456   0.040   2.496</span></span>
+<span><span class="co">#&gt;   2.153   0.028   2.182</span></span>
 <span></span>
 <span><span class="co">## unnest first layers prev_evolution and next_evolution</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="op">{</span></span>
@@ -536,16 +450,9 @@ bottleneck when unnesting large nested lists:</p>
 <span>    <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">prev_evolution</span>, names_sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> </span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt; 130.279   0.396 130.757</span></span></code></pre></div>
-<p><strong>Remark</strong>: in the chained calls to
-<code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider()</a></code> above, we only unnest the first layer of the
-<code>next_evolution</code> and <code>prev_evolution</code>
-list-columns, and not any of the resulting children list-columns, which
-would only further increase computation time.</p>
-<p>To extract and unnest sublists at deeper levels of nesting in the
-list, such as <code>next_evolution</code>, we manually set the
-<code>coldepth</code> parameter in the <code>options</code> argument, as
-also demonstrated above:</p>
+<span><span class="co">#&gt; 104.713   0.220 104.939</span></span></code></pre></div>
+<p><strong>Remark</strong>: in the chained calls to <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider()</a></code> above, we only unnest the first layer of the <code>next_evolution</code> and <code>prev_evolution</code> list-columns, and not any of the resulting children list-columns, which would only further increase computation time.</p>
+<p>To extract and unnest sublists at deeper levels of nesting in the list, such as <code>next_evolution</code>, we manually set the <code>coldepth</code> parameter in the <code>options</code> argument, as also demonstrated above:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  <span class="va">ev1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -556,7 +463,7 @@ also demonstrated above:</p>
 <span>  <span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;   1.629   0.000   1.629</span></span>
+<span><span class="co">#&gt;   1.452   0.000   1.453</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">ev1</span><span class="op">)</span></span>
 <span><span class="co">#&gt;        L1 L2             L3 L4 num       name</span></span>
 <span><span class="co">#&gt; 1 pokemon  1 next_evolution  1 002    Ivysaur</span></span>
@@ -565,9 +472,7 @@ also demonstrated above:</p>
 <span><span class="co">#&gt; 4 pokemon  4 next_evolution  1 005 Charmeleon</span></span>
 <span><span class="co">#&gt; 5 pokemon  4 next_evolution  2 006  Charizard</span></span>
 <span><span class="co">#&gt; 6 pokemon  5 next_evolution  1 006  Charizard</span></span></code></pre></div>
-<p>The same unnested version of the <code>next_evolution</code> sublists
-can be obtained by mixing several calls to <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider()</a></code>
-and <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_longer()</a></code>:</p>
+<p>The same unnested version of the <code>next_evolution</code> sublists can be obtained by mixing several calls to <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider()</a></code> and <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_longer()</a></code>:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  <span class="va">ev2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">pokedex_large</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -577,7 +482,7 @@ and <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="exte
 <span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">next_evolution_num</span>, <span class="va">next_evolution_name</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;  89.831   0.068  89.905</span></span>
+<span><span class="co">#&gt;  82.027   0.000  82.033</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">ev2</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 3</span></span></span>
 <span><span class="co">#&gt;      id next_evolution_num next_evolution_name</span></span>
@@ -588,10 +493,7 @@ and <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="exte
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>     3 <span style="color: #BB0000;">NA</span>                 <span style="color: #BB0000;">NA</span>                 </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>     4 005                Charmeleon         </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span>     4 006                Charizard</span></span></code></pre></div>
-<p>In the context of the current example, a more efficient approach is
-to combine <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider()</a></code> with <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">hoist()</a></code>. The
-disadvantage is that we need to manually specify the exact locations of
-the elements that we wish to hoist from the nested list:</p>
+<p>In the context of the current example, a more efficient approach is to combine <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider()</a></code> with <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">hoist()</a></code>. The disadvantage is that we need to manually specify the exact locations of the elements that we wish to hoist from the nested list:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  <span class="va">ev3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">pokedex_large</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -604,7 +506,7 @@ the elements that we wish to hoist from the nested list:</p>
 <span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">name.1</span>, <span class="va">name.2</span>, <span class="va">name.3</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;  41.965   0.000  41.967</span></span>
+<span><span class="co">#&gt;  38.002   0.056  38.065</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">ev3</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 4</span></span></span>
 <span><span class="co">#&gt;      id name.1     name.2    name.3</span></span>
@@ -615,11 +517,7 @@ the elements that we wish to hoist from the nested list:</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>     4 Charmeleon Charizard <span style="color: #BB0000;">NA</span>    </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>     5 Charizard  <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>    </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span>     6 <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
-<p>Using <code><a href="../reference/rrapply.html">rrapply()</a></code>, the same result can be obtained by
-adding a call to <code><a href="https://rdrr.io/r/stats/reshape.html" class="external-link">reshape()</a></code> (or alternatively
-e.g. <code><a href="https://tidyr.tidyverse.org/reference/pivot_wider.html" class="external-link">tidyr::pivot_wider()</a></code> or
-<code><a href="https://Rdatatable.gitlab.io/data.table/reference/dcast.data.table.html" class="external-link">data.table::dcast()</a></code>) by converting from a long to a wide
-data.frame:</p>
+<p>Using <code><a href="../reference/rrapply.html">rrapply()</a></code>, the same result can be obtained by adding a call to <code><a href="https://rdrr.io/r/stats/reshape.html" class="external-link">reshape()</a></code> (or alternatively e.g. <code><a href="https://tidyr.tidyverse.org/reference/pivot_wider.html" class="external-link">tidyr::pivot_wider()</a></code> or <code><a href="https://Rdatatable.gitlab.io/data.table/reference/dcast.data.table.html" class="external-link">data.table::dcast()</a></code>) by converting from a long to a wide data.frame:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  <span class="va">ev4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -637,7 +535,7 @@ data.frame:</p>
 <span>  <span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;   2.220   0.000   2.221</span></span>
+<span><span class="co">#&gt;   1.959   0.000   1.959</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">ev5</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   L2     name.1    name.2 name.3</span></span>
 <span><span class="co">#&gt; 1  1    Ivysaur  Venusaur   &lt;NA&gt;</span></span>
@@ -650,9 +548,7 @@ data.frame:</p>
 <div class="section level4">
 <h4 id="additional-examples">Additional examples<a class="anchor" aria-label="anchor" href="#additional-examples"></a>
 </h4>
-<p>We conclude this section by replicating some of the data rectangling
-examples presented in the <code>tidyr</code> vignette: <a href="https://tidyr.tidyverse.org/articles/rectangle.html" class="external-link uri">https://tidyr.tidyverse.org/articles/rectangle.html</a>. The
-example nested lists are all conveniently included in the <a href="https://CRAN.R-project.org/package=repurrrsive" class="external-link">repurrrsive</a>-package.</p>
+<p>We conclude this section by replicating some of the data rectangling examples presented in the <code>tidyr</code> vignette: <a href="https://tidyr.tidyverse.org/articles/rectangle.html" class="external-link uri">https://tidyr.tidyverse.org/articles/rectangle.html</a>. The example nested lists are all conveniently included in the <a href="https://CRAN.R-project.org/package=repurrrsive" class="external-link">repurrrsive</a>-package.</p>
 <div class="section level5">
 <h5 id="github-users">GitHub Users<a class="anchor" aria-label="anchor" href="#github-users"></a>
 </h5>
@@ -894,9 +790,7 @@ example nested lists are all conveniently included in the <a href="https://CRAN.
 <div class="section level2">
 <h2 id="data-frame-to-nested-list">Data.frame to nested list<a class="anchor" aria-label="anchor" href="#data-frame-to-nested-list"></a>
 </h2>
-<p>As a demonstrating example, we reconsider the long data.frame from
-the first section obtained after melting the renewable energy shares of
-all Western European countries:</p>
+<p>As a demonstrating example, we reconsider the long data.frame from the first section obtained after melting the renewable energy shares of all Western European countries:</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">renewable_energy_melt_west_eu</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
 <span>  <span class="va">renewable_energy_by_country</span>,</span>
@@ -914,29 +808,12 @@ all Western European countries:</p>
 <span><span class="co">#&gt; 7 World Europe Western Europe        Monaco    NA</span></span>
 <span><span class="co">#&gt; 8 World Europe Western Europe   Netherlands  5.78</span></span>
 <span><span class="co">#&gt; 9 World Europe Western Europe   Switzerland 25.49</span></span></code></pre></div>
-<p>For certain tasks, it may be necessary to convert this data.frame
-back to a nested list object, e.g. to write the data to a JSON- or
-XML-object or for some tree visualization purpose. Writing a recursive
-function to reconstruct the nested list can prove to be quite
-time-consuming and error-prone.</p>
-<p>In this context, the <code><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist()</a></code> function has an inverse
-counterpart <code><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist()</a></code> that reconstructs a nested list from
-the unlisted vector. The <code><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist()</a></code> function always requires
-a <code>skeleton</code> nested list to repopulate, which can make it
-difficult to use in practice, as such a <code>skeleton</code> object is
-for instance unavailable for the current example. In particular, the
-melted data.frame contains only a subset of the original list elements,
-so we can not use the original list as a template object without
-filtering nodes from the original list as well.</p>
+<p>For certain tasks, it may be necessary to convert this data.frame back to a nested list object, e.g. to write the data to a JSON- or XML-object or for some tree visualization purpose. Writing a recursive function to reconstruct the nested list can prove to be quite time-consuming and error-prone.</p>
+<p>In this context, the <code><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist()</a></code> function has an inverse counterpart <code><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist()</a></code> that reconstructs a nested list from the unlisted vector. The <code><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist()</a></code> function always requires a <code>skeleton</code> nested list to repopulate, which can make it difficult to use in practice, as such a <code>skeleton</code> object is for instance unavailable for the current example. In particular, the melted data.frame contains only a subset of the original list elements, so we can not use the original list as a template object without filtering nodes from the original list as well.</p>
 <div class="section level3">
 <h3 id="unmelt-to-nested-list">Unmelt to nested list<a class="anchor" aria-label="anchor" href="#unmelt-to-nested-list"></a>
 </h3>
-<p>To address this difficulty, <code><a href="../reference/rrapply.html">rrapply()</a></code> includes the
-dedicated option <code>how = "unmelt"</code> that performs the inverse
-operation of <code>how = "melt"</code>. No skeleton object is needed in
-this case, only a plain data.frame in the format returned by
-<code>how = "melt"</code>. To illustrate, we can convert the melted
-data.frame above to a nested list as follows:</p>
+<p>To address this difficulty, <code><a href="../reference/rrapply.html">rrapply()</a></code> includes the dedicated option <code>how = "unmelt"</code> that performs the inverse operation of <code>how = "melt"</code>. No skeleton object is needed in this case, only a plain data.frame in the format returned by <code>how = "melt"</code>. To illustrate, we can convert the melted data.frame above to a nested list as follows:</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
 <span>  <span class="va">renewable_energy_melt_west_eu</span>, </span>
@@ -956,67 +833,41 @@ data.frame above to a nested list as follows:</p>
 <span><span class="co">#&gt;   .. .. ..$ Monaco       : num NA</span></span>
 <span><span class="co">#&gt;   .. .. ..$ Netherlands  : num 5.78</span></span>
 <span><span class="co">#&gt;   .. .. ..$ Switzerland  : num 25.5</span></span></code></pre></div>
-<p><strong>Remark 1:</strong> <code>how = "unmelt"</code> is based on a
-<em>greedy</em> approach parsing data.frame rows as list elements
-starting from the top of the data.frame. That is, <code><a href="../reference/rrapply.html">rrapply()</a></code>
-continues collecting children nodes as long as the parent node name
-remains unchanged. If, for instance, the goal is to create two separate
-nodes (on the same level) with the name <code>"Western Europe"</code>,
-these nodes should not be listed directly after one another in the
-melted data.frame as <code><a href="../reference/rrapply.html">rrapply()</a></code> will group all children
-under a single <code>"Western Europe"</code> list element.</p>
-<p><strong>Remark 2:</strong> Internally, <code>how = "unmelt"</code>
-reconstructs a nested list from the melted data.frame and subsequently
-follows the same conceptual framework as <code>how = "replace"</code>.
-Any other function arguments, such as <code>f</code> and
-<code>condition</code> can be used in exactly the same way as when
-applying <code>how = "replace"</code> to a nested list object.</p>
-<p><strong>Remark 3:</strong> <code>how = "unmelt"</code> does
-(currently) not restore the attributes of intermediate list nodes and is
-therefore not an exact inverse of <code>how = "melt"</code>. The other
-way around always produces the same result:</p>
+<p><strong>Remark 1:</strong> <code>how = "unmelt"</code> is based on a <em>greedy</em> approach parsing data.frame rows as list elements starting from the top of the data.frame. That is, <code><a href="../reference/rrapply.html">rrapply()</a></code> continues collecting children nodes as long as the parent node name remains unchanged. If, for instance, the goal is to create two separate nodes (on the same level) with the name <code>"Western Europe"</code>, these nodes should not be listed directly after one another in the melted data.frame as <code><a href="../reference/rrapply.html">rrapply()</a></code> will group all children under a single <code>"Western Europe"</code> list element.</p>
+<p><strong>Remark 2:</strong> Internally, <code>how = "unmelt"</code> reconstructs a nested list from the melted data.frame and subsequently follows the same conceptual framework as <code>how = "replace"</code>. Any other function arguments, such as <code>f</code> and <code>condition</code> can be used in exactly the same way as when applying <code>how = "replace"</code> to a nested list object.</p>
+<p><strong>Remark 3:</strong> <code>how = "unmelt"</code> does (currently) not restore the attributes of intermediate list nodes and is therefore not an exact inverse of <code>how = "melt"</code>. The other way around always produces the same result:</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">renewable_energy_unmelt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">renewable_energy_melt_west_eu</span>, how <span class="op">=</span> <span class="st">"unmelt"</span><span class="op">)</span></span>
 <span><span class="va">renewable_energy_remelt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">renewable_energy_unmelt</span>, how <span class="op">=</span> <span class="st">"melt"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">renewable_energy_melt_west_eu</span>, <span class="va">renewable_energy_remelt</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
-<p>In terms of computational effort, <code><a href="../reference/rrapply.html">rrapply()</a></code>’s
-<code>how = "unmelt"</code> can be equally or more efficient than
-<code><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist()</a></code> even though there is no template list object that
-can be repopulated. This is highlighted using the large list objects
-generated previously:</p>
+<p>In terms of computational effort, <code><a href="../reference/rrapply.html">rrapply()</a></code>’s <code>how = "unmelt"</code> can be equally or more efficient than <code><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist()</a></code> even though there is no template list object that can be repopulated. This is highlighted using the large list objects generated previously:</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## large deeply nested list (2^18 elements)</span></span>
 <span><span class="co">##  benchmark timing with rrapply</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">deep_unmelt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">deep_melt</span>, how <span class="op">=</span> <span class="st">"unmelt"</span><span class="op">)</span><span class="op">)</span> </span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;   0.154   0.000   0.155</span></span>
+<span><span class="co">#&gt;   0.139   0.000   0.139</span></span>
 <span></span>
 <span><span class="co">## benchmark timing with relist</span></span>
 <span><span class="va">deep_unlist</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/relist.html" class="external-link">as.relistable</a></span><span class="op">(</span><span class="va">deep_list</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">deep_relist</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist</a></span><span class="op">(</span><span class="va">deep_unlist</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;   3.084   0.000   3.085</span></span></code></pre></div>
+<span><span class="co">#&gt;   2.665   0.000   2.665</span></span></code></pre></div>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## large shallow list (10^6 elements)</span></span>
 <span><span class="co">## benchmark timing with rrapply </span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">shallow_unmelt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">shallow_melt</span>, how <span class="op">=</span> <span class="st">"unmelt"</span><span class="op">)</span><span class="op">)</span> </span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;   0.094   0.000   0.093</span></span>
+<span><span class="co">#&gt;   0.085   0.000   0.085</span></span>
 <span></span>
 <span><span class="co">## benchmark timing with relist</span></span>
 <span><span class="va">shallow_unlist</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/relist.html" class="external-link">as.relistable</a></span><span class="op">(</span><span class="va">shallow_list</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">shallow_relist</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist</a></span><span class="op">(</span><span class="va">shallow_unlist</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;   5.356   0.000   5.357</span></span></code></pre></div>
-<p><strong>Note</strong>: the unmelted lists are not exactly identical
-to the original nested lists, since <code>how = "unmelt"</code> uses the
-placeholder names <code>1</code>, <code>2</code>, <code>3</code>, etc.
-in the melted data.frames to name the nodes in the newly constructed
-lists, whereas the name attributes in the original lists are all empty.
-By removing all names from the unmelted lists, they become identical to
-their original counterparts:</p>
+<span><span class="co">#&gt;   5.123   0.000   5.123</span></span></code></pre></div>
+<p><strong>Note</strong>: the unmelted lists are not exactly identical to the original nested lists, since <code>how = "unmelt"</code> uses the placeholder names <code>1</code>, <code>2</code>, <code>3</code>, etc. in the melted data.frames to name the nodes in the newly constructed lists, whereas the name attributes in the original lists are all empty. By removing all names from the unmelted lists, they become identical to their original counterparts:</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## remove all list names</span></span>
 <span><span class="va">deep_unmelt_unnamed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
