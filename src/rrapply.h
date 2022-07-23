@@ -28,7 +28,7 @@ typedef struct FixedArgs
     Rboolean anynames;   // any names present (only for flatten)
     Rboolean anysymbol;  // any symbols present (only for melting and binding)
     int ans_flags;       // coerce to flagged type (only for flatten and melting), refer to main/bind.c
-    Rboolean ans_namecols; // add name-columns (only for binding)
+    int ans_namecols;    // add name-columns (only for binding)
     const char *ans_sep; // name separator (only for flatten, binding)
     int ans_depthmax;    // observed maximum depth (only for melting)
     int ans_depthpivot;  // pivot depth (only for binding)

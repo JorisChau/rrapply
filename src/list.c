@@ -284,18 +284,12 @@ SEXP C_recurse_list(
         SEXP fvalptr = Rf_isPairList(fval) ? fval : NULL;
 
         /* allocate new output list */
-        if ((Rf_isVectorList(fval) && (fixedArgs->how == 1 || fixedArgs->how == 2)) || (Rf_isPairList(fval) && fixedArgs->how > 0))
+        if ((Rf_isVectorList(fval) && (fixedArgs->how == 1 || fixedArgs->how == 2 || fixedArgs->how == 9)) || (Rf_isPairList(fval) && fixedArgs->how > 0))
         {
             ans = PROTECT(Rf_allocVector(VECSXP, n));
             C_copyAttrs(fval, ans, names, !Rf_isPairList(fval));
             if (Rf_isPairList(fval))
                 Rf_copyMostAttrib(fval, ans);
-        }
-        else
-        {
-            ans = PROTECT(Rf_shallow_duplicate(fval));
-            if (Rf_isPairList(fval))
-                ansptr = ans;
 
             if (fixedArgs->how == 9)
             {
@@ -307,6 +301,12 @@ SEXP C_recurse_list(
                 fixedArgs->ansnames_ptr = ansnames;
                 nprotect++;
             }
+        }
+        else
+        {
+            ans = PROTECT(Rf_shallow_duplicate(fval));
+            if (Rf_isPairList(fval))
+                ansptr = ans;
         }
         nprotect += 2;
 
@@ -353,7 +353,7 @@ SEXP C_recurse_list(
                 (localArgs->xpos_vec)[localArgs->depth] = i + 1;
 
             /* update .xparents and/or .xname arguments */
-            if (f.xparents || condition.xparents || f.xname || condition.xname)
+            if (localArgs->xparent_ptr)
             {
                 SEXP iname = PROTECT(Rf_isNull(names) ? C_int2char(i + 1, FALSE) : STRING_ELT(names, i));
                 SET_STRING_ELT(localArgs->xparent_ptr, (f.xparents || condition.xparents) ? localArgs->depth : 0, iname);

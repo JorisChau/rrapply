@@ -149,7 +149,7 @@ rrapply(
 ) |>
   str(list.len = 5, give.attr = FALSE)
 
-#> List of 29
+#> List of 22
 #>  $ Oceania.Australia and New Zealand.Australia        : num 9.32
 #>  $ Oceania.Australia and New Zealand.New Zealand      : num 32.8
 #>  $ Oceania.Melanesia.Fiji                             : num 24.4

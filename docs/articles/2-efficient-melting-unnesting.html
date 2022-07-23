@@ -44,7 +44,7 @@
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/1-when-to-use-rrapply.html">Efficient list recursion with rrapply</a>
     <a class="dropdown-item" href="../articles/2-efficient-melting-unnesting.html">Efficient list melting and unnesting with rrapply</a>
-    <a class="dropdown-item" href="../articles/3-calls-and-expressions.html">Recursive apply for call and expression objects</a>
+    <a class="dropdown-item" href="../articles/3-calls-and-expressions.html">Recursive apply for calls and expressions</a>
   </div>
 </li>
 <li class="nav-item">
@@ -73,11 +73,11 @@
 
 
 <div class="row">
-  <main id="main"><div class="page-header">
+  <main id="main" class="col-md-9"><div class="page-header">
       <img src="" class="logo" alt=""><h1>Efficient list melting and unnesting with rrapply</h1>
                         <h4 data-toc-skip class="author">Joris Chau</h4>
             
-            <h4 data-toc-skip class="date">Latest date: 2022-06-22</h4>
+            <h4 data-toc-skip class="date">Latest date: 2022-07-23</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/JorisChau/rrapply/blob/HEAD/vignettes/articles/2-efficient-melting-unnesting.Rmd" class="external-link"><code>vignettes/articles/2-efficient-melting-unnesting.Rmd</code></a></small>
       <div class="d-none name"><code>2-efficient-melting-unnesting.Rmd</code></div>
@@ -86,264 +86,962 @@
     
     
 <div class="section level2">
-<h2 id="efficient-list-unnesting">Efficient list unnesting<a class="anchor" aria-label="anchor" href="#efficient-list-unnesting"></a>
+<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
-<p>The tutorial <code><a href="../articles/1-when-to-use-rrapply.html">vignette("1-when-to-use-rrapply")</a></code> describes the use of <code><a href="../reference/rrapply.html">rrapply()</a></code> when applied directly to data formatted as a nested list. If there is no specific reason to keep the data in the form of a nested list, it is often more practical to transform the nested list into a more manageable rectangular format and execute any further data processing steps on the unnested object (e.g. a data.frame). For this purpose, <code><a href="../reference/rrapply.html">rrapply()</a></code> includes the options <code>how = "melt"</code> and <code>how = "bind"</code> to unnest a nested list either to a <em>long</em> or a <em>wide</em> data.frame. The following sections explain these two options in more detail and provide several examples on their usage.</p>
+<p>The previous article <code><a href="../articles/1-when-to-use-rrapply.html">vignette("1-when-to-use-rrapply")</a></code>
+describes the principal use of the <code><a href="../reference/rrapply.html">rrapply()</a></code> function as a
+revised and extended version of base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code> in the
+context of nested list recursion. For quick data exploration of a nested
+list it can make sense to keep the list in its original nested format to
+reduce the number of processing steps and minimize code complexity. As
+part of a more elaborate data analysis, if there is no specific reason
+to keep the nested data structure, it is often more practical to
+transform the nested list into a more convenient rectangular format and
+work with the unnested object (e.g. a data.frame) instead. In this
+follow-up article, we review the available (<code>how</code>) options in
+<code><a href="../reference/rrapply.html">rrapply()</a></code> to unnest or melt nested lists into a rectangular
+format in more detail and highlight the similarities and differences
+with respect to several common alternatives in R.</p>
+</div>
+<div class="section level2">
+<h2 id="nested-list-to-data-frame">Nested list to data.frame<a class="anchor" aria-label="anchor" href="#nested-list-to-data-frame"></a>
+</h2>
 <div class="section level3">
-<h3 id="unnest-to-long-data-frame-with-how-melt">Unnest to long data.frame with <code>how = "melt"</code><a class="anchor" aria-label="anchor" href="#unnest-to-long-data-frame-with-how-melt"></a>
+<h3 id="melt-to-long-data-frame">Melt to long data.frame<a class="anchor" aria-label="anchor" href="#melt-to-long-data-frame"></a>
 </h3>
-<p>The option <code>how = "melt"</code> unnests a nested list to a <em>long</em> or melted data.frame similar in format to <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> applied to a nested list. The rows of the melted data.frame contain the individual node paths of the elements in the nested list after pruning (based on the <code>condition</code> or <code>classes</code> arguments). The <code>"value"</code> column is a vector- or list-column with the values of the terminal nodes identical to the result returned by <code>how = "flatten"</code>, see also <code><a href="../articles/1-when-to-use-rrapply.html">vignette("1-when-to-use-rrapply")</a></code>.</p>
-<p>In comparison to <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code>, <code><a href="../reference/rrapply.html">rrapply()</a></code> provides additional flexibility to filter or transform specific list elements before melting a nested list using e.g. the <code>f</code>, <code>classes</code> or <code>condition</code> arguments. More importantly, <code><a href="../reference/rrapply.html">rrapply()</a></code> is optimized specifically for nested lists, whereas <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> was mainly aimed at melting data.frames before it was superseded by <code><a href="https://tidyr.tidyverse.org/reference/gather.html" class="external-link">tidyr::gather()</a></code> and the more recent <code><a href="https://tidyr.tidyverse.org/reference/pivot_longer.html" class="external-link">tidyr::pivot_longer()</a></code>. For this reason, <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> tends to be quite slow when applied to larger nested lists.</p>
-<p>For illustration purposes, we use the same dataset <code>renewable_energy_by_country</code> as in <code><a href="../articles/1-when-to-use-rrapply.html">vignette("1-when-to-use-rrapply")</a></code>, a nested list containing the per country shares of renewable energy as a percentage in the total energy consumption in 2016.</p>
+<p>The option <code>how = "melt"</code> in <code><a href="../reference/rrapply.html">rrapply()</a></code>
+unnests a nested list to a <em>long</em> or melted data.frame similar in
+format to the retired <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> function applied to
+a nested list. The rows of the melted data.frame contain the individual
+node paths of the elements in the nested list after pruning (based on
+the <code>condition</code> and/or <code>classes</code> arguments). The
+<code>"value"</code> column is a vector- or list-column containing the
+values of the leaf elements identical to the object returned by
+<code>how = "flatten"</code>.</p>
+<p>To demonstrate, we use the <code>renewable_energy_by_country</code>
+dataset included in the <code>rrapply</code>-package, a nested list
+containing the renewable energy shares per country (% of total energy
+consumption) in 2016<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;The &lt;code&gt;renewable_energy_by_country&lt;/code&gt; dataset is
+publicly available at the &lt;a href="https://unstats-undesa.opendata.arcgis.com/datasets/" class="external-link"&gt;United
+Nations Open SDG Data Hub&lt;/a&gt;&lt;/p&gt;'><sup>1</sup></a>. The 249 countries and areas are structured
+based on their geographical locations according to the <a href="https://unstats.un.org/unsd/methodology/m49/" class="external-link">United Nations M49
+standard</a>. The numeric values listed for each country are
+percentages, if no data is available the value of the country is
+<code>NA</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://jorischau.github.io/rrapply/" class="external-link">rrapply</a></span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"renewable_energy_by_country"</span><span class="op">)</span></code></pre></div>
-<p>First, let us convert the nested list to a melted data.frame:</p>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://jorischau.github.io/rrapply/" class="external-link">rrapply</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co">## melt all data to long data.frame</span></span>
+<span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
+<span>  <span class="va">renewable_energy_by_country</span>, </span>
+<span>  how <span class="op">=</span> <span class="st">"melt"</span></span>
+<span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="co">#&gt;       L1     L2                 L3             L4                             L5 value</span></span>
+<span><span class="co">#&gt; 1  World Africa    Northern Africa        Algeria                           &lt;NA&gt;  0.08</span></span>
+<span><span class="co">#&gt; 2  World Africa    Northern Africa          Egypt                           &lt;NA&gt;  5.69</span></span>
+<span><span class="co">#&gt; 3  World Africa    Northern Africa          Libya                           &lt;NA&gt;  1.64</span></span>
+<span><span class="co">#&gt; 4  World Africa    Northern Africa        Morocco                           &lt;NA&gt; 11.02</span></span>
+<span><span class="co">#&gt; 5  World Africa    Northern Africa          Sudan                           &lt;NA&gt; 61.64</span></span>
+<span><span class="co">#&gt; 6  World Africa    Northern Africa        Tunisia                           &lt;NA&gt; 12.47</span></span>
+<span><span class="co">#&gt; 7  World Africa    Northern Africa Western Sahara                           &lt;NA&gt;    NA</span></span>
+<span><span class="co">#&gt; 8  World Africa Sub-Saharan Africa Eastern Africa British Indian Ocean Territory    NA</span></span>
+<span><span class="co">#&gt; 9  World Africa Sub-Saharan Africa Eastern Africa                        Burundi 89.22</span></span>
+<span><span class="co">#&gt; 10 World Africa Sub-Saharan Africa Eastern Africa                        Comoros 41.92</span></span></code></pre></div>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span>
-  <span class="va">renewable_energy_melt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">renewable_energy_by_country</span>, how <span class="op">=</span> <span class="st">"melt"</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">renewable_energy_melt</span>, <span class="fl">10</span><span class="op">)</span></code></pre></div>
-<p>As data processing and reshaping for data.frames is familiar R territory, any subsequent processing tasks are likely more straightforward to execute using the melted data.frame than using the original nested list. For instance, we can easily filter all Western European countries with <code><a href="https://Rdatatable.gitlab.io/data.table/reference/subset.data.table.html" class="external-link">subset()</a></code> (or using e.g. a <code>dplyr</code> or <code>data.table</code>):</p>
+<code class="sourceCode R"><span><span class="co">## drop logical NA's and melt to data.frame</span></span>
+<span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
+<span>  <span class="va">renewable_energy_by_country</span>,</span>
+<span>  classes <span class="op">=</span> <span class="st">"numeric"</span>,</span>
+<span>  how <span class="op">=</span> <span class="st">"melt"</span></span>
+<span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="co">#&gt;       L1     L2                 L3             L4       L5 value</span></span>
+<span><span class="co">#&gt; 1  World Africa    Northern Africa        Algeria     &lt;NA&gt;  0.08</span></span>
+<span><span class="co">#&gt; 2  World Africa    Northern Africa          Egypt     &lt;NA&gt;  5.69</span></span>
+<span><span class="co">#&gt; 3  World Africa    Northern Africa          Libya     &lt;NA&gt;  1.64</span></span>
+<span><span class="co">#&gt; 4  World Africa    Northern Africa        Morocco     &lt;NA&gt; 11.02</span></span>
+<span><span class="co">#&gt; 5  World Africa    Northern Africa          Sudan     &lt;NA&gt; 61.64</span></span>
+<span><span class="co">#&gt; 6  World Africa    Northern Africa        Tunisia     &lt;NA&gt; 12.47</span></span>
+<span><span class="co">#&gt; 7  World Africa Sub-Saharan Africa Eastern Africa  Burundi 89.22</span></span>
+<span><span class="co">#&gt; 8  World Africa Sub-Saharan Africa Eastern Africa  Comoros 41.92</span></span>
+<span><span class="co">#&gt; 9  World Africa Sub-Saharan Africa Eastern Africa Djibouti 28.50</span></span>
+<span><span class="co">#&gt; 10 World Africa Sub-Saharan Africa Eastern Africa  Eritrea 80.14</span></span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">renewable_energy_melt_west_eu</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">renewable_energy_melt</span>, <span class="va">L3</span> <span class="op">==</span> <span class="st">"Western Europe"</span><span class="op">)</span>
-
-<span class="va">renewable_energy_melt_west_eu</span></code></pre></div>
-<p>For completeness, note that a similar result can also be obtained directly with <code><a href="../reference/rrapply.html">rrapply()</a></code> using the <code>.xparents</code> argument:</p>
+<code class="sourceCode R"><span><span class="co">## apply condition and melt to data.frame</span></span>
+<span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
+<span>  <span class="va">renewable_energy_by_country</span>,</span>
+<span>  condition <span class="op">=</span> \<span class="op">(</span><span class="va">x</span>, <span class="va">.xparents</span><span class="op">)</span> <span class="st">"Western Europe"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">.xparents</span>,</span>
+<span>  how <span class="op">=</span> <span class="st">"melt"</span></span>
+<span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="co">#&gt;      L1     L2             L3            L4 value</span></span>
+<span><span class="co">#&gt; 1 World Europe Western Europe       Austria 34.67</span></span>
+<span><span class="co">#&gt; 2 World Europe Western Europe       Belgium  9.14</span></span>
+<span><span class="co">#&gt; 3 World Europe Western Europe        France 14.74</span></span>
+<span><span class="co">#&gt; 4 World Europe Western Europe       Germany 14.17</span></span>
+<span><span class="co">#&gt; 5 World Europe Western Europe Liechtenstein 62.93</span></span>
+<span><span class="co">#&gt; 6 World Europe Western Europe    Luxembourg 13.54</span></span>
+<span><span class="co">#&gt; 7 World Europe Western Europe        Monaco    NA</span></span>
+<span><span class="co">#&gt; 8 World Europe Western Europe   Netherlands  5.78</span></span>
+<span><span class="co">#&gt; 9 World Europe Western Europe   Switzerland 25.49</span></span></code></pre></div>
+<p>As shown in the above examples, in comparison to
+<code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code>, <code><a href="../reference/rrapply.html">rrapply()</a></code> allows to filter
+or transform list elements before melting the nested list through the
+<code>f</code>, <code>classes</code> and <code>condition</code>
+arguments<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;Note that &lt;code&gt;&lt;a href="../reference/rrapply.html"&gt;rrapply()&lt;/a&gt;&lt;/code&gt; imposes a different
+column order than &lt;code&gt;&lt;a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link"&gt;reshape2::melt()&lt;/a&gt;&lt;/code&gt; and the
+&lt;code&gt;"value"&lt;/code&gt; column may follow slightly different coercion
+rules, but other than that the melted data.frames are the same.&lt;/p&gt;'><sup>2</sup></a>. More importantly, <code><a href="../reference/rrapply.html">rrapply()</a></code>
+is optimized specifically for handling nested lists, whereas
+<code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> was aimed primarily at melting data.frames
+before being superseded by <code><a href="https://tidyr.tidyverse.org/reference/gather.html" class="external-link">tidyr::gather()</a></code> and more
+recently <code><a href="https://tidyr.tidyverse.org/reference/pivot_longer.html" class="external-link">tidyr::pivot_longer()</a></code>. For this reason,
+<code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> can be quite slow when applied to large
+nested lists:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span>
-  <span class="va">renewable_energy_by_country</span>, 
-  condition <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">.xparents</span><span class="op">)</span> <span class="st">"Western Europe"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">.xparents</span>,
-  how <span class="op">=</span> <span class="st">"melt"</span>
-<span class="op">)</span></code></pre></div>
-<p>Here, the <code>L5</code> column is no longer present as the pruned list does not contain any elements at this depth before melting to a long data.frame.</p>
-<p>Now let us return the same results with <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code>,</p>
+<code class="sourceCode R"><span><span class="co">## melt to long data.frame (reshape2)</span></span>
+<span><span class="fu">reshape2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">melt</a></span><span class="op">(</span><span class="va">renewable_energy_by_country</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    value             L4                             L5                 L3     L2    L1</span></span>
+<span><span class="co">#&gt; 1   0.08        Algeria                           &lt;NA&gt;    Northern Africa Africa World</span></span>
+<span><span class="co">#&gt; 2   5.69          Egypt                           &lt;NA&gt;    Northern Africa Africa World</span></span>
+<span><span class="co">#&gt; 3   1.64          Libya                           &lt;NA&gt;    Northern Africa Africa World</span></span>
+<span><span class="co">#&gt; 4  11.02        Morocco                           &lt;NA&gt;    Northern Africa Africa World</span></span>
+<span><span class="co">#&gt; 5  61.64          Sudan                           &lt;NA&gt;    Northern Africa Africa World</span></span>
+<span><span class="co">#&gt; 6  12.47        Tunisia                           &lt;NA&gt;    Northern Africa Africa World</span></span>
+<span><span class="co">#&gt; 7     NA Western Sahara                           &lt;NA&gt;    Northern Africa Africa World</span></span>
+<span><span class="co">#&gt; 8     NA Eastern Africa British Indian Ocean Territory Sub-Saharan Africa Africa World</span></span>
+<span><span class="co">#&gt; 9  89.22 Eastern Africa                        Burundi Sub-Saharan Africa Africa World</span></span>
+<span><span class="co">#&gt; 10 41.92 Eastern Africa                        Comoros Sub-Saharan Africa Africa World</span></span>
+<span></span>
+<span><span class="co">## computation times</span></span>
+<span><span class="fu">bench</span><span class="fu">::</span><span class="fu"><a href="http://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">renewable_energy_by_country</span><span class="op">)</span>,</span>
+<span>  <span class="fu">reshape2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">melt</a></span><span class="op">(</span><span class="va">renewable_energy_by_country</span><span class="op">)</span>,</span>
+<span>  check <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression                                       min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>                                  <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> rrapply(renewable_energy_by_country)          13.4µs   15.2µs   <span style="text-decoration: underline;">63</span>947.         0B     25.6</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> reshape2::melt(renewable_energy_by_country)   48.1ms   49.9ms      20.0    73.1KB     80.1</span></span></code></pre></div>
+<p>For a medium-sized list as used in this example, the computation time
+of <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> is not a bottleneck for practical
+usage. However, the computational effort quickly increases when melting
+larger or more deeply nested lists:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span>
-  <span class="va">renewable_energy_melt_reshape2</span> <span class="op">&lt;-</span> <span class="fu">reshape2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">melt</a></span><span class="op">(</span><span class="va">renewable_energy_by_country</span><span class="op">)</span>
-<span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="co">## helper function to generate large nested list</span></span>
+<span><span class="va">new_list</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span>, <span class="va">d</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">v</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">vector</a></span><span class="op">(</span>mode <span class="op">=</span> <span class="st">"list"</span>, length <span class="op">=</span> <span class="va">n</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
+<span>    object <span class="op">=</span> <span class="va">v</span>,</span>
+<span>    classes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"list"</span>, <span class="st">"NULL"</span><span class="op">)</span>,</span>
+<span>    condition <span class="op">=</span> \<span class="op">(</span><span class="va">x</span>, <span class="va">.xpos</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">.xpos</span><span class="op">)</span> <span class="op">&lt;=</span> <span class="va">d</span>,</span>
+<span>    f <span class="op">=</span> \<span class="op">(</span><span class="va">x</span>, <span class="va">.xpos</span><span class="op">)</span> <span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">.xpos</span><span class="op">)</span> <span class="op">&lt;</span> <span class="va">d</span><span class="op">)</span> <span class="va">v</span> <span class="kw">else</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
+<span>    how <span class="op">=</span> <span class="st">"recurse"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co">## generate large shallow list (10^6 elements)</span></span>
+<span><span class="va">shallow_list</span> <span class="op">&lt;-</span> <span class="fu">new_list</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">100</span>, d <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">shallow_list</span>, list.len <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">#&gt; List of 100</span></span>
+<span><span class="co">#&gt;  $ :List of 100</span></span>
+<span><span class="co">#&gt;   ..$ :List of 100</span></span>
+<span><span class="co">#&gt;   .. ..$ : num 0.905</span></span>
+<span><span class="co">#&gt;   .. ..$ : num 0.45</span></span>
+<span><span class="co">#&gt;   .. .. [list output truncated]</span></span>
+<span><span class="co">#&gt;   ..$ :List of 100</span></span>
+<span><span class="co">#&gt;   .. ..$ : num 0.617</span></span>
+<span><span class="co">#&gt;   .. ..$ : num 0.661</span></span>
+<span><span class="co">#&gt;   .. .. [list output truncated]</span></span>
+<span><span class="co">#&gt;   .. [list output truncated]</span></span>
+<span><span class="co">#&gt;  $ :List of 100</span></span>
+<span><span class="co">#&gt;   ..$ :List of 100</span></span>
+<span><span class="co">#&gt;   .. ..$ : num 0.0803</span></span>
+<span><span class="co">#&gt;   .. ..$ : num 0.648</span></span>
+<span><span class="co">#&gt;   .. .. [list output truncated]</span></span>
+<span><span class="co">#&gt;   ..$ :List of 100</span></span>
+<span><span class="co">#&gt;   .. ..$ : num 0.386</span></span>
+<span><span class="co">#&gt;   .. ..$ : num 0.142</span></span>
+<span><span class="co">#&gt;   .. .. [list output truncated]</span></span>
+<span><span class="co">#&gt;   .. [list output truncated]</span></span>
+<span><span class="co">#&gt;   [list output truncated]</span></span>
+<span></span>
+<span><span class="co">## benchmark timing with rrapply</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">shallow_melt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">shallow_list</span>, how <span class="op">=</span> <span class="st">"melt"</span><span class="op">)</span><span class="op">)</span> </span>
+<span><span class="co">#&gt;    user  system elapsed </span></span>
+<span><span class="co">#&gt;   1.070   0.024   1.094</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">shallow_melt</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   L1 L2 L3     value</span></span>
+<span><span class="co">#&gt; 1  1  1  1 0.9053252</span></span>
+<span><span class="co">#&gt; 2  1  1  2 0.4502085</span></span>
+<span><span class="co">#&gt; 3  1  1  3 0.8994272</span></span>
+<span><span class="co">#&gt; 4  1  1  4 0.1495881</span></span>
+<span><span class="co">#&gt; 5  1  1  5 0.9045653</span></span>
+<span><span class="co">#&gt; 6  1  1  6 0.2190834</span></span>
+<span></span>
+<span><span class="co">## benchmark timing with reshape2::melt</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">shallow_melt_reshape2</span> <span class="op">&lt;-</span> <span class="fu">reshape2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">melt</a></span><span class="op">(</span><span class="va">shallow_list</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    user  system elapsed </span></span>
+<span><span class="co">#&gt; 169.650   0.047 169.739</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">shallow_melt_reshape2</span><span class="op">)</span></span>
+<span><span class="co">#&gt;       value L3 L2 L1</span></span>
+<span><span class="co">#&gt; 1 0.9053252  1  1  1</span></span>
+<span><span class="co">#&gt; 2 0.4502085  2  1  1</span></span>
+<span><span class="co">#&gt; 3 0.8994272  3  1  1</span></span>
+<span><span class="co">#&gt; 4 0.1495881  4  1  1</span></span>
+<span><span class="co">#&gt; 5 0.9045653  5  1  1</span></span>
+<span><span class="co">#&gt; 6 0.2190834  6  1  1</span></span></code></pre></div>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">renewable_energy_melt_reshape2</span>, <span class="fl">10</span><span class="op">)</span></code></pre></div>
-<p><code><a href="../reference/rrapply.html">rrapply()</a></code> orders the columns differently by default and the <code>"value"</code> column might follow slightly different coercion rules, but other than that the data contained in the melted data.frame is identical. For a medium-sized list as used here, the computational speed of <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> is acceptable for practical usage. However, its computational efficiency quickly decreases when melting larger or more deeply nested lists:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">## helper function to generate named nested list</span>
-<span class="va">new_list</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span>, <span class="va">dmax</span>, <span class="va">d</span> <span class="op">=</span> <span class="fl">0</span>, <span class="va">name</span> <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span> <span class="op">{</span>
-  <span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">vector</a></span><span class="op">(</span>mode <span class="op">=</span> <span class="st">"list"</span>, length <span class="op">=</span> <span class="va">n</span><span class="op">)</span>
-  <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="kw">if</span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">name</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">name</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="kw">else</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span>
-  <span class="kw">for</span><span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
-    <span class="kw">if</span><span class="op">(</span><span class="va">d</span> <span class="op">+</span> <span class="fl">1</span> <span class="op">&lt;</span> <span class="va">dmax</span><span class="op">)</span> <span class="op">{</span>
-      <span class="va">x</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Recall.html" class="external-link">Recall</a></span><span class="op">(</span><span class="va">n</span>, <span class="va">dmax</span>, <span class="va">d</span> <span class="op">+</span> <span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">name</span>, <span class="va">i</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">"."</span><span class="op">)</span><span class="op">)</span>
-    <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span>
-      <span class="va">x</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1L</span>
-    <span class="op">}</span>
-  <span class="op">}</span>
-  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>
-<span class="op">}</span>
-
-<span class="co">## generate a large shallow list with 3 layers and a total of 10^6 elements</span>
-<span class="va">shallow_list</span> <span class="op">&lt;-</span> <span class="fu">new_list</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">100</span>, dmax <span class="op">=</span> <span class="fl">3</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">shallow_list</span>, list.len <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
-
-<span class="co">## benchmark timing with rrapply</span>
-<span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">shallow_melt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">shallow_list</span>, how <span class="op">=</span> <span class="st">"melt"</span><span class="op">)</span><span class="op">)</span> 
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">shallow_melt</span><span class="op">)</span>
-
-<span class="co">## benchmark timing with reshape2::melt</span>
-<span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">shallow_melt_reshape2</span> <span class="op">&lt;-</span> <span class="fu">reshape2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">melt</a></span><span class="op">(</span><span class="va">shallow_list</span><span class="op">)</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">shallow_melt_reshape2</span><span class="op">)</span></code></pre></div>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">## generate a deeply nested list with 18 layers and a total of 2^18 elements</span>
-<span class="va">deep_list</span> <span class="op">&lt;-</span> <span class="fu">new_list</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">2</span>, dmax <span class="op">=</span> <span class="fl">18</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">deep_list</span>, max.level <span class="op">=</span> <span class="fl">3</span><span class="op">)</span>
-
-<span class="co">## benchmark timing with rrapply</span>
-<span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">deep_melt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">deep_list</span>, how <span class="op">=</span> <span class="st">"melt"</span><span class="op">)</span><span class="op">)</span> 
-
-<span class="co">## benchmark timing with reshape2::melt</span>
-<span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">deep_melt_reshape2</span> <span class="op">&lt;-</span> <span class="fu">reshape2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">melt</a></span><span class="op">(</span><span class="va">deep_list</span><span class="op">)</span><span class="op">)</span></code></pre></div>
-<p>Although unlikely to encounter such large or deeply nested lists in practice, these artificial examples serve to illustrate that <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> is not very well-suited to convert large nested lists to melted data.frames.</p>
+<code class="sourceCode R"><span><span class="co">## generate large deeply nested list (2^18 elements)</span></span>
+<span><span class="va">deep_list</span> <span class="op">&lt;-</span> <span class="fu">new_list</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">2</span>, d <span class="op">=</span> <span class="fl">18</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co">## benchmark timing with rrapply</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">deep_melt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">deep_list</span>, how <span class="op">=</span> <span class="st">"melt"</span><span class="op">)</span><span class="op">)</span> </span>
+<span><span class="co">#&gt;    user  system elapsed </span></span>
+<span><span class="co">#&gt;   0.643   0.008   0.651</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">deep_melt</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   L1 L2 L3 L4 L5 L6 L7 L8 L9 L10 L11 L12 L13 L14 L15 L16 L17 L18     value</span></span>
+<span><span class="co">#&gt; 1  1  1  1  1  1  1  1  1  1   1   1   1   1   1   1   1   1   1 0.6780994</span></span>
+<span><span class="co">#&gt; 2  1  1  1  1  1  1  1  1  1   1   1   1   1   1   1   1   1   2 0.6604063</span></span>
+<span><span class="co">#&gt; 3  1  1  1  1  1  1  1  1  1   1   1   1   1   1   1   1   2   1 0.4734945</span></span>
+<span><span class="co">#&gt; 4  1  1  1  1  1  1  1  1  1   1   1   1   1   1   1   1   2   2 0.8969230</span></span>
+<span><span class="co">#&gt; 5  1  1  1  1  1  1  1  1  1   1   1   1   1   1   1   2   1   1 0.8322423</span></span>
+<span><span class="co">#&gt; 6  1  1  1  1  1  1  1  1  1   1   1   1   1   1   1   2   1   2 0.2993607</span></span>
+<span></span>
+<span><span class="co">## benchmark timing with reshape2::melt</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">deep_melt_reshape2</span> <span class="op">&lt;-</span> <span class="fu">reshape2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">melt</a></span><span class="op">(</span><span class="va">deep_list</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    user  system elapsed </span></span>
+<span><span class="co">#&gt; 133.664   0.052 133.730</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">deep_melt_reshape2</span><span class="op">)</span></span>
+<span><span class="co">#&gt;       value L18 L17 L16 L15 L14 L13 L12 L11 L10 L9 L8 L7 L6 L5 L4 L3 L2 L1</span></span>
+<span><span class="co">#&gt; 1 0.6780994   1   1   1   1   1   1   1   1   1  1  1  1  1  1  1  1  1  1</span></span>
+<span><span class="co">#&gt; 2 0.6604063   2   1   1   1   1   1   1   1   1  1  1  1  1  1  1  1  1  1</span></span>
+<span><span class="co">#&gt; 3 0.4734945   1   2   1   1   1   1   1   1   1  1  1  1  1  1  1  1  1  1</span></span>
+<span><span class="co">#&gt; 4 0.8969230   2   2   1   1   1   1   1   1   1  1  1  1  1  1  1  1  1  1</span></span>
+<span><span class="co">#&gt; 5 0.8322423   1   1   2   1   1   1   1   1   1  1  1  1  1  1  1  1  1  1</span></span>
+<span><span class="co">#&gt; 6 0.2993607   2   1   2   1   1   1   1   1   1  1  1  1  1  1  1  1  1  1</span></span></code></pre></div>
+<p>Although unlikely to encounter such large or deeply nested lists in
+practice, these artificial examples serve to illustrate that
+<code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> is not particularly efficient in unnesting
+large nested lists to data.frames.</p>
 </div>
 <div class="section level3">
-<h3 id="unnest-to-wide-data-frame-with-how-bind">Unnest to wide data.frame with <code>how = "bind"</code><a class="anchor" aria-label="anchor" href="#unnest-to-wide-data-frame-with-how-bind"></a>
+<h3 id="bind-to-wide-data-frame">Bind to wide data.frame<a class="anchor" aria-label="anchor" href="#bind-to-wide-data-frame"></a>
 </h3>
-<p>The option <code>how = "bind"</code> unnests a nested list to a <em>wide</em> data.frame and is only useful to unnest nested lists containing <em>repeated</em> observations of the same variables. Consider for instance the <code>pokedex</code> dataset as in <code><a href="../articles/1-when-to-use-rrapply.html">vignette("1-when-to-use-rrapply")</a></code>, a nested list containing up to 17 property variables for each of the 151 original Pokémon.</p>
+<p>The option <code>how = "bind"</code> unnests a nested list to a
+<em>wide</em> data.frame and is used to unnest nested lists containing
+repeated entries of the same variables. To illustrate, we consider the
+<code>pokedex</code> dataset included in the
+<code>rrapply</code>-package, a nested list containing various property
+values for each of the 151 original Pokémon available (in .json) from <a href="https://github.com/Biuni/PokemonGO-Pokedex" class="external-link uri">https://github.com/Biuni/PokemonGO-Pokedex</a>.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">## all 151 Pokemon</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pokedex</span>, list.len <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt; List of 1</span></span>
+<span><span class="co">#&gt;  $ pokemon:List of 151</span></span>
+<span><span class="co">#&gt;   ..$ :List of 16</span></span>
+<span><span class="co">#&gt;   .. ..$ id            : int 1</span></span>
+<span><span class="co">#&gt;   .. ..$ num           : chr "001"</span></span>
+<span><span class="co">#&gt;   .. ..$ name          : chr "Bulbasaur"</span></span>
+<span><span class="co">#&gt;   .. .. [list output truncated]</span></span>
+<span><span class="co">#&gt;   ..$ :List of 17</span></span>
+<span><span class="co">#&gt;   .. ..$ id            : int 2</span></span>
+<span><span class="co">#&gt;   .. ..$ num           : chr "002"</span></span>
+<span><span class="co">#&gt;   .. ..$ name          : chr "Ivysaur"</span></span>
+<span><span class="co">#&gt;   .. .. [list output truncated]</span></span>
+<span><span class="co">#&gt;   ..$ :List of 15</span></span>
+<span><span class="co">#&gt;   .. ..$ id            : int 3</span></span>
+<span><span class="co">#&gt;   .. ..$ num           : chr "003"</span></span>
+<span><span class="co">#&gt;   .. ..$ name          : chr "Venusaur"</span></span>
+<span><span class="co">#&gt;   .. .. [list output truncated]</span></span>
+<span><span class="co">#&gt;   .. [list output truncated]</span></span>
+<span></span>
+<span><span class="co">## single Pokemon entry</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pokedex</span><span class="op">[[</span><span class="st">"pokemon"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt; List of 16</span></span>
+<span><span class="co">#&gt;  $ id            : int 1</span></span>
+<span><span class="co">#&gt;  $ num           : chr "001"</span></span>
+<span><span class="co">#&gt;  $ name          : chr "Bulbasaur"</span></span>
+<span><span class="co">#&gt;  $ img           : chr "http://www.serebii.net/pokemongo/pokemon/001.png"</span></span>
+<span><span class="co">#&gt;  $ type          : chr [1:2] "Grass" "Poison"</span></span>
+<span><span class="co">#&gt;  $ height        : chr "0.71 m"</span></span>
+<span><span class="co">#&gt;  $ weight        : chr "6.9 kg"</span></span>
+<span><span class="co">#&gt;  $ candy         : chr "Bulbasaur Candy"</span></span>
+<span><span class="co">#&gt;  $ candy_count   : int 25</span></span>
+<span><span class="co">#&gt;  $ egg           : chr "2 km"</span></span>
+<span><span class="co">#&gt;  $ spawn_chance  : num 0.69</span></span>
+<span><span class="co">#&gt;  $ avg_spawns    : int 69</span></span>
+<span><span class="co">#&gt;  $ spawn_time    : chr "20:00"</span></span>
+<span><span class="co">#&gt;  $ multipliers   : num 1.58</span></span>
+<span><span class="co">#&gt;  $ weaknesses    : chr [1:4] "Fire" "Ice" "Flying" "Psychic"</span></span>
+<span><span class="co">#&gt;  $ next_evolution:List of 2</span></span>
+<span><span class="co">#&gt;   ..$ :List of 2</span></span>
+<span><span class="co">#&gt;   .. ..$ num : chr "002"</span></span>
+<span><span class="co">#&gt;   .. ..$ name: chr "Ivysaur"</span></span>
+<span><span class="co">#&gt;   ..$ :List of 2</span></span>
+<span><span class="co">#&gt;   .. ..$ num : chr "003"</span></span>
+<span><span class="co">#&gt;   .. ..$ name: chr "Venusaur"</span></span></code></pre></div>
+<p>Calling <code><a href="../reference/rrapply.html">rrapply()</a></code> with <code>how = "bind</code> expands
+each Pokémon sublist as a single row in a wide data.frame. The 151 rows
+are stacked and aligned by matching variable names, with missing entries
+replaced by <code>NA</code>’s (similar to
+<code>data.table::rbindlist(..., fill = TRUE)</code>). Note that any
+nested variables, such as <code>next_evolution</code> and
+<code>prev_evolution</code>, are unnested as wide as possible into
+individual data.frame columns similar to repeated application of
+<code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">tidyr::unnest_wider()</a></code> to a data.frame with nested
+list-columns.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">pokedex</span>, how <span class="op">=</span> <span class="st">"bind"</span><span class="op">)</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">9</span><span class="op">]</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   id num       name                                              img          type height   weight            candy candy_count</span></span>
+<span><span class="co">#&gt; 1  1 001  Bulbasaur http://www.serebii.net/pokemongo/pokemon/001.png Grass, Poison 0.71 m   6.9 kg  Bulbasaur Candy          25</span></span>
+<span><span class="co">#&gt; 2  2 002    Ivysaur http://www.serebii.net/pokemongo/pokemon/002.png Grass, Poison 0.99 m  13.0 kg  Bulbasaur Candy         100</span></span>
+<span><span class="co">#&gt; 3  3 003   Venusaur http://www.serebii.net/pokemongo/pokemon/003.png Grass, Poison 2.01 m 100.0 kg  Bulbasaur Candy          NA</span></span>
+<span><span class="co">#&gt; 4  4 004 Charmander http://www.serebii.net/pokemongo/pokemon/004.png          Fire 0.61 m   8.5 kg Charmander Candy          25</span></span>
+<span><span class="co">#&gt; 5  5 005 Charmeleon http://www.serebii.net/pokemongo/pokemon/005.png          Fire 1.09 m  19.0 kg Charmander Candy         100</span></span>
+<span><span class="co">#&gt; 6  6 006  Charizard http://www.serebii.net/pokemongo/pokemon/006.png  Fire, Flying 1.70 m  90.5 kg Charmander Candy          NA</span></span></code></pre></div>
+<p>By default, the list layer containing the repeated observations is
+identified by the minimal depth detected across leaf elements. This
+option can be overridden by the <code>coldepth</code> parameter in the
+<code>options</code> argument, which can be useful to unnest nested
+sublists, such as <code>next_evolution</code> or
+<code>prev_evolution</code>. In addition, setting
+<code>namecols = TRUE</code> in the <code>options</code> argument
+includes the parent list names associated to each row in the wide
+data.frame as individual columns <code>L1</code>, <code>L2</code>,
+etc.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"pokedex"</span><span class="op">)</span>
-
-<span class="co">## all 151 Pokemon entries</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pokedex</span>, list.len <span class="op">=</span> <span class="fl">3</span><span class="op">)</span>
-
-<span class="co">## single Pokemon entry</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pokedex</span><span class="op">[[</span><span class="st">"pokemon"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></code></pre></div>
-<p>Setting <code>how = "bind"</code> unnests the <code>pokedex</code> list to a wide data.frame with a single row entry for each Pokémon:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">pokedex_wide</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">pokedex</span>, how <span class="op">=</span> <span class="st">"bind"</span><span class="op">)</span>
-
-<span class="co">## display few data.frame columns</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pokedex_wide</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, <span class="fl">5</span><span class="op">:</span><span class="fl">10</span><span class="op">)</span><span class="op">]</span>, n <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
-
-<span class="co">## display all data.frame columns</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pokedex_wide</span>, max.level <span class="op">=</span> <span class="fl">1</span>, vec.len <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></code></pre></div>
-<p>Each Pokémon sublist has been flattened to a single wide row in the data.frame. The 151 rows are stacked and aligned by matching variable names, with missing variables replaced by <code>NA</code>s (similar to <code>data.table::rbindlist(..., fill = TRUE)</code>). Note that any nested variables, such as <code>next_evolution</code> and <code>prev_evolution</code>, are unnested as individual data.frame columns similar to repeated application of <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">tidyr::unnest_wider()</a></code> to a data.frame with nested list-columns.</p>
-<p><strong>Remark</strong>: The discovery of repeated observations (e.g. individual Pokémon) is based on a depth first search of the nested list. Conceptually, the nested list is traversed to detect any multi-element sublists without names or with the same name repeated for each list element. When such a sublist is detected, each of its elements is flattened and row-binded into a wide data.frame.</p>
+<code class="sourceCode R"><span><span class="co">## bind prev/next evolution columns</span></span>
+<span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
+<span>  <span class="va">pokedex</span>, </span>
+<span>  how <span class="op">=</span> <span class="st">"bind"</span>,</span>
+<span>  options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>coldepth <span class="op">=</span> <span class="fl">5</span>, namecols <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="co">#&gt;         L1 L2             L3 L4 num       name</span></span>
+<span><span class="co">#&gt; 1  pokemon  1 next_evolution  1 002    Ivysaur</span></span>
+<span><span class="co">#&gt; 2  pokemon  1 next_evolution  2 003   Venusaur</span></span>
+<span><span class="co">#&gt; 3  pokemon  2 prev_evolution  1 001  Bulbasaur</span></span>
+<span><span class="co">#&gt; 4  pokemon  2 next_evolution  1 003   Venusaur</span></span>
+<span><span class="co">#&gt; 5  pokemon  3 prev_evolution  1 001  Bulbasaur</span></span>
+<span><span class="co">#&gt; 6  pokemon  3 prev_evolution  2 002    Ivysaur</span></span>
+<span><span class="co">#&gt; 7  pokemon  4 next_evolution  1 005 Charmeleon</span></span>
+<span><span class="co">#&gt; 8  pokemon  4 next_evolution  2 006  Charizard</span></span>
+<span><span class="co">#&gt; 9  pokemon  5 prev_evolution  1 004 Charmander</span></span>
+<span><span class="co">#&gt; 10 pokemon  5 next_evolution  1 006  Charizard</span></span></code></pre></div>
 <div class="section level4">
-<h4 id="comparison-to-common-alternatives">Comparison to common alternatives<a class="anchor" aria-label="anchor" href="#comparison-to-common-alternatives"></a>
+<h4 id="common-alternatives">Common alternatives<a class="anchor" aria-label="anchor" href="#common-alternatives"></a>
 </h4>
-<p>Several common alternatives to unnest lists containing repeated observations also eluded to in the previous section include <code><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html" class="external-link">data.table::rbindlist()</a></code>, <code><a href="https://dplyr.tidyverse.org/reference/bind.html" class="external-link">dplyr::bind_rows()</a></code>, and <code>tidyr</code>’s dedicated rectangling functions <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_longer()</a></code>, <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider()</a></code> and <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">hoist()</a></code>.</p>
-<p>The first two functions are most useful for lists of repeated data.frames (or lists) containing no further levels of nesting (e.g. data.frames without list-columns):</p>
+<p>Several common alternatives used to unnest lists containing repeated
+entries include <code><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html" class="external-link">data.table::rbindlist()</a></code>,
+<code><a href="https://dplyr.tidyverse.org/reference/bind.html" class="external-link">dplyr::bind_rows()</a></code>, and <code>tidyr</code>’s dedicated
+rectangling functions <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_longer()</a></code>,
+<code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider()</a></code> and <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">hoist()</a></code>.</p>
+<p>The first two functions are primarily aimed at binding lists of
+data.frames or lists of lists, but are not meant for nested lists
+containing multiple levels of nesting, such as <code>pokedex</code>:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co">## simple list of lists</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">pokedex</span><span class="op">[[</span><span class="st">"pokemon"</span><span class="op">]</span><span class="op">]</span>, <span class="va">`[`</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 4</span></span></span>
+<span><span class="co">#&gt;      id num   name       img                                             </span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                                           </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1 001   Bulbasaur  http://www.serebii.net/pokemongo/pokemon/001.png</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>     2 002   Ivysaur    http://www.serebii.net/pokemongo/pokemon/002.png</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>     3 003   Venusaur   http://www.serebii.net/pokemongo/pokemon/003.png</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>     4 004   Charmander http://www.serebii.net/pokemongo/pokemon/004.png</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>     5 005   Charmeleon http://www.serebii.net/pokemongo/pokemon/005.png</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span>     6 006   Charizard  http://www.serebii.net/pokemongo/pokemon/006.png</span></span>
+<span></span>
+<span><span class="co">## complex nested list (error)</span></span>
+<span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="va">pokedex</span><span class="op">[[</span><span class="st">"pokemon"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;"> in `vctrs::data_frame()`:</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Can't recycle `id` (size 2) to match `weaknesses` (size 4).</span></span>
+<span></span>
+<span><span class="co">## simple list of lists</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">pokedex</span><span class="op">[[</span><span class="st">"pokemon"</span><span class="op">]</span><span class="op">]</span>, <span class="va">`[`</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html" class="external-link">rbindlist</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    id num       name                                              img</span></span>
+<span><span class="co">#&gt; 1:  1 001  Bulbasaur http://www.serebii.net/pokemongo/pokemon/001.png</span></span>
+<span><span class="co">#&gt; 2:  2 002    Ivysaur http://www.serebii.net/pokemongo/pokemon/002.png</span></span>
+<span><span class="co">#&gt; 3:  3 003   Venusaur http://www.serebii.net/pokemongo/pokemon/003.png</span></span>
+<span><span class="co">#&gt; 4:  4 004 Charmander http://www.serebii.net/pokemongo/pokemon/004.png</span></span>
+<span><span class="co">#&gt; 5:  5 005 Charmeleon http://www.serebii.net/pokemongo/pokemon/005.png</span></span>
+<span><span class="co">#&gt; 6:  6 006  Charizard http://www.serebii.net/pokemongo/pokemon/006.png</span></span>
+<span></span>
+<span><span class="co">## complex nested list (error)</span></span>
+<span><span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html" class="external-link">rbindlist</a></span><span class="op">(</span><span class="va">pokedex</span><span class="op">[[</span><span class="st">"pokemon"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in data.table::rbindlist(pokedex[["pokemon"]]): Column 5 of item 1 is length 2 inconsistent with column 15 which is length 4. Only length-1 columns are recycled.</span></span></code></pre></div>
+<p>The rectangling functions in the <code>tidyr</code>-package offer a
+lot more flexibility. A similar data.frame as returned by
+<code>rrapply(pokedex, how = "bind")</code> can be obtained by repeated
+application of <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">tidyr::unnest_wider()</a></code>:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">## bind_rows() works fine with simple lists </span>
-<span class="va">pokedex_wide_dplyr</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">pokedex</span><span class="op">[[</span><span class="st">"pokemon"</span><span class="op">]</span><span class="op">]</span>, <span class="va">`[`</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pokedex_wide_dplyr</span><span class="op">)</span>
-
-<span class="co">## but does not work well with list-columns</span>
-<span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">pokedex</span><span class="op">[[</span><span class="st">"pokemon"</span><span class="op">]</span><span class="op">]</span>, <span class="va">`[`</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">)</span><span class="op">)</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">err</span><span class="op">)</span> <span class="va">err</span><span class="op">$</span><span class="va">message</span><span class="op">)</span>  
-
-<span class="co">## rbindlist() works fine with simple lists </span>
-<span class="va">pokedex_wide_dt</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html" class="external-link">rbindlist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">pokedex</span><span class="op">[[</span><span class="st">"pokemon"</span><span class="op">]</span><span class="op">]</span>, <span class="va">`[`</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span>  
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pokedex_wide_dt</span><span class="op">)</span>
-
-<span class="co">## but is not ideal for nested variables</span>
-<span class="va">pokedex_wide_dt2</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/rbindlist.html" class="external-link">rbindlist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">pokedex</span><span class="op">[[</span><span class="st">"pokemon"</span><span class="op">]</span><span class="op">]</span>, <span class="va">`[`</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"name"</span>, <span class="st">"prev_evolution"</span><span class="op">)</span><span class="op">)</span>, fill <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pokedex_wide_dt2</span><span class="op">)</span></code></pre></div>
-<p>The rectangling functions in the <code>tidyr</code>-package offer a lot more flexibility. A similar result as <code>rrapply(pokedex, how = "bind")</code> can be obtained with:</p>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyr.tidyverse.org" class="external-link">tidyr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tibble.tidyverse.org/" class="external-link">tibble</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">pokedex</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">pokemon</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">next_evolution</span>, names_sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">prev_evolution</span>, names_sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">next_evolution.1</span>, names_sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">next_evolution.2</span>, names_sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">next_evolution.3</span>, names_sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">prev_evolution.1</span>, names_sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">prev_evolution.2</span>, names_sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 25</span></span></span>
+<span><span class="co">#&gt;      id num   name       img   type  height weight candy candy…¹ egg   spawn…² avg_s…³ spawn…⁴ multi…⁵ weakn…⁶ next_…⁷ next_…⁸ next_…⁹ next_…˟ next_…˟</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lis&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1 001   Bulbasaur  http… &lt;chr&gt; 0.71 m 6.9 kg Bulb…      25 2 km   0.69     69    20:00   &lt;dbl&gt;   &lt;chr&gt;   002     Ivysaur 003     Venusa… <span style="color: #BB0000;">NA</span>     </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>     2 002   Ivysaur    http… &lt;chr&gt; 0.99 m 13.0 … Bulb…     100 Not …  0.042     4.2  07:00   &lt;dbl&gt;   &lt;chr&gt;   003     Venusa… <span style="color: #BB0000;">NA</span>      <span style="color: #BB0000;">NA</span>      <span style="color: #BB0000;">NA</span>     </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>     3 003   Venusaur   http… &lt;chr&gt; 2.01 m 100.0… Bulb…      <span style="color: #BB0000;">NA</span> Not …  0.017     1.7  11:30   &lt;dbl&gt;   &lt;chr&gt;   <span style="color: #BB0000;">NA</span>      <span style="color: #BB0000;">NA</span>      <span style="color: #BB0000;">NA</span>      <span style="color: #BB0000;">NA</span>      <span style="color: #BB0000;">NA</span>     </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>     4 004   Charmander http… &lt;chr&gt; 0.61 m 8.5 kg Char…      25 2 km   0.253    25.3  08:45   &lt;dbl&gt;   &lt;chr&gt;   005     Charme… 006     Chariz… <span style="color: #BB0000;">NA</span>     </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>     5 005   Charmeleon http… &lt;chr&gt; 1.09 m 19.0 … Char…     100 Not …  0.012     1.2  19:00   &lt;dbl&gt;   &lt;chr&gt;   006     Chariz… <span style="color: #BB0000;">NA</span>      <span style="color: #BB0000;">NA</span>      <span style="color: #BB0000;">NA</span>     </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span>     6 006   Charizard  http… &lt;chr&gt; 1.70 m 90.5 … Char…      <span style="color: #BB0000;">NA</span> Not …  0.003<span style="text-decoration: underline;">1</span>    0.31 13:34   &lt;dbl&gt;   &lt;chr&gt;   <span style="color: #BB0000;">NA</span>      <span style="color: #BB0000;">NA</span>      <span style="color: #BB0000;">NA</span>      <span style="color: #BB0000;">NA</span>      <span style="color: #BB0000;">NA</span>     </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># … with 5 more variables: next_evolution.3.name &lt;chr&gt;, prev_evolution.1.num &lt;chr&gt;, prev_evolution.1.name &lt;chr&gt;, prev_evolution.2.num &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   prev_evolution.2.name &lt;chr&gt;, and abbreviated variable names ¹​candy_count, ²​spawn_chance, ³​avg_spawns, ⁴​spawn_time, ⁵​multipliers, ⁶​weaknesses,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   ⁷​next_evolution.1.num, ⁸​next_evolution.1.name, ⁹​next_evolution.2.num, ˟​next_evolution.2.name, ˟​next_evolution.3.num</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ Use `colnames()` to see all variable names</span></span></span></code></pre></div>
+<p>The option <code>how = "bind"</code> in <code><a href="../reference/rrapply.html">rrapply()</a></code> is
+less flexible as it always expands the nested list to a data.frame that
+is <em>as wide as possible</em>. On the other hand, the flexibility and
+interpretability in <code>tidyr</code>’s rectangling functions come at
+the cost of increased computational effort, which can become a
+bottleneck when unnesting large nested lists:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyr.tidyverse.org" class="external-link">tidyr</a></span><span class="op">)</span>
-<span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tibble.tidyverse.org/" class="external-link">tibble</a></span><span class="op">)</span>
-
-<span class="va">pokedex_wide_tidyr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">pokedex</span><span class="op">)</span> <span class="op"><a href="https://tidyr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span>
-  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">pokemon</span><span class="op">)</span> <span class="op"><a href="https://tidyr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span>
-  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">next_evolution</span>, names_sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="op"><a href="https://tidyr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span>
-  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">prev_evolution</span>, names_sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="op"><a href="https://tidyr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span>
-  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">next_evolution.1</span>, names_sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="op"><a href="https://tidyr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span>
-  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">next_evolution.2</span>, names_sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="op"><a href="https://tidyr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span>
-  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">next_evolution.3</span>, names_sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="op"><a href="https://tidyr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span>
-  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">prev_evolution.1</span>, names_sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="op"><a href="https://tidyr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span>
-  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">prev_evolution.2</span>, names_sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> 
-
-<span class="va">pokedex_wide_tidyr</span></code></pre></div>
-<p>The option <code>how = "bind"</code> in <code><a href="../reference/rrapply.html">rrapply()</a></code> is arguably less flexible as it always expands the nested list to a data.frame that is <em>as wide as possible</em>. On the other hand, the increased flexibility and interpretability in <code>tidyr</code>’s rectangling functions come at the cost of computational efficiency, which can quickly become a bottleneck when unnesting large nested lists:</p>
+<code class="sourceCode R"><span><span class="co">## large replicated pokedex list </span></span>
+<span><span class="va">pokedex_large</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>pokemon <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">c</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">replicate</a></span><span class="op">(</span><span class="fl">1500</span>, <span class="va">pokedex</span><span class="op">[[</span><span class="st">"pokemon"</span><span class="op">]</span><span class="op">]</span>, simplify <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">pokedex_large</span>, how <span class="op">=</span> <span class="st">"bind"</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    user  system elapsed </span></span>
+<span><span class="co">#&gt;   2.456   0.040   2.496</span></span>
+<span></span>
+<span><span class="co">## unnest first layers prev_evolution and next_evolution</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">pokedex_large</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">pokemon</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">next_evolution</span>, names_sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">prev_evolution</span>, names_sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> </span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    user  system elapsed </span></span>
+<span><span class="co">#&gt; 130.279   0.396 130.757</span></span></code></pre></div>
+<p><strong>Remark</strong>: in the chained calls to
+<code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider()</a></code> above, we only unnest the first layer of the
+<code>next_evolution</code> and <code>prev_evolution</code>
+list-columns, and not any of the resulting children list-columns, which
+would only further increase computation time.</p>
+<p>To extract and unnest sublists at deeper levels of nesting in the
+list, such as <code>next_evolution</code>, we manually set the
+<code>coldepth</code> parameter in the <code>options</code> argument, as
+also demonstrated above:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">## replicate the original pokedex 1000 times</span>
-<span class="va">pokedex_large</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>pokemon <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">c</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">replicate</a></span><span class="op">(</span><span class="fl">1E3</span>, <span class="va">pokedex</span><span class="op">[[</span><span class="st">"pokemon"</span><span class="op">]</span><span class="op">]</span>, simplify <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
-
-<span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="op">{</span>
-  <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">pokedex_large</span>, how <span class="op">=</span> <span class="st">"bind"</span><span class="op">)</span>
-<span class="op">}</span><span class="op">)</span>
-
-<span class="co">## unnest only first layer of next_evolution and prev_evolution</span>
-<span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="op">{</span>
-  <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">pokedex_large</span><span class="op">)</span> <span class="op"><a href="https://tidyr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span>
-    <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">pokemon</span><span class="op">)</span> <span class="op"><a href="https://tidyr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span>
-    <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">next_evolution</span>, names_sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="op"><a href="https://tidyr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span>
-    <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">prev_evolution</span>, names_sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> 
-<span class="op">}</span><span class="op">)</span></code></pre></div>
-<p>Note that the chained calls to <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider()</a></code> above only unnest the first layer of the list-columns <code>next_evolution</code> and <code>prev_evolution</code>, and not any of the resulting children list-columns, which would only further increase computation time.</p>
-<p><strong>Remark</strong>: The following approach to simultaneously unnest the nested list and post-process the resulting data.frame columns is not particularly efficient:</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="va">ev1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
+<span>    <span class="va">pokedex_large</span>, </span>
+<span>    condition <span class="op">=</span> \<span class="op">(</span><span class="va">x</span>, <span class="va">.xparents</span><span class="op">)</span> <span class="st">"next_evolution"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">.xparents</span>,</span>
+<span>    how <span class="op">=</span> <span class="st">"bind"</span>,</span>
+<span>    options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>namecols <span class="op">=</span> <span class="cn">TRUE</span>, coldepth <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    user  system elapsed </span></span>
+<span><span class="co">#&gt;   1.629   0.000   1.629</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">ev1</span><span class="op">)</span></span>
+<span><span class="co">#&gt;        L1 L2             L3 L4 num       name</span></span>
+<span><span class="co">#&gt; 1 pokemon  1 next_evolution  1 002    Ivysaur</span></span>
+<span><span class="co">#&gt; 2 pokemon  1 next_evolution  2 003   Venusaur</span></span>
+<span><span class="co">#&gt; 3 pokemon  2 next_evolution  1 003   Venusaur</span></span>
+<span><span class="co">#&gt; 4 pokemon  4 next_evolution  1 005 Charmeleon</span></span>
+<span><span class="co">#&gt; 5 pokemon  4 next_evolution  2 006  Charizard</span></span>
+<span><span class="co">#&gt; 6 pokemon  5 next_evolution  1 006  Charizard</span></span></code></pre></div>
+<p>The same unnested version of the <code>next_evolution</code> sublists
+can be obtained by mixing several calls to <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider()</a></code>
+and <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_longer()</a></code>:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">## Combine Pokemon evolution names in single call</span>
-<span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="op">{</span>
-  <span class="va">pokedex_large_evolutions</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span>
-    <span class="va">pokedex_large</span>,
-    classes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"character"</span>, <span class="st">"list"</span><span class="op">)</span>,
-    condition <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">.xparents</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/any.html" class="external-link">any</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"name|evolution"</span>, <span class="va">.xparents</span><span class="op">)</span><span class="op">)</span>,
-    f <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">is.list</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">`[[`</span>, <span class="st">"name"</span><span class="op">)</span> <span class="kw">else</span> <span class="va">x</span>,
-    how <span class="op">=</span> <span class="st">"bind"</span>
-  <span class="op">)</span>
-<span class="op">}</span><span class="op">)</span>
-
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pokedex_large_evolutions</span>, n <span class="op">=</span> <span class="fl">9</span><span class="op">)</span></code></pre></div>
-<p>The reason is that the <code>condition</code> and <code>f</code> functions have to be applied to each node in the nested list individually and cannot be vectorized in any way, which makes this call very time-consuming. It is likely more efficient to post-process the data.frame outside the call to <code><a href="../reference/rrapply.html">rrapply()</a></code>, e.g. using <code>data.table</code>:</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="va">ev2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">pokedex_large</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">pokemon</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_longer</a></span><span class="op">(</span><span class="va">next_evolution</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">next_evolution</span>, names_sep <span class="op">=</span> <span class="st">"_"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">next_evolution_num</span>, <span class="va">next_evolution_name</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    user  system elapsed </span></span>
+<span><span class="co">#&gt;  89.831   0.068  89.905</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">ev2</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 3</span></span></span>
+<span><span class="co">#&gt;      id next_evolution_num next_evolution_name</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>              </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1 002                Ivysaur            </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>     1 003                Venusaur           </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>     2 003                Venusaur           </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>     3 <span style="color: #BB0000;">NA</span>                 <span style="color: #BB0000;">NA</span>                 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>     4 005                Charmeleon         </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span>     4 006                Charizard</span></span></code></pre></div>
+<p>In the context of the current example, a more efficient approach is
+to combine <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider()</a></code> with <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">hoist()</a></code>. The
+disadvantage is that we need to manually specify the exact locations of
+the elements that we wish to hoist from the nested list:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-datatable.com" class="external-link">data.table</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
-
-<span class="co">## Combine Pokemon evolution names in multiple calls</span>
-<span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="op">{</span>
-  <span class="va">pokedex_large_evolutions2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/as.data.table.html" class="external-link">as.data.table</a></span><span class="op">(</span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">pokedex_large</span>, how <span class="op">=</span> <span class="st">"bind"</span><span class="op">)</span><span class="op">)</span>
-  <span class="va">pokedex_large_evolutions2</span><span class="op">[</span>, <span class="va">pokemon.next_evolution</span> <span class="op">:=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">as.list</a></span><span class="op">(</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/transpose.html" class="external-link">transpose</a></span><span class="op">(</span><span class="va">.SD</span><span class="op">)</span><span class="op">)</span>, .SDcols <span class="op">=</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/patterns.html" class="external-link">patterns</a></span><span class="op">(</span><span class="st">"next_evolution.*name"</span><span class="op">)</span><span class="op">]</span>
-  <span class="va">pokedex_large_evolutions2</span><span class="op">[</span>, <span class="va">pokemon.prev_evolution</span> <span class="op">:=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">as.list</a></span><span class="op">(</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/transpose.html" class="external-link">transpose</a></span><span class="op">(</span><span class="va">.SD</span><span class="op">)</span><span class="op">)</span>, .SDcols <span class="op">=</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/patterns.html" class="external-link">patterns</a></span><span class="op">(</span><span class="st">"prev_evolution.*name"</span><span class="op">)</span><span class="op">]</span>
-<span class="op">}</span><span class="op">)</span>
-
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pokedex_large_evolutions2</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">pokemon.name</span>, <span class="va">pokemon.next_evolution</span>, <span class="va">pokemon.prev_evolution</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="va">ev3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">pokedex_large</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">pokemon</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">hoist</a></span><span class="op">(</span><span class="va">next_evolution</span>, </span>
+<span>          name.1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fl">1</span>, <span class="st">"name"</span><span class="op">)</span>,</span>
+<span>          name.2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fl">2</span>, <span class="st">"name"</span><span class="op">)</span>,</span>
+<span>          name.3 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fl">3</span>, <span class="st">"name"</span><span class="op">)</span></span>
+<span>    <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">name.1</span>, <span class="va">name.2</span>, <span class="va">name.3</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    user  system elapsed </span></span>
+<span><span class="co">#&gt;  41.965   0.000  41.967</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">ev3</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 4</span></span></span>
+<span><span class="co">#&gt;      id name.1     name.2    name.3</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1 Ivysaur    Venusaur  <span style="color: #BB0000;">NA</span>    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>     2 Venusaur   <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>     3 <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>     4 Charmeleon Charizard <span style="color: #BB0000;">NA</span>    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>     5 Charizard  <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span>     6 <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
+<p>Using <code><a href="../reference/rrapply.html">rrapply()</a></code>, the same result can be obtained by
+adding a call to <code><a href="https://rdrr.io/r/stats/reshape.html" class="external-link">reshape()</a></code> (or alternatively
+e.g. <code><a href="https://tidyr.tidyverse.org/reference/pivot_wider.html" class="external-link">tidyr::pivot_wider()</a></code> or
+<code><a href="https://Rdatatable.gitlab.io/data.table/reference/dcast.data.table.html" class="external-link">data.table::dcast()</a></code>) by converting from a long to a wide
+data.frame:</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="va">ev4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
+<span>    <span class="va">pokedex_large</span>, </span>
+<span>    condition <span class="op">=</span> \<span class="op">(</span><span class="va">x</span>, <span class="va">.xparents</span><span class="op">)</span> <span class="st">"next_evolution"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">.xparents</span>,</span>
+<span>    how <span class="op">=</span> <span class="st">"bind"</span>, </span>
+<span>    options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>namecols <span class="op">=</span> <span class="cn">TRUE</span>, coldepth <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
+<span>  <span class="op">)</span> </span>
+<span>  <span class="va">ev5</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/reshape.html" class="external-link">reshape</a></span><span class="op">(</span></span>
+<span>    <span class="va">ev4</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"L2"</span>, <span class="st">"L4"</span>, <span class="st">"name"</span><span class="op">)</span><span class="op">]</span>,</span>
+<span>    idvar <span class="op">=</span> <span class="st">"L2"</span>,</span>
+<span>    timevar <span class="op">=</span> <span class="st">"L4"</span>,</span>
+<span>    v.names <span class="op">=</span> <span class="st">"name"</span>,</span>
+<span>    direction <span class="op">=</span> <span class="st">"wide"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    user  system elapsed </span></span>
+<span><span class="co">#&gt;   2.220   0.000   2.221</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">ev5</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   L2     name.1    name.2 name.3</span></span>
+<span><span class="co">#&gt; 1  1    Ivysaur  Venusaur   &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 3  2   Venusaur      &lt;NA&gt;   &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 4  4 Charmeleon Charizard   &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 6  5  Charizard      &lt;NA&gt;   &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 7  7  Wartortle Blastoise   &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 9  8  Blastoise      &lt;NA&gt;   &lt;NA&gt;</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="additional-examples">Additional examples<a class="anchor" aria-label="anchor" href="#additional-examples"></a>
 </h4>
-<p>We conclude this section by replicating some of the demonstrating examples in the <code>tidyr</code> vignette <a href="https://tidyr.tidyverse.org/articles/rectangle.html" class="external-link uri">https://tidyr.tidyverse.org/articles/rectangle.html</a>. The nested list datasets are publicly available in the <a href="https://CRAN.R-project.org/package=repurrrsive" class="external-link">repurrrsive</a>-package.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/jennybc/repurrrsive" class="external-link">repurrrsive</a></span><span class="op">)</span>
-
-<span class="co">## github users dataset</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">gh_users</span>, list.len <span class="op">=</span> <span class="fl">3</span><span class="op">)</span>
-
-<span class="co">## return all variables in result</span>
-<span class="va">gh_users_wide</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">gh_users</span>, how <span class="op">=</span> <span class="st">"bind"</span><span class="op">)</span>
-
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">gh_users_wide</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"login"</span>, <span class="st">"followers"</span>, <span class="st">"url"</span>, <span class="st">"html_url"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span>
-
-<span class="co">## github repos dataset</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">gh_repos</span>, list.len <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
-
-<span class="co">## return only a subset of variables</span>
-<span class="va">gh_repos_wide</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span>
-  <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">gh_repos</span>, recursive <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,
-  condition <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">.xname</span><span class="op">)</span> <span class="va">.xname</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"login"</span>, <span class="st">"name"</span>, <span class="st">"homepage"</span>, <span class="st">"watchers_count"</span><span class="op">)</span>,
-  how <span class="op">=</span> <span class="st">"bind"</span>
-<span class="op">)</span>
-
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">gh_repos_wide</span><span class="op">)</span>
-
-<span class="co">## GoT characters dataset</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">got_chars</span>, list.len <span class="op">=</span> <span class="fl">3</span><span class="op">)</span>
-
-<span class="co">## return only list-columns</span>
-<span class="va">got_chars_wide</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">got_chars</span>, how <span class="op">=</span> <span class="st">"bind"</span><span class="op">)</span>
-<span class="va">got_chars_wide</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">got_chars_wide</span>, classes <span class="op">=</span> <span class="st">"list"</span>, how <span class="op">=</span> <span class="st">"prune"</span><span class="op">)</span>
-
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">got_chars_wide</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<p>We conclude this section by replicating some of the data rectangling
+examples presented in the <code>tidyr</code> vignette: <a href="https://tidyr.tidyverse.org/articles/rectangle.html" class="external-link uri">https://tidyr.tidyverse.org/articles/rectangle.html</a>. The
+example nested lists are all conveniently included in the <a href="https://CRAN.R-project.org/package=repurrrsive" class="external-link">repurrrsive</a>-package.</p>
+<div class="section level5">
+<h5 id="github-users">GitHub Users<a class="anchor" aria-label="anchor" href="#github-users"></a>
+</h5>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/jennybc/repurrrsive" class="external-link">repurrrsive</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co">## nested data</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">gh_users</span>, list.len <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt; List of 6</span></span>
+<span><span class="co">#&gt;  $ :List of 30</span></span>
+<span><span class="co">#&gt;   ..$ login              : chr "gaborcsardi"</span></span>
+<span><span class="co">#&gt;   ..$ id                 : int 660288</span></span>
+<span><span class="co">#&gt;   ..$ avatar_url         : chr "https://avatars.githubusercontent.com/u/660288?v=3"</span></span>
+<span><span class="co">#&gt;   .. [list output truncated]</span></span>
+<span><span class="co">#&gt;  $ :List of 30</span></span>
+<span><span class="co">#&gt;   ..$ login              : chr "jennybc"</span></span>
+<span><span class="co">#&gt;   ..$ id                 : int 599454</span></span>
+<span><span class="co">#&gt;   ..$ avatar_url         : chr "https://avatars.githubusercontent.com/u/599454?v=3"</span></span>
+<span><span class="co">#&gt;   .. [list output truncated]</span></span>
+<span><span class="co">#&gt;  $ :List of 30</span></span>
+<span><span class="co">#&gt;   ..$ login              : chr "jtleek"</span></span>
+<span><span class="co">#&gt;   ..$ id                 : int 1571674</span></span>
+<span><span class="co">#&gt;   ..$ avatar_url         : chr "https://avatars.githubusercontent.com/u/1571674?v=3"</span></span>
+<span><span class="co">#&gt;   .. [list output truncated]</span></span>
+<span><span class="co">#&gt;   [list output truncated]</span></span>
+<span></span>
+<span><span class="co">## unnested version</span></span>
+<span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">gh_users</span>, how <span class="op">=</span> <span class="st">"bind"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 30</span></span></span>
+<span><span class="co">#&gt;   login     id avata…¹ grava…² url   html_…³ follo…⁴ follo…⁵ gists…⁶ starr…⁷ subsc…⁸ organ…⁹ repos…˟ event…˟ recei…˟ type  site_…˟ name  company blog </span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> gabo… 6.60<span style="color: #949494;">e</span>5 https:… <span style="color: #949494;">""</span>      http… https:… https:… https:… https:… https:… https:… https:… https:… https:… https:… User  FALSE   Gábo… &lt;chr&gt;   http…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> jenn… 5.99<span style="color: #949494;">e</span>5 https:… <span style="color: #949494;">""</span>      http… https:… https:… https:… https:… https:… https:… https:… https:… https:… https:… User  FALSE   Jenn… &lt;chr&gt;   http…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> jtle… 1.57<span style="color: #949494;">e</span>6 https:… <span style="color: #949494;">""</span>      http… https:… https:… https:… https:… https:… https:… https:… https:… https:… https:… User  FALSE   Jeff… <span style="color: #949494;">&lt;NULL&gt;</span>  http…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> juli… 1.25<span style="color: #949494;">e</span>7 https:… <span style="color: #949494;">""</span>      http… https:… https:… https:… https:… https:… https:… https:… https:… https:… https:… User  FALSE   Juli… <span style="color: #949494;">&lt;NULL&gt;</span>  juli…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> leep… 3.51<span style="color: #949494;">e</span>6 https:… <span style="color: #949494;">""</span>      http… https:… https:… https:… https:… https:… https:… https:… https:… https:… https:… User  FALSE   Thom… &lt;chr&gt;   http…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> masa… 8.36<span style="color: #949494;">e</span>6 https:… <span style="color: #949494;">""</span>      http… https:… https:… https:… https:… https:… https:… https:… https:… https:… https:… User  FALSE   Maël… &lt;chr&gt;   http…</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># … with 10 more variables: location &lt;chr&gt;, email &lt;list&gt;, hireable &lt;list&gt;, bio &lt;list&gt;, public_repos &lt;int&gt;, public_gists &lt;int&gt;, followers &lt;int&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   following &lt;int&gt;, created_at &lt;chr&gt;, updated_at &lt;chr&gt;, and abbreviated variable names ¹​avatar_url, ²​gravatar_id, ³​html_url, ⁴​followers_url,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   ⁵​following_url, ⁶​gists_url, ⁷​starred_url, ⁸​subscriptions_url, ⁹​organizations_url, ˟​repos_url, ˟​events_url, ˟​received_events_url, ˟​site_admin</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ Use `colnames()` to see all variable names</span></span></span></code></pre></div>
+</div>
+<div class="section level5">
+<h5 id="github-repos">GitHub repos<a class="anchor" aria-label="anchor" href="#github-repos"></a>
+</h5>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">## nested data</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">gh_repos</span>, list.len <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">#&gt; List of 6</span></span>
+<span><span class="co">#&gt;  $ :List of 30</span></span>
+<span><span class="co">#&gt;   ..$ :List of 68</span></span>
+<span><span class="co">#&gt;   .. ..$ id               : int 61160198</span></span>
+<span><span class="co">#&gt;   .. ..$ name             : chr "after"</span></span>
+<span><span class="co">#&gt;   .. .. [list output truncated]</span></span>
+<span><span class="co">#&gt;   ..$ :List of 68</span></span>
+<span><span class="co">#&gt;   .. ..$ id               : int 40500181</span></span>
+<span><span class="co">#&gt;   .. ..$ name             : chr "argufy"</span></span>
+<span><span class="co">#&gt;   .. .. [list output truncated]</span></span>
+<span><span class="co">#&gt;   .. [list output truncated]</span></span>
+<span><span class="co">#&gt;  $ :List of 30</span></span>
+<span><span class="co">#&gt;   ..$ :List of 68</span></span>
+<span><span class="co">#&gt;   .. ..$ id               : int 14756210</span></span>
+<span><span class="co">#&gt;   .. ..$ name             : chr "2013-11_sfu"</span></span>
+<span><span class="co">#&gt;   .. .. [list output truncated]</span></span>
+<span><span class="co">#&gt;   ..$ :List of 68</span></span>
+<span><span class="co">#&gt;   .. ..$ id               : int 14152301</span></span>
+<span><span class="co">#&gt;   .. ..$ name             : chr "2014-01-27-miami"</span></span>
+<span><span class="co">#&gt;   .. .. [list output truncated]</span></span>
+<span><span class="co">#&gt;   .. [list output truncated]</span></span>
+<span><span class="co">#&gt;   [list output truncated]</span></span>
+<span></span>
+<span><span class="co">## unnested version</span></span>
+<span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">gh_repos</span>, how <span class="op">=</span> <span class="st">"bind"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 176 × 84</span></span></span>
+<span><span class="co">#&gt;          id name       full_…¹ owner…² owner…³ owner…⁴ owner…⁵ owner…⁶ owner…⁷ owner…⁸ owner…⁹ owner…˟ owner…˟ owner…˟ owner…˟ owner…˟ owner…˟ owner…˟</span></span>
+<span><span class="co">#&gt;       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> 61<span style="text-decoration: underline;">160</span>198 after      gaborc… gaborc…  <span style="text-decoration: underline;">660</span>288 https:… <span style="color: #949494;">""</span>      https:… https:… https:… https:… https:… https:… https:… https:… https:… https:… https:…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> 40<span style="text-decoration: underline;">500</span>181 argufy     gaborc… gaborc…  <span style="text-decoration: underline;">660</span>288 https:… <span style="color: #949494;">""</span>      https:… https:… https:… https:… https:… https:… https:… https:… https:… https:… https:…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> 36<span style="text-decoration: underline;">442</span>442 ask        gaborc… gaborc…  <span style="text-decoration: underline;">660</span>288 https:… <span style="color: #949494;">""</span>      https:… https:… https:… https:… https:… https:… https:… https:… https:… https:… https:…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> 34<span style="text-decoration: underline;">924</span>886 baseimpor… gaborc… gaborc…  <span style="text-decoration: underline;">660</span>288 https:… <span style="color: #949494;">""</span>      https:… https:… https:… https:… https:… https:… https:… https:… https:… https:… https:…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> 61<span style="text-decoration: underline;">620</span>661 citest     gaborc… gaborc…  <span style="text-decoration: underline;">660</span>288 https:… <span style="color: #949494;">""</span>      https:… https:… https:… https:… https:… https:… https:… https:… https:… https:… https:…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> 33<span style="text-decoration: underline;">907</span>457 clisymbols gaborc… gaborc…  <span style="text-decoration: underline;">660</span>288 https:… <span style="color: #949494;">""</span>      https:… https:… https:… https:… https:… https:… https:… https:… https:… https:… https:…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> 37<span style="text-decoration: underline;">236</span>467 cmaker     gaborc… gaborc…  <span style="text-decoration: underline;">660</span>288 https:… <span style="color: #949494;">""</span>      https:… https:… https:… https:… https:… https:… https:… https:… https:… https:… https:…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> 67<span style="text-decoration: underline;">959</span>624 cmark      gaborc… gaborc…  <span style="text-decoration: underline;">660</span>288 https:… <span style="color: #949494;">""</span>      https:… https:… https:… https:… https:… https:… https:… https:… https:… https:… https:…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> 63<span style="text-decoration: underline;">152</span>619 conditions gaborc… gaborc…  <span style="text-decoration: underline;">660</span>288 https:… <span style="color: #949494;">""</span>      https:… https:… https:… https:… https:… https:… https:… https:… https:… https:… https:…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> 24<span style="text-decoration: underline;">343</span>686 crayon     gaborc… gaborc…  <span style="text-decoration: underline;">660</span>288 https:… <span style="color: #949494;">""</span>      https:… https:… https:… https:… https:… https:… https:… https:… https:… https:… https:…</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># … with 166 more rows, 66 more variables: owner.type &lt;chr&gt;, owner.site_admin &lt;lgl&gt;, private &lt;lgl&gt;, html_url &lt;chr&gt;, description &lt;list&gt;, fork &lt;lgl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   url &lt;chr&gt;, forks_url &lt;chr&gt;, keys_url &lt;chr&gt;, collaborators_url &lt;chr&gt;, teams_url &lt;chr&gt;, hooks_url &lt;chr&gt;, issue_events_url &lt;chr&gt;, events_url &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   assignees_url &lt;chr&gt;, branches_url &lt;chr&gt;, tags_url &lt;chr&gt;, blobs_url &lt;chr&gt;, git_tags_url &lt;chr&gt;, git_refs_url &lt;chr&gt;, trees_url &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   statuses_url &lt;chr&gt;, languages_url &lt;chr&gt;, stargazers_url &lt;chr&gt;, contributors_url &lt;chr&gt;, subscribers_url &lt;chr&gt;, subscription_url &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   commits_url &lt;chr&gt;, git_commits_url &lt;chr&gt;, comments_url &lt;chr&gt;, issue_comment_url &lt;chr&gt;, contents_url &lt;chr&gt;, compare_url &lt;chr&gt;, merges_url &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   archive_url &lt;chr&gt;, downloads_url &lt;chr&gt;, issues_url &lt;chr&gt;, pulls_url &lt;chr&gt;, milestones_url &lt;chr&gt;, notifications_url &lt;chr&gt;, labels_url &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   releases_url &lt;chr&gt;, deployments_url &lt;chr&gt;, created_at &lt;chr&gt;, updated_at &lt;chr&gt;, pushed_at &lt;chr&gt;, git_url &lt;chr&gt;, ssh_url &lt;chr&gt;, clone_url &lt;chr&gt;, …</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ Use `print(n = ...)` to see more rows, and `colnames()` to see all variable names</span></span></span></code></pre></div>
+</div>
+<div class="section level5">
+<h5 id="game-of-thrones-characters">Game of Thrones characters<a class="anchor" aria-label="anchor" href="#game-of-thrones-characters"></a>
+</h5>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">## nested data</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">got_chars</span>, list.len <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt; List of 30</span></span>
+<span><span class="co">#&gt;  $ :List of 18</span></span>
+<span><span class="co">#&gt;   ..$ url        : chr "https://www.anapioficeandfire.com/api/characters/1022"</span></span>
+<span><span class="co">#&gt;   ..$ id         : int 1022</span></span>
+<span><span class="co">#&gt;   ..$ name       : chr "Theon Greyjoy"</span></span>
+<span><span class="co">#&gt;   .. [list output truncated]</span></span>
+<span><span class="co">#&gt;  $ :List of 18</span></span>
+<span><span class="co">#&gt;   ..$ url        : chr "https://www.anapioficeandfire.com/api/characters/1052"</span></span>
+<span><span class="co">#&gt;   ..$ id         : int 1052</span></span>
+<span><span class="co">#&gt;   ..$ name       : chr "Tyrion Lannister"</span></span>
+<span><span class="co">#&gt;   .. [list output truncated]</span></span>
+<span><span class="co">#&gt;  $ :List of 18</span></span>
+<span><span class="co">#&gt;   ..$ url        : chr "https://www.anapioficeandfire.com/api/characters/1074"</span></span>
+<span><span class="co">#&gt;   ..$ id         : int 1074</span></span>
+<span><span class="co">#&gt;   ..$ name       : chr "Victarion Greyjoy"</span></span>
+<span><span class="co">#&gt;   .. [list output truncated]</span></span>
+<span><span class="co">#&gt;   [list output truncated]</span></span>
+<span></span>
+<span><span class="co">## unnested version</span></span>
+<span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">got_chars</span>, how <span class="op">=</span> <span class="st">"bind"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 30 × 18</span></span></span>
+<span><span class="co">#&gt;    url                             id name  gender culture born  died  alive titles aliases father mother spouse alleg…¹ books povBo…² tvSer…³ playe…⁴</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;list&gt;</span> <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;lis&gt;</span> <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;list&gt;</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> https://www.anapioficeandfi…  <span style="text-decoration: underline;">1</span>022 Theo… Male   <span style="color: #949494;">"</span>Ironb… <span style="color: #949494;">"</span>In … <span style="color: #949494;">""</span>    TRUE  &lt;chr&gt;  &lt;chr&gt;   <span style="color: #949494;">""</span>     <span style="color: #949494;">""</span>     <span style="color: #949494;">""</span>     &lt;chr&gt;   &lt;chr&gt; &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> https://www.anapioficeandfi…  <span style="text-decoration: underline;">1</span>052 Tyri… Male   <span style="color: #949494;">""</span>      <span style="color: #949494;">"</span>In … <span style="color: #949494;">""</span>    TRUE  &lt;chr&gt;  &lt;chr&gt;   <span style="color: #949494;">""</span>     <span style="color: #949494;">""</span>     <span style="color: #949494;">"</span>http… &lt;chr&gt;   &lt;chr&gt; &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> https://www.anapioficeandfi…  <span style="text-decoration: underline;">1</span>074 Vict… Male   <span style="color: #949494;">"</span>Ironb… <span style="color: #949494;">"</span>In … <span style="color: #949494;">""</span>    TRUE  &lt;chr&gt;  &lt;chr&gt;   <span style="color: #949494;">""</span>     <span style="color: #949494;">""</span>     <span style="color: #949494;">""</span>     &lt;chr&gt;   &lt;chr&gt; &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> https://www.anapioficeandfi…  <span style="text-decoration: underline;">1</span>109 Will  Male   <span style="color: #949494;">""</span>      <span style="color: #949494;">""</span>    <span style="color: #949494;">"</span>In … FALSE &lt;chr&gt;  &lt;chr&gt;   <span style="color: #949494;">""</span>     <span style="color: #949494;">""</span>     <span style="color: #949494;">""</span>     &lt;lgl&gt;   &lt;chr&gt; &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> https://www.anapioficeandfi…  <span style="text-decoration: underline;">1</span>166 Areo… Male   <span style="color: #949494;">"</span>Norvo… <span style="color: #949494;">"</span>In … <span style="color: #949494;">""</span>    TRUE  &lt;chr&gt;  &lt;chr&gt;   <span style="color: #949494;">""</span>     <span style="color: #949494;">""</span>     <span style="color: #949494;">""</span>     &lt;chr&gt;   &lt;chr&gt; &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> https://www.anapioficeandfi…  <span style="text-decoration: underline;">1</span>267 Chett Male   <span style="color: #949494;">""</span>      <span style="color: #949494;">"</span>At … <span style="color: #949494;">"</span>In … FALSE &lt;chr&gt;  &lt;chr&gt;   <span style="color: #949494;">""</span>     <span style="color: #949494;">""</span>     <span style="color: #949494;">""</span>     &lt;lgl&gt;   &lt;chr&gt; &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> https://www.anapioficeandfi…  <span style="text-decoration: underline;">1</span>295 Cres… Male   <span style="color: #949494;">""</span>      <span style="color: #949494;">"</span>In … <span style="color: #949494;">"</span>In … FALSE &lt;chr&gt;  &lt;chr&gt;   <span style="color: #949494;">""</span>     <span style="color: #949494;">""</span>     <span style="color: #949494;">""</span>     &lt;lgl&gt;   &lt;chr&gt; &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> https://www.anapioficeandfi…   130 Aria… Female <span style="color: #949494;">"</span>Dorni… <span style="color: #949494;">"</span>In … <span style="color: #949494;">""</span>    TRUE  &lt;chr&gt;  &lt;chr&gt;   <span style="color: #949494;">""</span>     <span style="color: #949494;">""</span>     <span style="color: #949494;">""</span>     &lt;chr&gt;   &lt;chr&gt; &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> https://www.anapioficeandfi…  <span style="text-decoration: underline;">1</span>303 Daen… Female <span style="color: #949494;">"</span>Valyr… <span style="color: #949494;">"</span>In … <span style="color: #949494;">""</span>    TRUE  &lt;chr&gt;  &lt;chr&gt;   <span style="color: #949494;">""</span>     <span style="color: #949494;">""</span>     <span style="color: #949494;">"</span>http… &lt;chr&gt;   &lt;chr&gt; &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> https://www.anapioficeandfi…  <span style="text-decoration: underline;">1</span>319 Davo… Male   <span style="color: #949494;">"</span>Weste… <span style="color: #949494;">"</span>In … <span style="color: #949494;">""</span>    TRUE  &lt;chr&gt;  &lt;chr&gt;   <span style="color: #949494;">""</span>     <span style="color: #949494;">""</span>     <span style="color: #949494;">"</span>http… &lt;chr&gt;   &lt;chr&gt; &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;  </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># … with 20 more rows, and abbreviated variable names ¹​allegiances, ²​povBooks, ³​tvSeries, ⁴​playedBy</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ Use `print(n = ...)` to see more rows</span></span></span></code></pre></div>
+</div>
+<div class="section level5">
+<h5 id="sharla-gelfands-discography">Sharla Gelfand’s discography<a class="anchor" aria-label="anchor" href="#sharla-gelfands-discography"></a>
+</h5>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">## nested data (first element)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">discog</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, list.len <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt; List of 1</span></span>
+<span><span class="co">#&gt;  $ :List of 5</span></span>
+<span><span class="co">#&gt;   ..$ instance_id      : int 354823933</span></span>
+<span><span class="co">#&gt;   ..$ date_added       : chr "2019-02-16T17:48:59-08:00"</span></span>
+<span><span class="co">#&gt;   ..$ basic_information:List of 11</span></span>
+<span><span class="co">#&gt;   .. ..$ labels      :List of 1</span></span>
+<span><span class="co">#&gt;   .. .. ..$ :List of 6</span></span>
+<span><span class="co">#&gt;   .. .. .. ..$ name            : chr "Tobi Records (2)"</span></span>
+<span><span class="co">#&gt;   .. .. .. ..$ entity_type     : chr "1"</span></span>
+<span><span class="co">#&gt;   .. .. .. ..$ catno           : chr "TOB-013"</span></span>
+<span><span class="co">#&gt;   .. .. .. .. [list output truncated]</span></span>
+<span><span class="co">#&gt;   .. ..$ year        : int 2015</span></span>
+<span><span class="co">#&gt;   .. ..$ master_url  : NULL</span></span>
+<span><span class="co">#&gt;   .. .. [list output truncated]</span></span>
+<span><span class="co">#&gt;   .. [list output truncated]</span></span>
+<span></span>
+<span><span class="co">## unnested version (excluding deeply nested sublists)</span></span>
+<span><span class="va">discs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
+<span>  <span class="va">discog</span>,</span>
+<span>  condition <span class="op">=</span> \<span class="op">(</span><span class="va">x</span>, <span class="va">.xpos</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">.xpos</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fl">5</span>,</span>
+<span>  f <span class="op">=</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, <span class="cn">NA</span>, <span class="va">x</span><span class="op">)</span>,  <span class="co">## replace NULLs</span></span>
+<span>  how <span class="op">=</span> <span class="st">"bind"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">discs</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 155 × 12</span></span></span>
+<span><span class="co">#&gt;    instance_id date_added                basic_information.year basic_information.mast…¹ basic…² basic…³ basic…⁴ basic…⁵ basic…⁶ basic…⁷     id rating</span></span>
+<span><span class="co">#&gt;          <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                                      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span>   354<span style="text-decoration: underline;">823</span>933 2019-02-16T17:48:59-08:00                   <span style="text-decoration: underline;">2</span>015 <span style="color: #BB0000;">NA</span>                        7.50<span style="color: #949494;">e</span>6 <span style="color: #949494;">"</span>https… Demo    https:… https:…       0 7.50<span style="color: #949494;">e</span>6      0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span>   354<span style="text-decoration: underline;">092</span>601 2019-02-13T14:13:11-08:00                   <span style="text-decoration: underline;">2</span>013 https://api.discogs.com…  4.49<span style="color: #949494;">e</span>6 <span style="color: #949494;">"</span>https… Observ… https:… https:…  <span style="text-decoration: underline;">553</span>057 4.49<span style="color: #949494;">e</span>6      0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span>   354<span style="text-decoration: underline;">091</span>476 2019-02-13T14:07:23-08:00                   <span style="text-decoration: underline;">2</span>017 https://api.discogs.com…  9.83<span style="color: #949494;">e</span>6 <span style="color: #949494;">"</span>https… I       https:… https:… 1<span style="text-decoration: underline;">109</span>943 9.83<span style="color: #949494;">e</span>6      0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span>   351<span style="text-decoration: underline;">244</span>906 2019-02-02T11:39:58-08:00                   <span style="text-decoration: underline;">2</span>017 https://api.discogs.com…  9.77<span style="color: #949494;">e</span>6 <span style="color: #949494;">"</span>https… Oído A… https:… https:… 1<span style="text-decoration: underline;">128</span>934 9.77<span style="color: #949494;">e</span>6      0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span>   351<span style="text-decoration: underline;">244</span>801 2019-02-02T11:39:37-08:00                   <span style="text-decoration: underline;">2</span>015 https://api.discogs.com…  7.24<span style="color: #949494;">e</span>6 <span style="color: #949494;">"</span>https… A Cat'… https:… https:…  <span style="text-decoration: underline;">857</span>592 7.24<span style="color: #949494;">e</span>6      0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span>   351<span style="text-decoration: underline;">052</span>065 2019-02-01T20:40:53-08:00                   <span style="text-decoration: underline;">2</span>019 https://api.discogs.com…  1.31<span style="color: #949494;">e</span>7 <span style="color: #949494;">"</span>https… Tashme  https:… https:… 1<span style="text-decoration: underline;">498</span>137 1.31<span style="color: #949494;">e</span>7      0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span>   350<span style="text-decoration: underline;">315</span>345 2019-01-29T15:48:37-08:00                   <span style="text-decoration: underline;">2</span>014 https://api.discogs.com…  7.11<span style="color: #949494;">e</span>6 <span style="color: #949494;">"</span>https… Demo    https:… https:…  <span style="text-decoration: underline;">852</span>880 7.11<span style="color: #949494;">e</span>6      0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span>   350<span style="text-decoration: underline;">315</span>103 2019-01-29T15:47:22-08:00                   <span style="text-decoration: underline;">2</span>015 https://api.discogs.com…  1.05<span style="color: #949494;">e</span>7 <span style="color: #949494;">"</span>https… Let Th… https:… https:…  <span style="text-decoration: underline;">869</span>410 1.05<span style="color: #949494;">e</span>7      0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span>   350<span style="text-decoration: underline;">314</span>507 2019-01-29T15:44:08-08:00                   <span style="text-decoration: underline;">2</span>017 https://api.discogs.com…  1.13<span style="color: #949494;">e</span>7 <span style="color: #949494;">""</span>      Sub Sp… https:… https:… 1<span style="text-decoration: underline;">281</span>224 1.13<span style="color: #949494;">e</span>7      0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span>   350<span style="text-decoration: underline;">314</span>047 2019-01-29T15:41:35-08:00                   <span style="text-decoration: underline;">2</span>017 <span style="color: #BB0000;">NA</span>                        1.17<span style="color: #949494;">e</span>7 <span style="color: #949494;">"</span>https… Demo    https:… https:…       0 1.17<span style="color: #949494;">e</span>7      0</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># … with 145 more rows, and abbreviated variable names ¹​basic_information.master_url, ²​basic_information.id, ³​basic_information.thumb,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   ⁴​basic_information.title, ⁵​basic_information.cover_image, ⁶​basic_information.resource_url, ⁷​basic_information.master_id</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ Use `print(n = ...)` to see more rows</span></span></span>
+<span></span>
+<span><span class="co">## unnest labels sublists </span></span>
+<span><span class="va">labels</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
+<span>  <span class="va">discog</span>,</span>
+<span>  condition <span class="op">=</span> \<span class="op">(</span><span class="va">x</span>, <span class="va">.xparents</span><span class="op">)</span> <span class="st">"labels"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">.xparents</span>,</span>
+<span>  how <span class="op">=</span> <span class="st">"bind"</span>,</span>
+<span>  options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>coldepth <span class="op">=</span> <span class="fl">5</span>, namecols <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">labels</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 182 × 10</span></span></span>
+<span><span class="co">#&gt;    L1    L2                L3     L4    name                                      entity_type catno   resource_url                          id entit…¹</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                                     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                              <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> 1     basic_information labels 1     Tobi Records (2)                          1           TOB-013 https://api.discogs.com/labels/6… <span style="text-decoration: underline;">633</span>407 Label  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> 2     basic_information labels 1     La Vida Es Un Mus                         1           Mus70   https://api.discogs.com/labels/3…  <span style="text-decoration: underline;">38</span>322 Label  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> 3     basic_information labels 1     La Vida Es Un Mus                         1           MUS118  https://api.discogs.com/labels/3…  <span style="text-decoration: underline;">38</span>322 Label  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> 4     basic_information labels 1     La Vida Es Un Mus                         1           MUS132  https://api.discogs.com/labels/3…  <span style="text-decoration: underline;">38</span>322 Label  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> 4     basic_information labels 2     Beat Generation                           1           BEAT64  https://api.discogs.com/labels/8…  <span style="text-decoration: underline;">88</span>198 Label  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> 4     basic_information labels 3     Beat Generation                           1           BEAT 64 https://api.discogs.com/labels/8…  <span style="text-decoration: underline;">88</span>198 Label  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> 5     basic_information labels 1     Katorga Works                             1           KW-043  https://api.discogs.com/labels/2… <span style="text-decoration: underline;">205</span>895 Label  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> 6     basic_information labels 1     High Fashion Industries                   1           HFI017  https://api.discogs.com/labels/6… <span style="text-decoration: underline;">637</span>837 Label  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> 7     basic_information labels 1     Mind Control Records (6)                  1           none    https://api.discogs.com/labels/7… <span style="text-decoration: underline;">763</span>103 Label  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> 8     basic_information labels 1     Not On Label (Phantom Head Self-released) 1           none    https://api.discogs.com/labels/8… <span style="text-decoration: underline;">879</span>916 Label  </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># … with 172 more rows, and abbreviated variable name ¹​entity_type_name</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ Use `print(n = ...)` to see more rows</span></span></span>
+<span></span>
+<span><span class="co">## merge disc id's with labels</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/merge.html" class="external-link">merge</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>L1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">discs</span><span class="op">)</span>, disc_id <span class="op">=</span> <span class="va">discs</span><span class="op">[</span>, <span class="st">"id"</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>  y <span class="op">=</span> <span class="va">labels</span>, </span>
+<span>  by <span class="op">=</span> <span class="st">"L1"</span>, </span>
+<span>  sort <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 182 × 11</span></span></span>
+<span><span class="co">#&gt;    L1     disc_id L2                L3     L4    name                                      entity_type catno   resource_url                 id entit…¹</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                                     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> 1      7<span style="text-decoration: underline;">496</span>378 basic_information labels 1     Tobi Records (2)                          1           TOB-013 https://api.discogs.com… <span style="text-decoration: underline;">633</span>407 Label  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> 2      4<span style="text-decoration: underline;">490</span>852 basic_information labels 1     La Vida Es Un Mus                         1           Mus70   https://api.discogs.com…  <span style="text-decoration: underline;">38</span>322 Label  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> 3      9<span style="text-decoration: underline;">827</span>276 basic_information labels 1     La Vida Es Un Mus                         1           MUS118  https://api.discogs.com…  <span style="text-decoration: underline;">38</span>322 Label  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> 4      9<span style="text-decoration: underline;">769</span>203 basic_information labels 1     La Vida Es Un Mus                         1           MUS132  https://api.discogs.com…  <span style="text-decoration: underline;">38</span>322 Label  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> 4      9<span style="text-decoration: underline;">769</span>203 basic_information labels 2     Beat Generation                           1           BEAT64  https://api.discogs.com…  <span style="text-decoration: underline;">88</span>198 Label  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> 4      9<span style="text-decoration: underline;">769</span>203 basic_information labels 3     Beat Generation                           1           BEAT 64 https://api.discogs.com…  <span style="text-decoration: underline;">88</span>198 Label  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> 5      7<span style="text-decoration: underline;">237</span>138 basic_information labels 1     Katorga Works                             1           KW-043  https://api.discogs.com… <span style="text-decoration: underline;">205</span>895 Label  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> 6     13<span style="text-decoration: underline;">117</span>042 basic_information labels 1     High Fashion Industries                   1           HFI017  https://api.discogs.com… <span style="text-decoration: underline;">637</span>837 Label  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> 7      7<span style="text-decoration: underline;">113</span>575 basic_information labels 1     Mind Control Records (6)                  1           none    https://api.discogs.com… <span style="text-decoration: underline;">763</span>103 Label  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> 8     10<span style="text-decoration: underline;">540</span>713 basic_information labels 1     Not On Label (Phantom Head Self-released) 1           none    https://api.discogs.com… <span style="text-decoration: underline;">879</span>916 Label  </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># … with 172 more rows, and abbreviated variable name ¹​entity_type_name</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ Use `print(n = ...)` to see more rows</span></span></span></code></pre></div>
+</div>
 </div>
 </div>
 </div>
 <div class="section level2">
-<h2 id="efficient-unmelting-of-melted-data-frames">Efficient unmelting of melted data.frames<a class="anchor" aria-label="anchor" href="#efficient-unmelting-of-melted-data-frames"></a>
+<h2 id="data-frame-to-nested-list">Data.frame to nested list<a class="anchor" aria-label="anchor" href="#data-frame-to-nested-list"></a>
 </h2>
-<p>Let’s return to the example of the melted long data.frame in the first section containing only the renewable energy shares of Western European countries:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">renewable_energy_melt_west_eu</span></code></pre></div>
-<p>Suppose that this data.frame needs to be converted back to a nested list object in order to write it to a JSON- or XML-object, or perhaps for some tree visualization purpose. Writing a recursive function to restore the nested list can prove to be quite a time-consuming and error-prone task. Base R’s <code><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist()</a></code> function has an inverse function <code><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist()</a></code>, but <code><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist()</a></code> requires a <code>skeleton</code> nested list to repopulate, and such a <code>skeleton</code> is clearly unavailable in the current context. In particular, since we have filtered entries from the melted data.frame, we can no longer use the original list as a template object, without filtering nodes from the original list as well.</p>
-<p>To this purpose, <code><a href="../reference/rrapply.html">rrapply()</a></code> includes the additional option <code>how = "unmelt"</code> that performs the inverse operation of <code>how = "melt"</code>. No skeleton object is needed in this case, only an ordinary data.frame in the format returned by <code>how = "melt"</code>. To illustrate, we can convert the melted data.frame above to a nested list as follows:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">renewable_energy_west_eu_unmelt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">renewable_energy_melt_west_eu</span>, how <span class="op">=</span> <span class="st">"unmelt"</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">renewable_energy_west_eu_unmelt</span>, give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div>
-<p><strong>Remark 1:</strong> <code>how = "unmelt"</code> is based on a <em>greedy</em> approach parsing data.frame rows as list elements starting from the top of the data.frame. That is, <code><a href="../reference/rrapply.html">rrapply()</a></code> continues collecting children nodes as long as the parent node name remains unchanged. If, for instance, we wish to create two separate nodes (on the same level) with the name <code>"Western Europe"</code>, these nodes should not be listed after one another in the melted data.frame as <code><a href="../reference/rrapply.html">rrapply()</a></code> will group all children under a single <code>"Western Europe"</code> list element.</p>
-<p><strong>Remark 2:</strong> Internally, <code>how = "unmelt"</code> reconstructs a nested list from the melted data.frame and subsequently follows the same conceptual framework as <code>how = "replace"</code>. Any other function arguments, such as <code>f</code> and <code>condition</code> should therefore be used in exactly the same way as one would use them for <code>how = "replace"</code> applied to a nested list object.</p>
-<p><strong>Remark 3:</strong> <code>how = "unmelt"</code> does (currently) not restore the attributes of intermediate list nodes and is therefore not an exact inverse of <code>how = "melt"</code>. The other way around will always produce the same results:</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">renewable_energy_unmelt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">renewable_energy_melt</span>, how <span class="op">=</span> <span class="st">"unmelt"</span><span class="op">)</span>
-<span class="va">renewable_energy_remelt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">renewable_energy_unmelt</span>, how <span class="op">=</span> <span class="st">"melt"</span><span class="op">)</span>
-
-<span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">renewable_energy_melt</span>, <span class="va">renewable_energy_remelt</span><span class="op">)</span></code></pre></div>
-<p>In terms of computational effort, <code><a href="../reference/rrapply.html">rrapply()</a></code>’s <code>how = "unmelt"</code> can be equally or more efficient than base R’s <code><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist()</a></code> even though there is no template list object that can be repopulated. This is illustrated using the large list objects generated above:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">## deeply nested list with 18 layers and a total of 2^18 elements</span>
-<span class="co">## benchmark timing with rrapply how = "unmelt"</span>
-<span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">deep_unmelt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">deep_melt</span>, how <span class="op">=</span> <span class="st">"unmelt"</span><span class="op">)</span><span class="op">)</span> 
-<span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">deep_unmelt</span>, <span class="va">deep_list</span><span class="op">)</span>
-
-<span class="co">## benchmark timing with relist</span>
-<span class="va">deep_unlist</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/relist.html" class="external-link">as.relistable</a></span><span class="op">(</span><span class="va">deep_list</span><span class="op">)</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">deep_relist</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist</a></span><span class="op">(</span><span class="va">deep_unlist</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<p>As a demonstrating example, we reconsider the long data.frame from
+the first section obtained after melting the renewable energy shares of
+all Western European countries:</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">## large shallow list with 3 layers and a total of 10^6 elements</span>
-<span class="co">## benchmark timing with rrapply how = "unmelt"</span>
-<span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">shallow_unmelt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">shallow_melt</span>, how <span class="op">=</span> <span class="st">"unmelt"</span><span class="op">)</span><span class="op">)</span> 
-<span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">shallow_unmelt</span>, <span class="va">shallow_list</span><span class="op">)</span>
-
-<span class="co">## benchmark timing with relist</span>
-<span class="va">shallow_unlist</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/relist.html" class="external-link">as.relistable</a></span><span class="op">(</span><span class="va">shallow_list</span><span class="op">)</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">shallow_relist</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist</a></span><span class="op">(</span><span class="va">shallow_unlist</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">renewable_energy_melt_west_eu</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
+<span>  <span class="va">renewable_energy_by_country</span>,</span>
+<span>  condition <span class="op">=</span> \<span class="op">(</span><span class="va">x</span>, <span class="va">.xparents</span><span class="op">)</span> <span class="st">"Western Europe"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">.xparents</span>,</span>
+<span>  how <span class="op">=</span> <span class="st">"melt"</span></span>
+<span><span class="op">)</span> </span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">renewable_energy_melt_west_eu</span>, n <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="co">#&gt;      L1     L2             L3            L4 value</span></span>
+<span><span class="co">#&gt; 1 World Europe Western Europe       Austria 34.67</span></span>
+<span><span class="co">#&gt; 2 World Europe Western Europe       Belgium  9.14</span></span>
+<span><span class="co">#&gt; 3 World Europe Western Europe        France 14.74</span></span>
+<span><span class="co">#&gt; 4 World Europe Western Europe       Germany 14.17</span></span>
+<span><span class="co">#&gt; 5 World Europe Western Europe Liechtenstein 62.93</span></span>
+<span><span class="co">#&gt; 6 World Europe Western Europe    Luxembourg 13.54</span></span>
+<span><span class="co">#&gt; 7 World Europe Western Europe        Monaco    NA</span></span>
+<span><span class="co">#&gt; 8 World Europe Western Europe   Netherlands  5.78</span></span>
+<span><span class="co">#&gt; 9 World Europe Western Europe   Switzerland 25.49</span></span></code></pre></div>
+<p>For certain tasks, it may be necessary to convert this data.frame
+back to a nested list object, e.g. to write the data to a JSON- or
+XML-object or for some tree visualization purpose. Writing a recursive
+function to reconstruct the nested list can prove to be quite
+time-consuming and error-prone.</p>
+<p>In this context, the <code><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist()</a></code> function has an inverse
+counterpart <code><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist()</a></code> that reconstructs a nested list from
+the unlisted vector. The <code><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist()</a></code> function always requires
+a <code>skeleton</code> nested list to repopulate, which can make it
+difficult to use in practice, as such a <code>skeleton</code> object is
+for instance unavailable for the current example. In particular, the
+melted data.frame contains only a subset of the original list elements,
+so we can not use the original list as a template object without
+filtering nodes from the original list as well.</p>
+<div class="section level3">
+<h3 id="unmelt-to-nested-list">Unmelt to nested list<a class="anchor" aria-label="anchor" href="#unmelt-to-nested-list"></a>
+</h3>
+<p>To address this difficulty, <code><a href="../reference/rrapply.html">rrapply()</a></code> includes the
+dedicated option <code>how = "unmelt"</code> that performs the inverse
+operation of <code>how = "melt"</code>. No skeleton object is needed in
+this case, only a plain data.frame in the format returned by
+<code>how = "melt"</code>. To illustrate, we can convert the melted
+data.frame above to a nested list as follows:</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
+<span>  <span class="va">renewable_energy_melt_west_eu</span>, </span>
+<span>  how <span class="op">=</span> <span class="st">"unmelt"</span></span>
+<span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span>give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; List of 1</span></span>
+<span><span class="co">#&gt;  $ World:List of 1</span></span>
+<span><span class="co">#&gt;   ..$ Europe:List of 1</span></span>
+<span><span class="co">#&gt;   .. ..$ Western Europe:List of 9</span></span>
+<span><span class="co">#&gt;   .. .. ..$ Austria      : num 34.7</span></span>
+<span><span class="co">#&gt;   .. .. ..$ Belgium      : num 9.14</span></span>
+<span><span class="co">#&gt;   .. .. ..$ France       : num 14.7</span></span>
+<span><span class="co">#&gt;   .. .. ..$ Germany      : num 14.2</span></span>
+<span><span class="co">#&gt;   .. .. ..$ Liechtenstein: num 62.9</span></span>
+<span><span class="co">#&gt;   .. .. ..$ Luxembourg   : num 13.5</span></span>
+<span><span class="co">#&gt;   .. .. ..$ Monaco       : num NA</span></span>
+<span><span class="co">#&gt;   .. .. ..$ Netherlands  : num 5.78</span></span>
+<span><span class="co">#&gt;   .. .. ..$ Switzerland  : num 25.5</span></span></code></pre></div>
+<p><strong>Remark 1:</strong> <code>how = "unmelt"</code> is based on a
+<em>greedy</em> approach parsing data.frame rows as list elements
+starting from the top of the data.frame. That is, <code><a href="../reference/rrapply.html">rrapply()</a></code>
+continues collecting children nodes as long as the parent node name
+remains unchanged. If, for instance, the goal is to create two separate
+nodes (on the same level) with the name <code>"Western Europe"</code>,
+these nodes should not be listed directly after one another in the
+melted data.frame as <code><a href="../reference/rrapply.html">rrapply()</a></code> will group all children
+under a single <code>"Western Europe"</code> list element.</p>
+<p><strong>Remark 2:</strong> Internally, <code>how = "unmelt"</code>
+reconstructs a nested list from the melted data.frame and subsequently
+follows the same conceptual framework as <code>how = "replace"</code>.
+Any other function arguments, such as <code>f</code> and
+<code>condition</code> can be used in exactly the same way as when
+applying <code>how = "replace"</code> to a nested list object.</p>
+<p><strong>Remark 3:</strong> <code>how = "unmelt"</code> does
+(currently) not restore the attributes of intermediate list nodes and is
+therefore not an exact inverse of <code>how = "melt"</code>. The other
+way around always produces the same result:</p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">renewable_energy_unmelt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">renewable_energy_melt_west_eu</span>, how <span class="op">=</span> <span class="st">"unmelt"</span><span class="op">)</span></span>
+<span><span class="va">renewable_energy_remelt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">renewable_energy_unmelt</span>, how <span class="op">=</span> <span class="st">"melt"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">renewable_energy_melt_west_eu</span>, <span class="va">renewable_energy_remelt</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+<p>In terms of computational effort, <code><a href="../reference/rrapply.html">rrapply()</a></code>’s
+<code>how = "unmelt"</code> can be equally or more efficient than
+<code><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist()</a></code> even though there is no template list object that
+can be repopulated. This is highlighted using the large list objects
+generated previously:</p>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">## large deeply nested list (2^18 elements)</span></span>
+<span><span class="co">##  benchmark timing with rrapply</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">deep_unmelt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">deep_melt</span>, how <span class="op">=</span> <span class="st">"unmelt"</span><span class="op">)</span><span class="op">)</span> </span>
+<span><span class="co">#&gt;    user  system elapsed </span></span>
+<span><span class="co">#&gt;   0.154   0.000   0.155</span></span>
+<span></span>
+<span><span class="co">## benchmark timing with relist</span></span>
+<span><span class="va">deep_unlist</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/relist.html" class="external-link">as.relistable</a></span><span class="op">(</span><span class="va">deep_list</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">deep_relist</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist</a></span><span class="op">(</span><span class="va">deep_unlist</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    user  system elapsed </span></span>
+<span><span class="co">#&gt;   3.084   0.000   3.085</span></span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">## large shallow list (10^6 elements)</span></span>
+<span><span class="co">## benchmark timing with rrapply </span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">shallow_unmelt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">shallow_melt</span>, how <span class="op">=</span> <span class="st">"unmelt"</span><span class="op">)</span><span class="op">)</span> </span>
+<span><span class="co">#&gt;    user  system elapsed </span></span>
+<span><span class="co">#&gt;   0.094   0.000   0.093</span></span>
+<span></span>
+<span><span class="co">## benchmark timing with relist</span></span>
+<span><span class="va">shallow_unlist</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/relist.html" class="external-link">as.relistable</a></span><span class="op">(</span><span class="va">shallow_list</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">shallow_relist</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist</a></span><span class="op">(</span><span class="va">shallow_unlist</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    user  system elapsed </span></span>
+<span><span class="co">#&gt;   5.356   0.000   5.357</span></span></code></pre></div>
+<p><strong>Note</strong>: the unmelted lists are not exactly identical
+to the original nested lists, since <code>how = "unmelt"</code> uses the
+placeholder names <code>1</code>, <code>2</code>, <code>3</code>, etc.
+in the melted data.frames to name the nodes in the newly constructed
+lists, whereas the name attributes in the original lists are all empty.
+By removing all names from the unmelted lists, they become identical to
+their original counterparts:</p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">## remove all list names</span></span>
+<span><span class="va">deep_unmelt_unnamed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
+<span>  <span class="va">deep_unmelt</span>,</span>
+<span>  f <span class="op">=</span> <span class="va">unname</span>,</span>
+<span>  classes <span class="op">=</span> <span class="st">"list"</span>,</span>
+<span>  how <span class="op">=</span> <span class="st">"recurse"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">## check if identical</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">deep_unmelt_unnamed</span><span class="op">)</span>, <span class="va">deep_list</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">## remove all list names</span></span>
+<span><span class="va">shallow_unmelt_unnamed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
+<span>  <span class="va">shallow_unmelt</span>,</span>
+<span>  f <span class="op">=</span> <span class="va">unname</span>,</span>
+<span>  classes <span class="op">=</span> <span class="st">"list"</span>,</span>
+<span>  how <span class="op">=</span> <span class="st">"recurse"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">## check if identical</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">shallow_unmelt_unnamed</span><span class="op">)</span>, <span class="va">shallow_list</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
 </div>
+</div>
+
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside>
 </div>
@@ -357,7 +1055,7 @@
 
 <div class="pkgdown-footer-right">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
     </footer>

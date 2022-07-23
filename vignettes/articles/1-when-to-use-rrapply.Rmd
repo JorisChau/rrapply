@@ -303,7 +303,7 @@ rrapply(
   str(list.len = 3, give.attr = FALSE)
 ```
 
-## Special arguments `.xname`, `.xpos`, `.xparents` and `.xsiblings`
+## Special arguments `.xname`, `.xpos`, `.xparents`, `.xsiblings`
 
 With base `rapply()`, the `f` function only has access to the *content* of the list element under evaluation, and there is no convenient way to access its name or location in the nested list from inside the `f` function. To overcome this limitation, `rrapply()` defines the special arguments `.xname`, `.xpos`, `.xparents` and `.xsiblings` inside the `f` and `condition` functions (in addition to the principal function argument):
 
