@@ -29,6 +29,8 @@ jobs:
             any::tibble
             any::tidyr
             any::repurrrsive
+            any::bench
+            any::data.table
             local::.
           needs: website
 
