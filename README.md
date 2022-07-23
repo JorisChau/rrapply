@@ -36,7 +36,7 @@ devtools::install_github("JorisChau/rrapply")
 
 <div>
 
-<a href='vignettes/cheatsheet.pdf'>
+<a href='https://github.com/JorisChau/rrapply/blob/master/vignettes/cheatsheet.pdf'>
 <img src='man/figures/cheatsheet.svg' align="center" height="600" />
 </a>
 
