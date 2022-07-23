@@ -93,6 +93,9 @@ new_list <- function(n, d) {
   )
 }
 
+## random seed
+set.seed(1)
+
 ## generate large shallow list (10^6 elements)
 shallow_list <- new_list(n = 100, d = 3)
 str(shallow_list, list.len = 2)
