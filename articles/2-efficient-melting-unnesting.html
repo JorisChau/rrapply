@@ -181,8 +181,8 @@
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression                                       min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>                                  <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> rrapply(renewable_energy_by_country)          14.1µs   15.3µs   <span style="text-decoration: underline;">64</span>432.         0B     25.8</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> reshape2::melt(renewable_energy_by_country)   41.3ms   41.4ms      24.1    73.1KB    121.</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> rrapply(renewable_energy_by_country)          14.5µs   16.3µs   <span style="text-decoration: underline;">60</span>351.         0B     24.1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> reshape2::melt(renewable_energy_by_country)   48.8ms     49ms      20.4    73.1KB     81.6</span></span></code></pre></div>
 <p>For a medium-sized list as used in this example, the computation time of <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> is not a bottleneck for practical usage. However, the computational effort quickly increases when melting larger or more deeply nested lists:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## helper function to generate large nested list</span></span>
@@ -229,7 +229,7 @@
 <span><span class="co">## benchmark timing with rrapply</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">shallow_melt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">shallow_list</span>, how <span class="op">=</span> <span class="st">"melt"</span><span class="op">)</span><span class="op">)</span> </span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;   0.888   0.024   0.912</span></span>
+<span><span class="co">#&gt;   1.171   0.032   1.203</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">shallow_melt</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   L1 L2 L3     value</span></span>
 <span><span class="co">#&gt; 1  1  1  1 0.2655087</span></span>
@@ -242,7 +242,7 @@
 <span><span class="co">## benchmark timing with reshape2::melt</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">shallow_melt_reshape2</span> <span class="op">&lt;-</span> <span class="fu">reshape2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">melt</a></span><span class="op">(</span><span class="va">shallow_list</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt; 137.244   0.092 137.413</span></span>
+<span><span class="co">#&gt; 150.227   0.120 150.452</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">shallow_melt_reshape2</span><span class="op">)</span></span>
 <span><span class="co">#&gt;       value L3 L2 L1</span></span>
 <span><span class="co">#&gt; 1 0.2655087  1  1  1</span></span>
@@ -258,7 +258,7 @@
 <span><span class="co">## benchmark timing with rrapply</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">deep_melt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">deep_list</span>, how <span class="op">=</span> <span class="st">"melt"</span><span class="op">)</span><span class="op">)</span> </span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;   0.581   0.004   0.584</span></span>
+<span><span class="co">#&gt;   0.776   0.016   0.793</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">deep_melt</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   L1 L2 L3 L4 L5 L6 L7 L8 L9 L10 L11 L12 L13 L14 L15 L16 L17 L18      value</span></span>
 <span><span class="co">#&gt; 1  1  1  1  1  1  1  1  1  1   1   1   1   1   1   1   1   1   1 0.14011775</span></span>
@@ -271,7 +271,7 @@
 <span><span class="co">## benchmark timing with reshape2::melt</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">deep_melt_reshape2</span> <span class="op">&lt;-</span> <span class="fu">reshape2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">melt</a></span><span class="op">(</span><span class="va">deep_list</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;  98.909   0.096  99.058</span></span>
+<span><span class="co">#&gt; 122.871   0.076 123.019</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">deep_melt_reshape2</span><span class="op">)</span></span>
 <span><span class="co">#&gt;        value L18 L17 L16 L15 L14 L13 L12 L11 L10 L9 L8 L7 L6 L5 L4 L3 L2 L1</span></span>
 <span><span class="co">#&gt; 1 0.14011775   1   1   1   1   1   1   1   1   1  1  1  1  1  1  1  1  1  1</span></span>
@@ -443,7 +443,7 @@
 <span>  <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">pokedex_large</span>, how <span class="op">=</span> <span class="st">"bind"</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;   1.841   0.028   1.870</span></span>
+<span><span class="co">#&gt;   2.451   0.048   2.501</span></span>
 <span></span>
 <span><span class="co">## unnest first layers prev_evolution and next_evolution</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="op">{</span></span>
@@ -453,7 +453,7 @@
 <span>    <span class="fu"><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider</a></span><span class="op">(</span><span class="va">prev_evolution</span>, names_sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> </span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt; 102.485   0.316 102.875</span></span></code></pre></div>
+<span><span class="co">#&gt; 113.121   0.364 113.522</span></span></code></pre></div>
 <p><strong>Remark</strong>: in the chained calls to <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">unnest_wider()</a></code> above, we only unnest the first layer of the <code>next_evolution</code> and <code>prev_evolution</code> list-columns, and not any of the resulting children list-columns, which would only further increase computation time.</p>
 <p>To extract and unnest sublists at deeper levels of nesting in the list, such as <code>next_evolution</code>, we manually set the <code>coldepth</code> parameter in the <code>options</code> argument, as also demonstrated above:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
@@ -466,7 +466,7 @@
 <span>  <span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;   1.610   0.000   1.611</span></span>
+<span><span class="co">#&gt;   1.544   0.000   1.544</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">ev1</span><span class="op">)</span></span>
 <span><span class="co">#&gt;        L1 L2             L3 L4 num       name</span></span>
 <span><span class="co">#&gt; 1 pokemon  1 next_evolution  1 002    Ivysaur</span></span>
@@ -485,7 +485,7 @@
 <span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">next_evolution_num</span>, <span class="va">next_evolution_name</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;  80.492   0.124  80.665</span></span>
+<span><span class="co">#&gt;  90.069   0.140  90.263</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">ev2</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 3</span></span></span>
 <span><span class="co">#&gt;      id next_evolution_num next_evolution_name</span></span>
@@ -509,7 +509,7 @@
 <span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">name.1</span>, <span class="va">name.2</span>, <span class="va">name.3</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;  41.486   0.204  41.699</span></span>
+<span><span class="co">#&gt;  42.896   0.080  42.998</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">ev3</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 4</span></span></span>
 <span><span class="co">#&gt;      id name.1     name.2    name.3</span></span>
@@ -538,7 +538,7 @@
 <span>  <span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;   2.073   0.000   2.075</span></span>
+<span><span class="co">#&gt;   2.151   0.000   2.151</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">ev5</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   L2     name.1    name.2 name.3</span></span>
 <span><span class="co">#&gt; 1  1    Ivysaur  Venusaur   &lt;NA&gt;</span></span>
@@ -851,25 +851,25 @@
 <span><span class="co">##  benchmark timing with rrapply</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">deep_unmelt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">deep_melt</span>, how <span class="op">=</span> <span class="st">"unmelt"</span><span class="op">)</span><span class="op">)</span> </span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;   0.147   0.000   0.147</span></span>
+<span><span class="co">#&gt;   0.156   0.000   0.156</span></span>
 <span></span>
 <span><span class="co">## benchmark timing with relist</span></span>
 <span><span class="va">deep_unlist</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/relist.html" class="external-link">as.relistable</a></span><span class="op">(</span><span class="va">deep_list</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">deep_relist</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist</a></span><span class="op">(</span><span class="va">deep_unlist</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;   2.881   0.000   2.882</span></span></code></pre></div>
+<span><span class="co">#&gt;   2.995   0.000   2.995</span></span></code></pre></div>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## large shallow list (10^6 elements)</span></span>
 <span><span class="co">## benchmark timing with rrapply </span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">shallow_unmelt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">shallow_melt</span>, how <span class="op">=</span> <span class="st">"unmelt"</span><span class="op">)</span><span class="op">)</span> </span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;   0.091   0.000   0.091</span></span>
+<span><span class="co">#&gt;   0.097   0.000   0.097</span></span>
 <span></span>
 <span><span class="co">## benchmark timing with relist</span></span>
 <span><span class="va">shallow_unlist</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/relist.html" class="external-link">as.relistable</a></span><span class="op">(</span><span class="va">shallow_list</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">shallow_relist</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist</a></span><span class="op">(</span><span class="va">shallow_unlist</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;   5.044   0.000   5.046</span></span></code></pre></div>
+<span><span class="co">#&gt;   5.476   0.000   5.484</span></span></code></pre></div>
 <p><strong>Note</strong>: the unmelted lists are not exactly identical to the original nested lists, since <code>how = "unmelt"</code> uses the placeholder names <code>1</code>, <code>2</code>, <code>3</code>, etc. in the melted data.frames to name the nodes in the newly constructed lists, whereas the name attributes in the original lists are all empty. By removing all names from the unmelted lists, they become identical to their original counterparts:</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## remove all list names</span></span>
