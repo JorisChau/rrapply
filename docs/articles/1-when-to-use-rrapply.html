@@ -69,6 +69,9 @@
   </div>
 </nav><div class="container template-article">
 
+
+
+
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="" class="logo" alt=""><h1>Efficient list recursion with rrapply</h1>
@@ -85,7 +88,13 @@
 <div class="section level2">
 <h2 id="list-recursion-in-r">List recursion in R<a class="anchor" aria-label="anchor" href="#list-recursion-in-r"></a>
 </h2>
-<p>The nested list below shows a small extract from the <a href="https://www.genealogy.math.ndsu.nodak.edu/" class="external-link">Mathematics Genealogy Project</a> highlighting the advisor/student genealogy of several famous mathematicians. The mathematician’s given names are present in the <code>"given"</code> attribute of each list element. The numeric values at the leaf elements are the total number of student descendants according to the website as of June 2022. If no descendants are available there is a missing value present at the leaf element.</p>
+<p>The nested list below shows a small extract from the <a href="https://www.genealogy.math.ndsu.nodak.edu/" class="external-link">Mathematics Genealogy
+Project</a> highlighting the advisor/student genealogy of several famous
+mathematicians. The mathematician’s given names are present in the
+<code>"given"</code> attribute of each list element. The numeric values
+at the leaf elements are the total number of student descendants
+according to the website as of June 2022. If no descendants are
+available there is a missing value present at the leaf element.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">students</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  Bernoulli <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/structure.html" class="external-link">structure</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -116,11 +125,14 @@
 <span><span class="co">#&gt;   .. .. .. ..$ Plana  : logi NA</span></span>
 <span><span class="co">#&gt;   .. .. .. ..$ Poisson: int 128235</span></span>
 <span><span class="co">#&gt;   ..$ Bernoulli: logi NA</span></span></code></pre></div>
-<p>As an exercise in list recursion, consider the following simple data exploration question:</p>
+<p>As an exercise in list recursion, consider the following simple data
+exploration question:</p>
 <blockquote>
-<p>Filter all descendants of ‘Leonhard Euler’ and replace all missing values by zero while maintaining the list structure.</p>
+<p>Filter all descendants of ‘Leonhard Euler’ and replace all missing
+values by zero while maintaining the list structure.</p>
 </blockquote>
-<p>Here is a possible (not so efficient) base R solution using recursion with the <code><a href="https://rdrr.io/r/base/Recall.html" class="external-link">Recall()</a></code> function:</p>
+<p>Here is a possible (not so efficient) base R solution using recursion
+with the <code><a href="https://rdrr.io/r/base/Recall.html" class="external-link">Recall()</a></code> function:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">filter_desc_euler</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">i</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
@@ -154,18 +166,58 @@
 <span><span class="co">#&gt;   .. .. .. ..$ Fourier: num 73788</span></span>
 <span><span class="co">#&gt;   .. .. .. ..$ Plana  : num 0</span></span>
 <span><span class="co">#&gt;   .. .. .. ..$ Poisson: num 128235</span></span></code></pre></div>
-<p>This works, but is hardly the kind of convoluted code we would like to write for such a seemingly simple question. Moreover, this code is not very easy to follow, which can make updating or modifying it quite a time-consuming and error-prone task.</p>
-<p>An alternative approach would be to unnest the list into a more manageable (e.g. rectangular) format or use specialized packages, such as <a href="https://igraph.org/r/" class="external-link">igraph</a> or <a href="https://CRAN.R-project.org/package=data.tree" class="external-link">data.tree</a>, to make pruning or modifying node entries more straightforward. Note that attention must be paid to correctly include the node attributes in the transformed object as the node names themselves are not unique in this example. This is a sensible approach and usually the way to go when cleaning or tidying up the data, but for fast prototyping and data exploration tasks we may want to keep the list in its original format to reduce the number of processing steps and minimize the code complexity. Sometimes it is also required to maintain a nested data structure as this can be for instance the expected input format for some data visualization or data exporting function.</p>
-<p>The recursive function above makes use of base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code>, a member of the <a href="https://rdrr.io/r/base/lapply.html" class="external-link">apply</a>-family of functions in R, that allows to apply a function recursively to the elements of a nested list and decide how the returned result is structured. Although sometimes useful, the existing <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code> function is often not sufficiently flexible for list recursion tasks in practice, for instance for pruning elements of a nested list (as demonstrated above). In this context, the <code><a href="../reference/rrapply.html">rrapply()</a></code> function in the minimal <code>rrapply</code>-package attempts to enhance and update base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code> to make it more generally applicable for list recursion in the wild. The <code><a href="../reference/rrapply.html">rrapply()</a></code> function builds upon R’s native C implementation of<code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code> and for this reason requires no other external dependencies.</p>
+<p>This works, but is hardly the kind of convoluted code we would like
+to write for such a seemingly simple question. Moreover, this code is
+not very easy to follow, which can make updating or modifying it quite a
+time-consuming and error-prone task.</p>
+<p>An alternative approach would be to unnest the list into a more
+manageable (e.g. rectangular) format or use specialized packages, such
+as <a href="https://igraph.org/r/" class="external-link">igraph</a> or <a href="https://CRAN.R-project.org/package=data.tree" class="external-link">data.tree</a>, to
+make pruning or modifying node entries more straightforward. Note that
+attention must be paid to correctly include the node attributes in the
+transformed object as the node names themselves are not unique in this
+example. This is a sensible approach and usually the way to go when
+cleaning or tidying up the data, but for fast prototyping and data
+exploration tasks we may want to keep the list in its original format to
+reduce the number of processing steps and minimize the code complexity.
+Sometimes it is also required to maintain a nested data structure as
+this can be for instance the expected input format for some data
+visualization or data exporting function.</p>
+<p>The recursive function above makes use of base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code>,
+a member of the <a href="https://rdrr.io/r/base/lapply.html" class="external-link">apply</a>-family of functions
+in R, that allows to apply a function recursively to the elements of a
+nested list and decide how the returned result is structured. Although
+sometimes useful, the existing <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code> function is often
+not sufficiently flexible for list recursion tasks in practice, for
+instance for pruning elements of a nested list (as demonstrated above).
+In this context, the <code><a href="../reference/rrapply.html">rrapply()</a></code> function in the minimal
+<code>rrapply</code>-package attempts to enhance and update base
+<code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code> to make it more generally applicable for list
+recursion in the wild. The <code><a href="../reference/rrapply.html">rrapply()</a></code> function builds upon
+R’s native C implementation of<code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code> and for this reason
+requires no other external dependencies.</p>
 </div>
 <div class="section level2">
 <h2 id="when-to-use-rrapply">When to use <code>rrapply()</code><a class="anchor" aria-label="anchor" href="#when-to-use-rrapply"></a>
 </h2>
-<p>For demonstrational purposes, we make use of the two datasets <code>renewable_energy_by_country</code> and <code>pokedex</code> included in the <code>rrapply</code>-package. <code>renewable_energy_by_country</code> is a nested list containing the renewable energy shares per country (% of total energy consumption) in 2016. The data is publicly available at the <a href="https://unstats-undesa.opendata.arcgis.com/datasets/" class="external-link">United Nations Open SDG Data Hub</a>. The 249 countries and areas are structured based on their geographical locations according to the <a href="https://unstats.un.org/unsd/methodology/m49/" class="external-link">United Nations M49 standard</a>. The numeric values listed for each country are percentages, if no data is available the value of the country is <code>NA</code>. <code>pokedex</code> is a nested list containing various property values for each of the 151 original Pokémon available (in .json) from <a href="https://github.com/Biuni/PokemonGO-Pokedex" class="external-link uri">https://github.com/Biuni/PokemonGO-Pokedex</a>.</p>
+<p>For demonstrational purposes, we make use of the two datasets
+<code>renewable_energy_by_country</code> and <code>pokedex</code>
+included in the <code>rrapply</code>-package.
+<code>renewable_energy_by_country</code> is a nested list containing the
+renewable energy shares per country (% of total energy consumption) in
+2016. The data is publicly available at the <a href="https://unstats-undesa.opendata.arcgis.com/datasets/" class="external-link">United
+Nations Open SDG Data Hub</a>. The 249 countries and areas are
+structured based on their geographical locations according to the <a href="https://unstats.un.org/unsd/methodology/m49/" class="external-link">United Nations M49
+standard</a>. The numeric values listed for each country are
+percentages, if no data is available the value of the country is
+<code>NA</code>. <code>pokedex</code> is a nested list containing
+various property values for each of the 151 original Pokémon available
+(in .json) from <a href="https://github.com/Biuni/PokemonGO-Pokedex" class="external-link uri">https://github.com/Biuni/PokemonGO-Pokedex</a>.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://jorischau.github.io/rrapply/" class="external-link">rrapply</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"renewable_energy_by_country"</span><span class="op">)</span></span></code></pre></div>
-<p>For convenience, we subset only the values for countries and areas in Oceania from <code>renewable_energy_by_country</code>,</p>
+<p>For convenience, we subset only the values for countries and areas in
+Oceania from <code>renewable_energy_by_country</code>,</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">renewable_oceania</span> <span class="op">&lt;-</span> <span class="va">renewable_energy_by_country</span><span class="op">[[</span><span class="st">"World"</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="st">"Oceania"</span><span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">renewable_oceania</span>, list.len <span class="op">=</span> <span class="fl">3</span>, give.attr <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -194,7 +246,15 @@
 <h4 id="how-prune">
 <code>how = "prune"</code><a class="anchor" aria-label="anchor" href="#how-prune"></a>
 </h4>
-<p>With base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code>, there is no convenient way to prune or filter elements from the input list. The <code><a href="../reference/rrapply.html">rrapply()</a></code> function adds an option <code>how = "prune"</code> to prune all list elements not subject to application of the function <code>f</code> from a nested list. The original list structure is retained, similar to the non-pruned versions <code>how = "replace"</code> and <code>how = "list"</code>. Using <code>how = "prune"</code> and the same syntax as in <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code>, we can easily drop all missing values from the list while preserving the nested list structure:</p>
+<p>With base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code>, there is no convenient way to prune
+or filter elements from the input list. The <code><a href="../reference/rrapply.html">rrapply()</a></code>
+function adds an option <code>how = "prune"</code> to prune all list
+elements not subject to application of the function <code>f</code> from
+a nested list. The original list structure is retained, similar to the
+non-pruned versions <code>how = "replace"</code> and
+<code>how = "list"</code>. Using <code>how = "prune"</code> and the same
+syntax as in <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code>, we can easily drop all missing
+values from the list while preserving the nested list structure:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## drop all logical NA's while preserving list structure </span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -220,13 +280,20 @@
 <span><span class="co">#&gt;   .. ..$ Marshall Islands                : num 11.8</span></span>
 <span><span class="co">#&gt;   .. .. [list output truncated]</span></span>
 <span><span class="co">#&gt;   .. [list output truncated]</span></span></code></pre></div>
-<p><strong>Remark</strong>: if the <code>f</code> function is missing, it defaults to the identity function. That is, the <code>f</code> argument can be dropped when no (non-trivial) function is applied to the list elements.</p>
+<p><strong>Remark</strong>: if the <code>f</code> function is missing,
+it defaults to the identity function. That is, the <code>f</code>
+argument can be dropped when no (non-trivial) function is applied to the
+list elements.</p>
 </div>
 <div class="section level4">
 <h4 id="how-flatten">
 <code>how = "flatten"</code><a class="anchor" aria-label="anchor" href="#how-flatten"></a>
 </h4>
-<p>Instead, we can set <code>how = "flatten"</code> to return a <em>flattened</em> unnested version of the pruned list. This is more efficient than first returning the pruned list with <code>how = "prune"</code> and unlisting or flattening the list in a subsequent step.</p>
+<p>Instead, we can set <code>how = "flatten"</code> to return a
+<em>flattened</em> unnested version of the pruned list. This is more
+efficient than first returning the pruned list with
+<code>how = "prune"</code> and unlisting or flattening the list in a
+subsequent step.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## drop all logical NA's and return unnested list</span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -241,7 +308,12 @@
 <span><span class="co">#&gt;            50.34            65.73            33.67             3.03 </span></span>
 <span><span class="co">#&gt;         Kiribati Marshall Islands </span></span>
 <span><span class="co">#&gt;            45.43            11.75</span></span></code></pre></div>
-<p><strong>Hint</strong>: the <code>options</code> argument allows to tune several options specific to certain choices of <code>how</code>. With <code>how = "flatten"</code>, we can choose to not coerce the flattened list to a vector and/or to include all parent list names in the result similar to <code>how = "unlist"</code> but then with a custom name separator.</p>
+<p><strong>Hint</strong>: the <code>options</code> argument allows to
+tune several options specific to certain choices of <code>how</code>.
+With <code>how = "flatten"</code>, we can choose to not coerce the
+flattened list to a vector and/or to include all parent list names in
+the result similar to <code>how = "unlist"</code> but then with a custom
+name separator.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## flatten to simple list with full names</span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -268,7 +340,13 @@
 <h4 id="how-melt">
 <code>how = "melt"</code><a class="anchor" aria-label="anchor" href="#how-melt"></a>
 </h4>
-<p>Using <code>how = "melt"</code>, we can return a melted data.frame of the pruned list similar in format to <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> applied to a nested list. The rows of the melted data.frame contain the parent node paths of the elements in the pruned list. The <code>"value"</code> column contains the values of the terminal or leaf nodes analogous to the flattened list returned by <code>how = "flatten"</code>.</p>
+<p>Using <code>how = "melt"</code>, we can return a melted data.frame of
+the pruned list similar in format to <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code>
+applied to a nested list. The rows of the melted data.frame contain the
+parent node paths of the elements in the pruned list. The
+<code>"value"</code> column contains the values of the terminal or leaf
+nodes analogous to the flattened list returned by
+<code>how = "flatten"</code>.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## drop all logical NA's and return melted data.frame</span></span>
 <span><span class="va">oceania_melt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -288,7 +366,10 @@
 <span><span class="co">#&gt; 8  Oceania                Micronesia             Guam  3.03</span></span>
 <span><span class="co">#&gt; 9  Oceania                Micronesia         Kiribati 45.43</span></span>
 <span><span class="co">#&gt; 10 Oceania                Micronesia Marshall Islands 11.75</span></span></code></pre></div>
-<p><strong>Remark</strong>: if no names are present in a certain sublist of the input list, <code>how = "melt"</code> replaces the names in the melted data.frame by list element indices <code>"1"</code>, <code>"2"</code>, etc.</p>
+<p><strong>Remark</strong>: if no names are present in a certain sublist
+of the input list, <code>how = "melt"</code> replaces the names in the
+melted data.frame by list element indices <code>"1"</code>,
+<code>"2"</code>, etc.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## drop some area names </span></span>
 <span><span class="va">renewable_oceania1</span> <span class="op">&lt;-</span> <span class="va">renewable_oceania</span></span>
@@ -312,7 +393,12 @@
 <span><span class="co">#&gt; 8  Oceania  3             Guam  3.03</span></span>
 <span><span class="co">#&gt; 9  Oceania  3         Kiribati 45.43</span></span>
 <span><span class="co">#&gt; 10 Oceania  3 Marshall Islands 11.75</span></span></code></pre></div>
-<p>A melted data.frame can be used to reconstruct a nested list with <code>how = "unmelt"</code>. No skeleton object as e.g. required by <code><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist()</a></code> is needed, only an ordinary data.frame in the format returned by <code>how = "melt"</code>. This option can be convenient to construct nested lists from a rectangular data.frame format without having to resort to recursive function definitions.</p>
+<p>A melted data.frame can be used to reconstruct a nested list with
+<code>how = "unmelt"</code>. No skeleton object as e.g. required by
+<code><a href="https://rdrr.io/r/utils/relist.html" class="external-link">relist()</a></code> is needed, only an ordinary data.frame in the
+format returned by <code>how = "melt"</code>. This option can be
+convenient to construct nested lists from a rectangular data.frame
+format without having to resort to recursive function definitions.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## reconstruct nested list from melted data.frame</span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span><span class="va">oceania_melt</span>, how <span class="op">=</span> <span class="st">"unmelt"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -338,7 +424,17 @@
 <h4 id="how-bind">
 <code>how = "bind"</code><a class="anchor" aria-label="anchor" href="#how-bind"></a>
 </h4>
-<p>Nested lists containing repeated observations can be unnested with <code>how = "bind"</code>. Each repeated sublist is expanded as a single row in a wide data.frame and identical sublist component names are aligned as individual columns. By default, the list layer containing the repeated observations is identified by the minimal depth detected across leaf elements, but this can also be overridden using the <code>coldepth</code> option in the <code>options</code> argument. Note that the returned data.frame is similar in format to repeated application of <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">tidyr::unnest_wider()</a></code> to a nested data.frame, with the same coercion rules applied to the individual columns as `how = “unlist”.</p>
+<p>Nested lists containing repeated observations can be unnested with
+<code>how = "bind"</code>. Each repeated sublist is expanded as a single
+row in a wide data.frame and identical sublist component names are
+aligned as individual columns. By default, the list layer containing the
+repeated observations is identified by the minimal depth detected across
+leaf elements, but this can also be overridden using the
+<code>coldepth</code> option in the <code>options</code> argument. Note
+that the returned data.frame is similar in format to repeated
+application of <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">tidyr::unnest_wider()</a></code> to a nested
+data.frame, with the same coercion rules applied to the individual
+columns as `how = “unlist”.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"pokedex"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pokedex</span>, list.len <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
@@ -375,7 +471,10 @@
 <span><span class="co">#&gt; 8   8 008  Wartortle         Water 0.99 m  22.5 kg   Squirtle Candy</span></span>
 <span><span class="co">#&gt; 9   9 009  Blastoise         Water 1.60 m  85.5 kg   Squirtle Candy</span></span>
 <span><span class="co">#&gt; 10 10 010   Caterpie           Bug 0.30 m   2.9 kg   Caterpie Candy</span></span></code></pre></div>
-<p><strong>Hint</strong>: setting <code>namecols = TRUE</code> in the <code>options</code> argument includes the parent list names associated to each row in the wide data.frame as individual columns <code>L1</code>, <code>L2</code>, etc.</p>
+<p><strong>Hint</strong>: setting <code>namecols = TRUE</code> in the
+<code>options</code> argument includes the parent list names associated
+to each row in the wide data.frame as individual columns
+<code>L1</code>, <code>L2</code>, etc.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## bind to data.frame including parent columns</span></span>
 <span><span class="va">pokemon_evolutions</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -395,7 +494,8 @@
 <span><span class="co">#&gt; 8  pokemon  4 next_evolution  2 006  Charizard</span></span>
 <span><span class="co">#&gt; 9  pokemon  5 prev_evolution  1 004 Charmander</span></span>
 <span><span class="co">#&gt; 10 pokemon  5 next_evolution  1 006  Charizard</span></span></code></pre></div>
-<p>This can be useful to unnest repeated list elements at multiple nested list levels and join the results into a single data.frame:</p>
+<p>This can be useful to unnest repeated list elements at multiple
+nested list levels and join the results into a single data.frame:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## merge pokemon evolutions with pokemon names</span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -425,7 +525,19 @@
 <div class="section level3">
 <h3 id="condition-function">Condition function<a class="anchor" aria-label="anchor" href="#condition-function"></a>
 </h3>
-<p>Base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code> allows to apply a function <code>f</code> to list elements of certain types or classes via the <code>classes</code> argument. <code><a href="../reference/rrapply.html">rrapply()</a></code> generalizes this concept via an additional <code>condition</code> argument, which accepts any function to use as a condition or predicate to apply <code>f</code> to a subset of list elements. Conceptually, the <code>f</code> function is applied to all leaf elements for which the <code>condition</code> function exactly evaluates to <code>TRUE</code> similar to <code><a href="https://rdrr.io/r/base/Logic.html" class="external-link">isTRUE()</a></code>. If the <code>condition</code> argument is missing, <code>f</code> is applied to all leaf elements. In combination with <code>how = "prune"</code>, the <code>condition</code> function provides additional flexibility in selecting and filtering elements from a nested list,</p>
+<p>Base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code> allows to apply a function <code>f</code>
+to list elements of certain types or classes via the
+<code>classes</code> argument. <code><a href="../reference/rrapply.html">rrapply()</a></code> generalizes this
+concept via an additional <code>condition</code> argument, which accepts
+any function to use as a condition or predicate to apply <code>f</code>
+to a subset of list elements. Conceptually, the <code>f</code> function
+is applied to all leaf elements for which the <code>condition</code>
+function exactly evaluates to <code>TRUE</code> similar to
+<code><a href="https://rdrr.io/r/base/Logic.html" class="external-link">isTRUE()</a></code>. If the <code>condition</code> argument is
+missing, <code>f</code> is applied to all leaf elements. In combination
+with <code>how = "prune"</code>, the <code>condition</code> function
+provides additional flexibility in selecting and filtering elements from
+a nested list,</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## drop all NA's using condition function</span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -450,7 +562,10 @@
 <span><span class="co">#&gt;   .. ..$ Marshall Islands                : num 11.8</span></span>
 <span><span class="co">#&gt;   .. .. [list output truncated]</span></span>
 <span><span class="co">#&gt;   .. [list output truncated]</span></span></code></pre></div>
-<p>More interesting is to consider a <code>condition</code> that cannot also be defined using the <code>classes</code> argument. For instance, we can filter all countries with values that satisfy a certain numeric condition:</p>
+<p>More interesting is to consider a <code>condition</code> that cannot
+also be defined using the <code>classes</code> argument. For instance,
+we can filter all countries with values that satisfy a certain numeric
+condition:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## filter all countries with values above 85%</span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -508,8 +623,14 @@
 <span><span class="co">#&gt;   .. .. ..$ Northern Mariana Islands: num 0</span></span>
 <span><span class="co">#&gt;   .. ..$ Polynesia :List of 1</span></span>
 <span><span class="co">#&gt;   .. .. ..$ Wallis and Futuna Islands: num 0</span></span></code></pre></div>
-<p>Note that the <code>NA</code> elements are not returned, as the <code>condition</code> function does not evaluate to <code>TRUE</code> for <code>NA</code> values.</p>
-<p>As the <code>condition</code> function is a generalization of the <code>classes</code> argument, it remains possible to use <code>deflt</code> together with <code>how = "list"</code> or <code>how = "unlist"</code> to set a default value to all leaf elements for which the <code>condition</code> is not <code>TRUE</code>:</p>
+<p>Note that the <code>NA</code> elements are not returned, as the
+<code>condition</code> function does not evaluate to <code>TRUE</code>
+for <code>NA</code> values.</p>
+<p>As the <code>condition</code> function is a generalization of the
+<code>classes</code> argument, it remains possible to use
+<code>deflt</code> together with <code>how = "list"</code> or
+<code>how = "unlist"</code> to set a default value to all leaf elements
+for which the <code>condition</code> is not <code>TRUE</code>:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## replace all NA elements by zero</span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -537,12 +658,26 @@
 <span><span class="co">#&gt;   .. ..$ Marshall Islands                    : num 11.8</span></span>
 <span><span class="co">#&gt;   .. .. [list output truncated]</span></span>
 <span><span class="co">#&gt;   .. [list output truncated]</span></span></code></pre></div>
-<p>To be consistent with base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code>, the <code>deflt</code> argument can still only be used in combination with <code>how = "list"</code> or <code>how = "unlist"</code>.</p>
+<p>To be consistent with base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code>, the
+<code>deflt</code> argument can still only be used in combination with
+<code>how = "list"</code> or <code>how = "unlist"</code>.</p>
 <div class="section level4">
 <h4 id="using-the-----argument">Using the <code>...</code> argument<a class="anchor" aria-label="anchor" href="#using-the-----argument"></a>
 </h4>
-<p>The first argument to <code>f</code> always evaluates to the content of the list element to which <code>f</code> is applied. Any further arguments, (besides the special arguments <code>.xname</code>, <code>.xpos</code>, <code>.xparents</code> and <code>.xsiblings</code> discussed below), that are independent of the list content can be supplied via the <code>...</code> argument. Since <code><a href="../reference/rrapply.html">rrapply()</a></code> accepts a function in two of its arguments <code>f</code> and <code>condition</code>, any arguments defined via the <code>...</code> need to be defined as function arguments in <em>both</em> the <code>f</code> and <code>condition</code> functions (if existing), even if they are not used in the function itself.</p>
-<p>To clarify, consider the following example which replaces all missing values by a value defined in a separate argument <code>newvalue</code>:</p>
+<p>The first argument to <code>f</code> always evaluates to the content
+of the list element to which <code>f</code> is applied. Any further
+arguments, (besides the special arguments <code>.xname</code>,
+<code>.xpos</code>, <code>.xparents</code> and <code>.xsiblings</code>
+discussed below), that are independent of the list content can be
+supplied via the <code>...</code> argument. Since <code><a href="../reference/rrapply.html">rrapply()</a></code>
+accepts a function in two of its arguments <code>f</code> and
+<code>condition</code>, any arguments defined via the <code>...</code>
+need to be defined as function arguments in <em>both</em> the
+<code>f</code> and <code>condition</code> functions (if existing), even
+if they are not used in the function itself.</p>
+<p>To clarify, consider the following example which replaces all missing
+values by a value defined in a separate argument
+<code>newvalue</code>:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## this is not ok!</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
@@ -586,20 +721,34 @@
 </div>
 </div>
 <div class="section level3">
-<h3 id="special-arguments--xname--xpos--xparents--xsiblings">Special arguments <code>.xname</code>, <code>.xpos</code>, <code>.xparents</code>, <code>.xsiblings</code><a class="anchor" aria-label="anchor" href="#special-arguments--xname--xpos--xparents--xsiblings"></a>
+<h3 id="special-arguments--xname--xpos--xparents--xsiblings">Special arguments <code>.xname</code>, <code>.xpos</code>,
+<code>.xparents</code>, <code>.xsiblings</code><a class="anchor" aria-label="anchor" href="#special-arguments--xname--xpos--xparents--xsiblings"></a>
 </h3>
-<p>With base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code>, the <code>f</code> function only has access to the <em>content</em> of the list element under evaluation, and there is no convenient way to access its name or location in the nested list from inside the <code>f</code> function. To overcome this limitation, <code><a href="../reference/rrapply.html">rrapply()</a></code> defines the special arguments <code>.xname</code>, <code>.xpos</code>, <code>.xparents</code> and <code>.xsiblings</code> inside the <code>f</code> and <code>condition</code> functions (in addition to the principal function argument):</p>
+<p>With base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code>, the <code>f</code> function only has
+access to the <em>content</em> of the list element under evaluation, and
+there is no convenient way to access its name or location in the nested
+list from inside the <code>f</code> function. To overcome this
+limitation, <code><a href="../reference/rrapply.html">rrapply()</a></code> defines the special arguments
+<code>.xname</code>, <code>.xpos</code>, <code>.xparents</code> and
+<code>.xsiblings</code> inside the <code>f</code> and
+<code>condition</code> functions (in addition to the principal function
+argument):</p>
 <ul>
 <li>
 <code>.xname</code> evaluates to the name of the list element;</li>
 <li>
-<code>.xpos</code> evaluates to the position of the element in the nested list structured as an integer vector;</li>
+<code>.xpos</code> evaluates to the position of the element in the
+nested list structured as an integer vector;</li>
 <li>
-<code>.xparents</code> evaluates to a vector of parent list names in the path to the current list element;</li>
+<code>.xparents</code> evaluates to a vector of parent list names in
+the path to the current list element;</li>
 <li>
-<code>.xsiblings</code> evaluates to the parent list containing the current list element and its direct siblings.</li>
+<code>.xsiblings</code> evaluates to the parent list containing the
+current list element and its direct siblings.</li>
 </ul>
-<p>Using the <code>.xname</code> and <code>.xpos</code> arguments, we can transform or filter list elements based on their names and/or positions in the nested list:</p>
+<p>Using the <code>.xname</code> and <code>.xpos</code> arguments, we
+can transform or filter list elements based on their names and/or
+positions in the nested list:</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## apply f based on element's name</span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -634,7 +783,10 @@
 <span><span class="co">#&gt;   .. .. ..$ Belgium    : num 9.14</span></span>
 <span><span class="co">#&gt;   .. .. ..$ Luxembourg : num 13.5</span></span>
 <span><span class="co">#&gt;   .. .. ..$ Netherlands: num 5.78</span></span></code></pre></div>
-<p>Knowing that Europe is located at <code>renewable_energy_by_country[[c(1, 5)]]</code>, we can filter all European countries with a renewable energy share above 50% using the <code>.xpos</code> argument as follows,</p>
+<p>Knowing that Europe is located at
+<code>renewable_energy_by_country[[c(1, 5)]]</code>, we can filter all
+European countries with a renewable energy share above 50% using the
+<code>.xpos</code> argument as follows,</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## filter European countries &gt; 50% using .xpos</span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -652,7 +804,9 @@
 <span><span class="co">#&gt;   .. .. ..$ Sweden : num 51.4</span></span>
 <span><span class="co">#&gt;   .. ..$ Western Europe :List of 1</span></span>
 <span><span class="co">#&gt;   .. .. ..$ Liechtenstein: num 62.9</span></span></code></pre></div>
-<p>This can be done more conveniently using the <code>.xparents</code> argument, which this does not require looking up the location of Europe in the nested list,</p>
+<p>This can be done more conveniently using the <code>.xparents</code>
+argument, which this does not require looking up the location of Europe
+in the nested list,</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## filter European countries &gt; 50% using .xparents</span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -670,7 +824,8 @@
 <span><span class="co">#&gt;   .. .. ..$ Sweden : num 51.4</span></span>
 <span><span class="co">#&gt;   .. ..$ Western Europe :List of 1</span></span>
 <span><span class="co">#&gt;   .. .. ..$ Liechtenstein: num 62.9</span></span></code></pre></div>
-<p>Using the <code>.xpos</code> argument, we can quickly look up the position of a specific element in the nested list,</p>
+<p>Using the <code>.xpos</code> argument, we can quickly look up the
+position of a specific element in the nested list,</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## return position of Sweden in list</span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -681,7 +836,8 @@
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; $Sweden</span></span>
 <span><span class="co">#&gt; [1]  1  5  2 14</span></span></code></pre></div>
-<p>Using the <code>.xsiblings</code> argument, we can look up the direct neighbors of an element in the nested list,</p>
+<p>Using the <code>.xsiblings</code> argument, we can look up the direct
+neighbors of an element in the nested list,</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## look up neighbors of Sweden in list</span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -694,7 +850,9 @@
 <span><span class="co">#&gt;            NA         33.06         26.55          4.24         42.03 </span></span>
 <span><span class="co">#&gt;       Iceland       Ireland   Isle of Man        Latvia     Lithuania </span></span>
 <span><span class="co">#&gt;         78.07          8.65          4.30         38.48         31.42</span></span></code></pre></div>
-<p>We can also use the <code>.xpos</code> argument to determine the maximum depth of the list or the length of the longest sublist as follows,</p>
+<p>We can also use the <code>.xpos</code> argument to determine the
+maximum depth of the list or the length of the longest sublist as
+follows,</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## maximum list depth</span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -713,7 +871,10 @@
 <span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 28</span></span></code></pre></div>
-<p>When unnesting nested lists with <code>how = "bind"</code>, the <code>.xname</code>, <code>.xpos</code> or <code>.xparents</code> arguments can be useful to decide which list elements to include in the unnested data.frame:</p>
+<p>When unnesting nested lists with <code>how = "bind"</code>, the
+<code>.xname</code>, <code>.xpos</code> or <code>.xparents</code>
+arguments can be useful to decide which list elements to include in the
+unnested data.frame:</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## filter elements and unnest list  </span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -733,8 +894,23 @@
 <div class="section level3">
 <h3 id="modifying-list-elements">Modifying list elements<a class="anchor" aria-label="anchor" href="#modifying-list-elements"></a>
 </h3>
-<p>By default, both base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code> and <code><a href="../reference/rrapply.html">rrapply()</a></code> recurse into any <em>list-like</em> element. Setting <code>classes = "list"</code> in <code><a href="../reference/rrapply.html">rrapply()</a></code> overrides this behavior and applies the <code>f</code> function to any list element (i.e. a sublist) that satisfies the <code>condition</code> argument. If the <code>condition</code> is not satisfied for a list element, <code><a href="../reference/rrapply.html">rrapply()</a></code> recurses further into the sublist, applies <code>f</code> to the elements that satisfy <code>condition</code> and so on. The use of <code>classes = "list"</code> signals the <code><a href="../reference/rrapply.html">rrapply()</a></code> function not to descend into list objects by default. For this reason this behavior can only be triggered via the <code>classes</code> argument and <em>not</em> through the use of e.g. <code>condition = is.list</code>.</p>
-<p>The mode <code>classes = "list"</code> can be useful to e.g. collapse sublists or calculate summary statistics across elements in a nested list:</p>
+<p>By default, both base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code> and
+<code><a href="../reference/rrapply.html">rrapply()</a></code> recurse into any <em>list-like</em> element.
+Setting <code>classes = "list"</code> in <code><a href="../reference/rrapply.html">rrapply()</a></code>
+overrides this behavior and applies the <code>f</code> function to any
+list element (i.e. a sublist) that satisfies the <code>condition</code>
+argument. If the <code>condition</code> is not satisfied for a list
+element, <code><a href="../reference/rrapply.html">rrapply()</a></code> recurses further into the sublist,
+applies <code>f</code> to the elements that satisfy
+<code>condition</code> and so on. The use of
+<code>classes = "list"</code> signals the <code><a href="../reference/rrapply.html">rrapply()</a></code>
+function not to descend into list objects by default. For this reason
+this behavior can only be triggered via the <code>classes</code>
+argument and <em>not</em> through the use of
+e.g. <code>condition = is.list</code>.</p>
+<p>The mode <code>classes = "list"</code> can be useful to e.g. collapse
+sublists or calculate summary statistics across elements in a nested
+list:</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## calculate mean value of Europe</span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -746,8 +922,12 @@
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt;   Europe </span></span>
 <span><span class="co">#&gt; 22.36565</span></span></code></pre></div>
-<p>Note that the principal argument in the <code>f</code> function now evaluates to a list. For this reason, we first have to <code>unlist</code> the sublist before calculating the mean.</p>
-<p>To calculate the mean renewable energy shares for each continent, we can make use of the fact that the <code>.xpos</code> vector of each continent has length (i.e. depth) 2:</p>
+<p>Note that the principal argument in the <code>f</code> function now
+evaluates to a list. For this reason, we first have to
+<code>unlist</code> the sublist before calculating the mean.</p>
+<p>To calculate the mean renewable energy shares for each continent, we
+can make use of the fact that the <code>.xpos</code> vector of each
+continent has length (i.e. depth) 2:</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## calculate mean value for each continent</span></span>
 <span><span class="co">## (Antartica's value is missing)</span></span>
@@ -766,7 +946,16 @@
 <span><span class="co">#&gt;   ..$ Asia      : num 17.9</span></span>
 <span><span class="co">#&gt;   ..$ Europe    : num 22.4</span></span>
 <span><span class="co">#&gt;   ..$ Oceania   : num 17.8</span></span></code></pre></div>
-<p><strong>Remark</strong>: if <code>classes = "list"</code>, the <code>f</code> function is only applied to the (non-terminal) list elements. To apply <code>f</code> to both terminal and non-terminal elements in the nested list, we can include additional classes, such as <code>classes = c("list", "numeric", "character")</code>. To apply <code>f</code> to <em>any</em> terminal and non-terminal element in the nested list, we can even combine <code>classes = c("list", "ANY")</code>. To illustrate, we search across all list elements for the country or region with M49-code <code>"155"</code>:</p>
+<p><strong>Remark</strong>: if <code>classes = "list"</code>, the
+<code>f</code> function is only applied to the (non-terminal) list
+elements. To apply <code>f</code> to both terminal and non-terminal
+elements in the nested list, we can include additional classes, such as
+<code>classes = c("list", "numeric", "character")</code>. To apply
+<code>f</code> to <em>any</em> terminal and non-terminal element in the
+nested list, we can even combine
+<code>classes = c("list", "ANY")</code>. To illustrate, we search across
+all list elements for the country or region with M49-code
+<code>"155"</code>:</p>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## filter country or region by M49-code</span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -778,7 +967,9 @@
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; World.Europe.Western Europe </span></span>
 <span><span class="co">#&gt;            "Western Europe"</span></span></code></pre></div>
-<p>As a more complex example, we unnest the Pokémon evolutions in <code>pokedex</code> into a wide data.frame by returning the sublists with Pokémon evolutions as character vectors:</p>
+<p>As a more complex example, we unnest the Pokémon evolutions in
+<code>pokedex</code> into a wide data.frame by returning the sublists
+with Pokémon evolutions as character vectors:</p>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## simplify pokemon evolutions to character vectors </span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -799,7 +990,12 @@
 <span><span class="co">#&gt; 7   Squirtle  Wartortle, Blastoise                     NA</span></span>
 <span><span class="co">#&gt; 8  Wartortle             Blastoise               Squirtle</span></span>
 <span><span class="co">#&gt; 9  Blastoise                    NA    Squirtle, Wartortle</span></span></code></pre></div>
-<p><strong>Hint:</strong> as data.frames are also list-like objects, <code><a href="../reference/rrapply.html">rrapply()</a></code> applies <code>f</code> to individual data.frame columns by default. Set <code>classes = "data.frame"</code> to avoid this behavior and apply the <code>f</code> and <code>condition</code> functions to complete data.frame objects instead of individual data.frame columns.</p>
+<p><strong>Hint:</strong> as data.frames are also list-like objects,
+<code><a href="../reference/rrapply.html">rrapply()</a></code> applies <code>f</code> to individual data.frame
+columns by default. Set <code>classes = "data.frame"</code> to avoid
+this behavior and apply the <code>f</code> and <code>condition</code>
+functions to complete data.frame objects instead of individual
+data.frame columns.</p>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## create a nested list of data.frames</span></span>
 <span><span class="va">oceania_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -847,7 +1043,12 @@
 <h4 id="how-recurse">
 <code>how = "recurse"</code><a class="anchor" aria-label="anchor" href="#how-recurse"></a>
 </h4>
-<p>If <code>classes = "list"</code> and <code>how = "recurse"</code>, <code><a href="../reference/rrapply.html">rrapply()</a></code> applies the <code>f</code> function to any list element that satisfies the <code>condition</code> argument, but recurses further into any <em>updated</em> list element after application of <code>f</code>. This can be useful to e.g. recursively update the class or other attributes of all elements in a nested list:</p>
+<p>If <code>classes = "list"</code> and <code>how = "recurse"</code>,
+<code><a href="../reference/rrapply.html">rrapply()</a></code> applies the <code>f</code> function to any list
+element that satisfies the <code>condition</code> argument, but recurses
+further into any <em>updated</em> list element after application of
+<code>f</code>. This can be useful to e.g. recursively update the class
+or other attributes of all elements in a nested list:</p>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## recursively remove all list attributes</span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -880,7 +1081,13 @@
 <h4 id="how-names">
 <code>how = "names"</code><a class="anchor" aria-label="anchor" href="#how-names"></a>
 </h4>
-<p>The option <code>how = "names"</code> is a special case of <code>how = "recurse"</code>, where the value of <code>f</code> is used to replace the <em>name</em> of the evaluated list element instead of its <em>content</em> (as with all other <code>how</code> options). By default, <code>how = "names"</code> uses <code>classes = c("list", "ANY")</code> in order to allow updating of all names in the nested list.</p>
+<p>The option <code>how = "names"</code> is a special case of
+<code>how = "recurse"</code>, where the value of <code>f</code> is used
+to replace the <em>name</em> of the evaluated list element instead of
+its <em>content</em> (as with all other <code>how</code> options). By
+default, <code>how = "names"</code> uses
+<code>classes = c("list", "ANY")</code> in order to allow updating of
+all names in the nested list.</p>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## recursively replace all names by M49-codes</span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -913,7 +1120,9 @@
 <div class="section level2">
 <h2 id="conclusion">Conclusion<a class="anchor" aria-label="anchor" href="#conclusion"></a>
 </h2>
-<p>To conclude, we return to the list recursion exercise in the first section. Using <code><a href="../reference/rrapply.html">rrapply()</a></code>, one possible solution is to split the question into two steps as follows:</p>
+<p>To conclude, we return to the list recursion exercise in the first
+section. Using <code><a href="../reference/rrapply.html">rrapply()</a></code>, one possible solution is to split
+the question into two steps as follows:</p>
 <div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## look up position of Euler (Leonhard)</span></span>
 <span><span class="va">euler</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -941,7 +1150,9 @@
 <span><span class="co">#&gt;   .. .. .. ..$ Fourier: num 73788</span></span>
 <span><span class="co">#&gt;   .. .. .. ..$ Plana  : num 0</span></span>
 <span><span class="co">#&gt;   .. .. .. ..$ Poisson: num 128235</span></span></code></pre></div>
-<p>Knowing that Johann Euler is a descendant of Leonhard Euler, we can further simplify this into a single function call using the <code>.xparents</code> argument:</p>
+<p>Knowing that Johann Euler is a descendant of Leonhard Euler, we can
+further simplify this into a single function call using the
+<code>.xparents</code> argument:</p>
 <div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## filter descendants of Euler (Leonhard) and replace missing values by zero</span></span>
 <span><span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>
@@ -960,7 +1171,9 @@
 <span><span class="co">#&gt;   .. .. .. ..$ Fourier: num 73788</span></span>
 <span><span class="co">#&gt;   .. .. .. ..$ Plana  : num 0</span></span>
 <span><span class="co">#&gt;   .. .. .. ..$ Poisson: num 128235</span></span></code></pre></div>
-<p>Or alternatively, we could first update the names of the elements in the nested list to include both first and last names and then prune the list in a second step:</p>
+<p>Or alternatively, we could first update the names of the elements in
+the nested list to include both first and last names and then prune the
+list in a second step:</p>
 <div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## include first names in list element names</span></span>
 <span><span class="va">students_fullnames</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rrapply.html">rrapply</a></span><span class="op">(</span></span>

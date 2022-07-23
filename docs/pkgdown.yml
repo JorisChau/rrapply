@@ -1,9 +1,9 @@
-pandoc: '2.5'
+pandoc: '2.18'
 pkgdown: 2.0.6
 pkgdown_sha: ~
 articles:
   1-when-to-use-rrapply: 1-when-to-use-rrapply.html
   2-efficient-melting-unnesting: 2-efficient-melting-unnesting.html
   3-calls-and-expressions: 3-calls-and-expressions.html
-last_built: 2022-07-23T14:33Z
+last_built: 2022-07-23T17:57Z
 

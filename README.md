@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# {rrapply}: Revisiting R-base rapply() <img style="height: 150px;" src='reference/figures/sticker.svg' align="right" />
+# {rrapply}: Revisiting R-base rapply() <img style="height: 139px;" src='man/figures/sticker.svg' align="right" />
 
 <!-- badges: start -->
 
@@ -36,8 +36,8 @@ devtools::install_github("JorisChau/rrapply")
 
 <div>
 
-<a href='reference/figures/cheatsheet.pdf'>
-<img src='reference/figures/cheatsheet.svg' align="center" height="600" />
+<a href='vignettes/cheatsheet.pdf'>
+<img src='man/figures/cheatsheet.svg' align="center" height="600" />
 </a>
 
 </div>

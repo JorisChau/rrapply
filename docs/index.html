@@ -70,9 +70,10 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="rrapply-revisiting-r-base-rapply-">{rrapply}: Revisiting R-base rapply() <img style="height: 150px;" src="reference/figures/sticker.svg" align="right"><a class="anchor" aria-label="anchor" href="#rrapply-revisiting-r-base-rapply-"></a>
+<div class="page-header"><h1 id="rrapply-revisiting-r-base-rapply-">{rrapply}: Revisiting R-base rapply() <img style="height: 139px;" src="reference/figures/sticker.svg" align="right"><a class="anchor" aria-label="anchor" href="#rrapply-revisiting-r-base-rapply-"></a>
 </h1></div>
 <!-- badges: start -->
+
 <p>The minimal {rrapply}-package contains a single function <code><a href="reference/rrapply.html">rrapply()</a></code>, providing an extended implementation of R-base’s <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code> function, which applies a function <code>f</code> to all elements of a nested list recursively and controls how to structure the returned result. <code><a href="reference/rrapply.html">rrapply()</a></code> builds upon <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code>’s native C implementation and for this reason requires no external R-package dependencies.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -88,7 +89,9 @@
 <div class="section level2">
 <h2 id="cheat-sheet">Cheat sheet<a class="anchor" aria-label="anchor" href="#cheat-sheet"></a>
 </h2>
-<div><p><a href="reference/figures/cheatsheet.pdf"> <img src="reference/figures/cheatsheet.svg" align="center" height="600"></a></p></div>
+<div>
+<p><a href="vignettes/cheatsheet.pdf"> <img src="reference/figures/cheatsheet.svg" align="center" height="600"></a></p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="when-to-use-rrapply">When to use <code>rrapply()</code>
@@ -98,8 +101,8 @@
 <h3 id="list-pruning-and-unnesting">List pruning and unnesting<a class="anchor" aria-label="anchor" href="#list-pruning-and-unnesting"></a>
 </h3>
 <div class="section level4">
-<h4 id="-how--prune">• <code>how = "prune"</code>
-<a class="anchor" aria-label="anchor" href="#-how--prune"></a>
+<h4 id="id_-how--prune">• <code>how = "prune"</code>
+<a class="anchor" aria-label="anchor" href="#id_-how--prune"></a>
 </h4>
 <p>With base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code>, there is no convenient way to prune or filter list elements from the input list object. The <code><a href="reference/rrapply.html">rrapply()</a></code> function adds an option <code>how = "prune"</code> to prune all list elements not subject to application of <code>f</code> from a nested list,</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
@@ -158,8 +161,8 @@
 <span><span class="co">#&gt;   .. [list output truncated]</span></span></code></pre></div>
 </div>
 <div class="section level4">
-<h4 id="-how--flatten">• <code>how = "flatten"</code>
-<a class="anchor" aria-label="anchor" href="#-how--flatten"></a>
+<h4 id="id_-how--flatten">• <code>how = "flatten"</code>
+<a class="anchor" aria-label="anchor" href="#id_-how--flatten"></a>
 </h4>
 <p>Instead, use <code>how = "flatten"</code> to return a flattened unnested version of the pruned list,</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
@@ -199,8 +202,8 @@
 <span><span class="co">#&gt;   [list output truncated]</span></span></code></pre></div>
 </div>
 <div class="section level4">
-<h4 id="-how--melt">• <code>how = "melt"</code>
-<a class="anchor" aria-label="anchor" href="#-how--melt"></a>
+<h4 id="id_-how--melt">• <code>how = "melt"</code>
+<a class="anchor" aria-label="anchor" href="#id_-how--melt"></a>
 </h4>
 <p>Or, use <code>how = "melt"</code> to return a melted data.frame of the pruned list similar in format to <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> applied to a nested list.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -244,8 +247,8 @@
 <span><span class="co">#&gt;   .. [list output truncated]</span></span></code></pre></div>
 </div>
 <div class="section level4">
-<h4 id="-how--bind">• <code>how = "bind"</code>
-<a class="anchor" aria-label="anchor" href="#-how--bind"></a>
+<h4 id="id_-how--bind">• <code>how = "bind"</code>
+<a class="anchor" aria-label="anchor" href="#id_-how--bind"></a>
 </h4>
 <p>Nested lists containing repeated observations can be unnested with <code>how = "bind"</code>, which returns a wide data.frame similar in format to <code><a href="https://dplyr.tidyverse.org/reference/bind.html" class="external-link">dplyr::bind_rows()</a></code> applied to a list of data.frames or repeated application of <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">tidyr::unnest_wider()</a></code> to a nested data.frame.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
@@ -546,8 +549,8 @@
 <h3 id="recursive-list-updating">Recursive list updating<a class="anchor" aria-label="anchor" href="#recursive-list-updating"></a>
 </h3>
 <div class="section level4">
-<h4 id="-how--recurse">• <code>how = "recurse"</code>
-<a class="anchor" aria-label="anchor" href="#-how--recurse"></a>
+<h4 id="id_-how--recurse">• <code>how = "recurse"</code>
+<a class="anchor" aria-label="anchor" href="#id_-how--recurse"></a>
 </h4>
 <p>If <code>classes = "list"</code> and <code>how = "recurse"</code>, <code><a href="reference/rrapply.html">rrapply()</a></code> applies the <code>f</code> function to any list element that satisfies the <code>condition</code> argument similar to the previous section, but recurses further into any <em>updated</em> list-like element after application of <code>f</code>. This can be useful to e.g. recursively update the class or other attributes of all elements in a nested list:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
@@ -580,8 +583,8 @@
 <span><span class="co">#&gt;   .. [list output truncated]</span></span></code></pre></div>
 </div>
 <div class="section level4">
-<h4 id="-how--names">• <code>how = "names"</code>
-<a class="anchor" aria-label="anchor" href="#-how--names"></a>
+<h4 id="id_-how--names">• <code>how = "names"</code>
+<a class="anchor" aria-label="anchor" href="#id_-how--names"></a>
 </h4>
 <p>The option <code>how = "names"</code> is a special case of <code>how = "recurse"</code>, where the value of <code>f</code> is used to replace the <em>name</em> of the evaluated list element instead of its <em>content</em> (as with all other <code>how</code> options). By default, <code>how = "names"</code> uses <code>classes = c("list", "ANY")</code> in order to allow updating of all names in the nested list.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
