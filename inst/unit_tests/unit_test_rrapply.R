@@ -765,9 +765,8 @@ xout13.21 <- list(raw.1 = as.raw(TRUE), raw.2 = as.raw(FALSE), lgl.1 = TRUE,
                   lgl.2 = FALSE, int.1 = 1L, int.2 = 0L, real.1 = 1, real.2 = 0, 
                   cplx.1 = 0+1i, cplx.2 = 0+0i, str.1 = "T", str.2 = "F", name.1 = quote(t), 
                   name.2 = quote(f))
-xout13.22 <-  
-  
-  dotest("13.1", rrapply(xin, classes = "raw", how = "flatten"), xout13.1)
+
+dotest("13.1", rrapply(xin, classes = "raw", how = "flatten"), xout13.1)
 dotest("13.2", rrapply(xin, classes = "raw", how = "bind", options = list(coldepth = 1L)), xout13.2)
 dotest("13.3", rrapply(xin, classes = "logical", how = "flatten"), xout13.3)
 dotest("13.4", rrapply(xin, classes = "logical", how = "bind", options = list(coldepth = 1L)), xout13.4)
