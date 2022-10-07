@@ -4,6 +4,26 @@
 #include <stdio.h>
 #include "rrapply.h"
 
+#define INTBITS (8 * sizeof(int))
+
+/* set bit in array */
+static void C_setbit(int *array, int el)
+{
+	array[el / INTBITS] |= 1 << (el % INTBITS);
+}
+
+/* reset bit array to zeros */
+static void C_resetbits(int *array, int len)
+{
+	memset(array, 0, (size_t)(len * sizeof(int)));
+}
+
+/* test bit in array */
+static int C_testbit(int *array, int el)
+{
+	return array[el / INTBITS] & (1 << (el % INTBITS));
+}
+
 SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPred, SEXP classes, SEXP R_how, SEXP deflt, SEXP R_dfaslist, SEXP R_feverywhere, SEXP options)
 {
 	SEXP ans, ansnames = NULL, ansnamecols = NULL, ansptr, xptr, names, xsym, xname, xpos, xparents, xsiblings;
@@ -519,27 +539,79 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 			SEXP *ansnames_uniq_ptr = STRING_PTR(ansnames_uniq);
 			SEXP *ansnames_new_ptr = STRING_PTR(ansnames);
 
+			/* track column assignment through bit array */
+			int nelem = localArgs.ans_idx / INTBITS + 1;
+			int *col_matched = (int *)S_alloc((size_t)nelem, sizeof(int));
+
+			/* initial column assignment */
 			ansnames_uniq_ptr[0] = ansnames_new_ptr[0];
 			col_idx_array[ncol++] = icol++;
+			C_setbit(col_matched, 0);
 
+			/* all column assignments */
 			for (R_len_t i = 1; i < localArgs.ans_idx; i++)
 			{
-				/* fast check, if fails default to slow check */
-				if (icol < ncol && strcmp(CHAR(ansnames_new_ptr[i]), CHAR(ansnames_uniq_ptr[icol])) == 0)
+				/* new row */
+				if (localArgs.xinfo_array[i] != localArgs.xinfo_array[i - 1])
 				{
-					col_idx_array[i] = icol;
-					icol = icol < (ncol - 1) ? icol + 1 : 0;
+					icol = 0;
+					C_resetbits(col_matched, ncol / INTBITS + 1);
+				}
+
+				/* fast check, if fails default to slow check */
+				if (!strcmp(CHAR(ansnames_new_ptr[i]), CHAR(ansnames_uniq_ptr[icol])))
+				{
+					if (!C_testbit(col_matched, icol))
+					{
+						/* set column id */
+						col_idx_array[i] = icol;
+						C_setbit(col_matched, icol);
+					}
+					else if(icol == (ncol - 1))
+					{
+						/* add new column */
+						ansnames_uniq_ptr[icol + 1] = ansnames_new_ptr[i];
+						col_idx_array[i] = icol + 1;
+						C_setbit(col_matched, icol + 1);
+						ncol++;
+					}
+					else 
+					{
+						for (R_len_t j = icol + 1; j < ncol; j++)
+						{
+							/* empty column + name match */
+							if (!C_testbit(col_matched, j) && !strcmp(CHAR(ansnames_new_ptr[i]), CHAR(ansnames_uniq_ptr[j])))
+							{
+								/* set column id */
+								col_idx_array[i] = j;
+								C_setbit(col_matched, j);
+								break;
+							}
+							if (j == (ncol - 1))
+							{
+								/* add new column */
+								ansnames_uniq_ptr[j + 1] = ansnames_new_ptr[i];
+								col_idx_array[i] = j + 1;
+								C_setbit(col_matched, j + 1);
+								ncol++;
+								break;
+							}
+						}
+					}
+					/* update column counter */
+					icol += (icol < (ncol - 1));
 				}
 				else
 				{
 					/* slow check */
 					for (R_len_t j = 0; j < ncol; j++)
 					{
-						/* match already observed column */
-						if (strcmp(CHAR(ansnames_new_ptr[i]), CHAR(ansnames_uniq_ptr[j])) == 0)
+						/* empty column + name match */
+						if (!C_testbit(col_matched, j) && !strcmp(CHAR(ansnames_new_ptr[i]), CHAR(ansnames_uniq_ptr[j])))
 						{
+							/* set column id */
 							col_idx_array[i] = j;
-							icol = j < (ncol - 1) ? j + 1 : 0;
+							C_setbit(col_matched, j);
 							break;
 						}
 						/* add new column */
@@ -547,11 +619,13 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 						{
 							ansnames_uniq_ptr[j + 1] = ansnames_new_ptr[i];
 							col_idx_array[i] = j + 1;
-							icol = 0;
+							C_setbit(col_matched, j + 1);
 							ncol++;
 							break;
 						}
 					}
+					/* update column counter */
+					icol += (C_testbit(col_matched, icol) && icol < (ncol - 1));
 				}
 			}
 		}
