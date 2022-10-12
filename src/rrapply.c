@@ -4,22 +4,23 @@
 #include <stdio.h>
 #include "rrapply.h"
 
-#define INTBITS (8 * sizeof(int))
+
+#define INTBITS (8 * (R_len_t)sizeof(R_len_t))
 
 /* set bit in array */
-static void C_setbit(int *array, int el)
+static void C_setbit(R_len_t *array, R_len_t el)
 {
 	array[el / INTBITS] |= 1 << (el % INTBITS);
 }
 
 /* reset bit array to zeros */
-static void C_resetbits(int *array, int len)
+static void C_resetbits(R_len_t *array, size_t len)
 {
-	memset(array, 0, (size_t)(len * sizeof(int)));
+	memset(array, 0, len * sizeof(R_len_t));
 }
 
 /* test bit in array */
-static int C_testbit(int *array, int el)
+static int C_testbit(R_len_t *array, R_len_t el)
 {
 	return array[el / INTBITS] & (1 << (el % INTBITS));
 }
@@ -540,8 +541,8 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 			SEXP *ansnames_new_ptr = STRING_PTR(ansnames);
 
 			/* track column assignment through bit array */
-			int nelem = localArgs.ans_idx / INTBITS + 1;
-			int *col_matched = (int *)S_alloc((size_t)nelem, sizeof(int));
+			R_len_t nelem = localArgs.ans_idx / INTBITS + 1;
+			R_len_t *col_matched = (R_len_t *)S_alloc(nelem, sizeof(R_len_t));
 
 			/* initial column assignment */
 			ansnames_uniq_ptr[0] = ansnames_new_ptr[0];
@@ -555,7 +556,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 				if (localArgs.xinfo_array[i] != localArgs.xinfo_array[i - 1])
 				{
 					icol = 0;
-					C_resetbits(col_matched, ncol / INTBITS + 1);
+					C_resetbits(col_matched, (size_t)(ncol / INTBITS + 1));
 				}
 
 				/* fast check, if fails default to slow check */
