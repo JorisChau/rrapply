@@ -521,7 +521,7 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
     {
       res <- structure(
         res,
-        names = names(res),
+        names = make.unique(names(res)),
         row.names = seq_len(length(res[[1L]])),
         class = "data.frame"
       )
