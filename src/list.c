@@ -222,12 +222,12 @@ SEXP C_recurse_list(
                     if (!Rf_isString(fval))
                     {
                         SEXP fname = PROTECT(Rf_coerceVector(fval, STRSXP));
-                        SET_STRING_ELT(fixedArgs->ansnames_ptr, localArgs->xpos_vec[localArgs->depth] - 1, !Rf_isNull(STRING_ELT(fname, 0)) ? STRING_ELT(fname, 0) : R_BlankString);
+                        SET_STRING_ELT(fixedArgs->ansnames_ptr, localArgs->xpos_vec[localArgs->depth] - 1, Rf_isValidString(fname) ? STRING_ELT(fname, 0) : R_BlankString);
                         UNPROTECT(1);
                     }
                     else
                     {
-                        SET_STRING_ELT(fixedArgs->ansnames_ptr, localArgs->xpos_vec[localArgs->depth] - 1, !Rf_isNull(STRING_ELT(fval, 0)) ? STRING_ELT(fval, 0) : R_BlankString);
+                        SET_STRING_ELT(fixedArgs->ansnames_ptr, localArgs->xpos_vec[localArgs->depth] - 1, Rf_isValidString(fval) ? STRING_ELT(fval, 0) : R_BlankString);
                     }
                     fval = Xi;
                 }
