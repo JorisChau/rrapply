@@ -97,6 +97,9 @@ rm(.xpos, .xname, .xparents)
 ## how argument
 xin5 <- list(l1 = unname(xin4))
 xin6 <- list(list(a1 = 1L, a2 = 2L), list(a1 = 1L, a2 = 2L))
+xin7 <- list(list(a = 1L, a = 2L), list(a = 1L, a = 2L))
+xin8 <- list(list(a = 1L, b = 2L, b = 3L), list(b = 2L, a = 1L, b = 3L))
+xin9 <- list(list(a = 1L, b = 2L, c = 3L), list(b = 2L, a = 1L, b = 3L))
 
 xout2.1 <- list(a = -1L, b = list(b1 = 2L, b2 = 3L), c = -4L)
 xout2.2 <- list(a = -1L, b = list(b1 = NULL, b2 = NULL), c = -4L)
@@ -153,6 +156,11 @@ xout2.48 <- structure(list(L1 = NULL, L2 = NULL, L3 = NULL), row.names = integer
 xout2.49 <- structure(list(l1.1.a1 = 1L, l1.1.a2 = 2L, l1.2.a2 = 2), row.names = 1L, class = "data.frame")
 xout2.50 <- structure(list(L1 = "l1", `1_a1` = 1L, `1_a2` = 2L, `2_a2` = 2), row.names = 1L, class = "data.frame")
 xout2.51 <- list(a = 1L, `2` = list(b1 = 2L, b2 = 3L), c = 4L)
+xout2.52 <- structure(list(a = c(1L, 1L), a.1 = c(2L, 2L)), row.names = 1:2, class = "data.frame")
+xout2.53 <- structure(list(a = c("a", "a"), a.1 = c("a", "a")), row.names = 1:2, class = "data.frame")
+xout2.55 <- structure(list(`1.a` = 1L, `1.a.1` = 2L, `2.a` = 1L, `2.a.1` = 2L), row.names = 1L, class = "data.frame")
+xout2.56 <- structure(list(a = c(1L, 1L), b = c(2L, 2L), b.1 = c(3L, 3L)), row.names = 1:2, class = "data.frame")
+xout2.57 <- structure(list(a = c(1L, 1L), b = c(2L, 2L), c = c(3L, NA), b.1 = c(NA, 3L)), row.names = 1:2, class = "data.frame")
 
 dotest("2.1", rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "replace"), xout2.1)
 dotest("2.2", rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "list"), xout2.2)
@@ -207,6 +215,13 @@ dotest("2.48", rrapply(xin5, how = "bind", options = list(namecols = TRUE, colde
 dotest("2.49", rrapply(xin5, condition = function(x, .xname) grepl("a", .xname), how = "bind", options = list(namecols = TRUE, coldepth = 1)), xout2.49)
 dotest("2.50", rrapply(xin5, condition = function(x, .xname) grepl("a", .xname), how = "bind", options = list(namesep = "_", namecols = TRUE, coldepth = 2)), xout2.50)
 dotest("2.51", rrapply(xin, f = identity, condition = is.list, how = "names"), xout2.51)
+
+dotest("2.52", rrapply(xin7, how = "bind"), xout2.52)
+dotest("2.53", rrapply(xin7, f = function(x, .xname) .xname, how = "bind"), xout2.53)
+dotest("2.54", rrapply(xin7, condition = function(x, .xname) .xname == "a", how = "bind"), xout2.52)
+dotest("2.55", rrapply(xin7, how = "bind", options = list(coldepth = 1)), xout2.55)
+dotest("2.56", rrapply(xin8, how = "bind"), xout2.56)
+dotest("2.57", rrapply(xin9, how = "bind"), xout2.57)
 
 ## check for trailing special arguments
 dotest("2.32", exists(".xpos"), FALSE)
@@ -321,8 +336,7 @@ xin4 <- list(expression(a <- 1L), expression(...))
 xin5 <- list(par = pairlist(a = 1L, b = 2L))
 xin6 <- list(1L, 2L, 3L)
 xin7 <- list(data.frame(a = I(data.frame(b = I(data.frame(c = 1L))))))
-xin8 <- list(list(a = 1L, a = 2L), list(a = 1L, a = 2L))
-  
+
 xout6.1 <- list(a = 1L, b = "b", c = 4L)
 xout6.2 <- list(a = "a", b = "b", c = "c")
 xout6.3 <- xout6.1
@@ -364,10 +378,6 @@ xout6.30 <- list(list(a = list(b = list(c = 1L))))
 xout6.31 <- list(a = 1L, b_ = list(b1 = 2L, b2 = 3L), c = 4L)
 xout6.32 <- structure(list(b1 = list(list(b11 = 2L)), b2 = 3L), row.names = 1L, class = "data.frame")
 xout6.33 <- structure(list(L1 = "b", L2 = "b1", b11 = 2L), row.names = 1L, class = "data.frame")
-
-xout6.34 <- structure(list(a = c(1L, 1L), a.1 = c(2L, 2L)), row.names = 1:2, class = "data.frame")
-xout6.35 <- structure(list(a = c("a", "a"), a.1 = c("a", "a")), row.names = 1:2, class = "data.frame")
-xout6.37 <- structure(list(`1.a` = 1L, `1.a.1` = 2L, `2.a` = 1L, `2.a.1` = 2L), row.names = 1L, class = "data.frame")
 
 dotest("6.1", rrapply(xin1, f = function(x, .xname) .xname, classes = "list"), xout6.1)
 dotest("6.2", rrapply(xin1, f = function(x, .xname) .xname, classes = c("list", "ANY")), xout6.2)
@@ -411,11 +421,6 @@ dotest("6.30", rrapply(xin7, classes = "data.frame", f = as.list, how = "recurse
 dotest("6.31", rrapply(xin2, f = function(x, .xname) paste0(.xname, "_"), classes = "list", how = "names"), xout6.31)
 dotest("6.32", rrapply(xin1, how = "bind", classes = c("list", "ANY"), options = list(coldepth = 2)), xout6.32)
 dotest("6.33", rrapply(xin1, how = "bind", classes = c("list", "ANY"), options = list(namecols = TRUE, coldepth = 3)), xout6.33)
-
-dotest("6.34", rrapply(xin8, how = "bind"), xout6.34)
-dotest("6.35", rrapply(xin8, f = function(x, .xname) .xname, how = "bind"), xout6.35)
-dotest("6.36", rrapply(xin8, condition = function(x, .xname) .xname == "a", how = "bind"), xout6.34)
-dotest("6.37", rrapply(xin8, how = "bind", options = list(coldepth = 1)), xout6.37)
 
 ## errors
 tools::assertError(rrapply(list(list(1)), f = list, classes = "list", how = "recurse"))
