@@ -284,7 +284,6 @@ void C_coerceList(SEXP ans, SEXP newans, R_len_t newlen, SEXPTYPE type)
 {
     /* initialize outside of switch statement */
     SEXP newString;
-    SEXP *newans_ptr = NULL;
 
     switch (type)
     {
@@ -293,25 +292,21 @@ void C_coerceList(SEXP ans, SEXP newans, R_len_t newlen, SEXPTYPE type)
             SET_VECTOR_ELT(newans, j, VECTOR_ELT(ans, j));
         break;
     case STRSXP:
-        newans_ptr = STRING_PTR(newans);
         for (R_len_t j = 0; j < newlen; j++)
         {
             if (!Rf_isString(VECTOR_ELT(ans, j)))
             {
                 newString = PROTECT(Rf_coerceVector(VECTOR_ELT(ans, j), STRSXP));
-                newans_ptr[j] = STRING_ELT(newString, 0);
+                SET_STRING_ELT(newans, j, STRING_ELT(newString, 0));
                 UNPROTECT(1);
             }
             else
-            {
-                newans_ptr[j] = STRING_ELT(VECTOR_ELT(ans, j), 0);
-            }
+                SET_STRING_ELT(newans, j, STRING_ELT(VECTOR_ELT(ans, j), 0));
         }
         break;
     case CPLXSXP:
         for (R_len_t j = 0; j < newlen; j++)
-            COMPLEX0(newans)
-        [j] = Rf_asComplex(VECTOR_ELT(ans, j));
+            SET_COMPLEX_ELT(newans, j, Rf_asComplex(VECTOR_ELT(ans, j)));
         break;
     case REALSXP:
         for (R_len_t j = 0; j < newlen; j++)

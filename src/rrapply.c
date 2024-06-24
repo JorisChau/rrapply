@@ -504,7 +504,6 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 			/* melted return object */
 			SEXP newans1 = PROTECT(Rf_allocVector(VECSXP, fixedArgs.ans_depthmax + 2));
 			SEXP newnames_col = PROTECT(Rf_allocVector(STRSXP, localArgs.ans_idx));
-			SEXP *newnames_col_ptr = STRING_PTR(newnames_col);
 			nprotect += 3;
 
 			/* populate columns */
@@ -513,7 +512,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 			for (R_len_t j = 0; j < fixedArgs.ans_depthmax + 1; j++)
 			{
 				for (R_len_t i = 0; i < localArgs.ans_idx; i++)
-					newnames_col_ptr[i] = STRING_ELT(VECTOR_ELT(ansnames, i), j);
+					SET_STRING_ELT(newnames_col, i, STRING_ELT(VECTOR_ELT(ansnames, i), j));
 				/* deep copy of column */
 				SET_VECTOR_ELT(newans1, j, Rf_duplicate(newnames_col));
 			}
@@ -537,15 +536,12 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 
 		if (localArgs.ans_idx > 0)
 		{
-			SEXP *ansnames_uniq_ptr = STRING_PTR(ansnames_uniq);
-			SEXP *ansnames_new_ptr = STRING_PTR(ansnames);
-
 			/* track column assignment through bit array */
 			R_len_t nelem = localArgs.ans_idx / INTBITS + 1;
 			R_len_t *col_matched = (R_len_t *)S_alloc(nelem, sizeof(R_len_t));
 
 			/* initial column assignment */
-			ansnames_uniq_ptr[0] = ansnames_new_ptr[0];
+			SET_STRING_ELT(ansnames_uniq, 0, STRING_ELT(ansnames, 0));
 			col_idx_array[ncol++] = icol++;
 			C_setbit(col_matched, 0);
 
@@ -560,7 +556,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 				}
 
 				/* fast check, if fails default to slow check */
-				if (!strcmp(CHAR(ansnames_new_ptr[i]), CHAR(ansnames_uniq_ptr[icol])))
+				if (!strcmp(CHAR(STRING_ELT(ansnames, i)), CHAR(STRING_ELT(ansnames_uniq, icol))))
 				{
 					if (!C_testbit(col_matched, icol))
 					{
@@ -571,7 +567,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 					else if(icol == (ncol - 1))
 					{
 						/* add new column */
-						ansnames_uniq_ptr[icol + 1] = ansnames_new_ptr[i];
+						SET_STRING_ELT(ansnames_uniq, icol + 1, STRING_ELT(ansnames, i));
 						col_idx_array[i] = icol + 1;
 						C_setbit(col_matched, icol + 1);
 						ncol++;
@@ -581,7 +577,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 						for (R_len_t j = icol + 1; j < ncol; j++)
 						{
 							/* empty column + name match */
-							if (!C_testbit(col_matched, j) && !strcmp(CHAR(ansnames_new_ptr[i]), CHAR(ansnames_uniq_ptr[j])))
+							if (!C_testbit(col_matched, j) && !strcmp(CHAR(STRING_ELT(ansnames, i)), CHAR(STRING_ELT(ansnames_uniq, j)))) 
 							{
 								/* set column id */
 								col_idx_array[i] = j;
@@ -591,7 +587,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 							if (j == (ncol - 1))
 							{
 								/* add new column */
-								ansnames_uniq_ptr[j + 1] = ansnames_new_ptr[i];
+								SET_STRING_ELT(ansnames_uniq, j + 1, STRING_ELT(ansnames, i));
 								col_idx_array[i] = j + 1;
 								C_setbit(col_matched, j + 1);
 								ncol++;
@@ -608,7 +604,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 					for (R_len_t j = 0; j < ncol; j++)
 					{
 						/* empty column + name match */
-						if (!C_testbit(col_matched, j) && !strcmp(CHAR(ansnames_new_ptr[i]), CHAR(ansnames_uniq_ptr[j])))
+						if (!C_testbit(col_matched, j) && !strcmp(CHAR(STRING_ELT(ansnames, i)), CHAR(STRING_ELT(ansnames_uniq, j)))) 
 						{
 							/* set column id */
 							col_idx_array[i] = j;
@@ -618,7 +614,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 						/* add new column */
 						if (j == (ncol - 1))
 						{
-							ansnames_uniq_ptr[j + 1] = ansnames_new_ptr[i];
+							SET_STRING_ELT(ansnames_uniq, j + 1, STRING_ELT(ansnames, i));
 							col_idx_array[i] = j + 1;
 							C_setbit(col_matched, j + 1);
 							ncol++;

@@ -1,20 +1,15 @@
-## CRAN package version 1.2.6
+## CRAN package version 1.2.7
 
-### Test environments
+## Test environments
 
-* ubuntu gcc R-release, R-devel (rhub)
-* debian gcc R-release, R-devel, R-patched (rhub)
-* debian clang R-devel (rhub)
-* fedora clang/gcc R-devel (rhub)
-* centos8-epel R-4.0.4 (rhub)
-* macos-highsierra R-release (rhub)
-* macos-big-sur R-release (rhub)
-* solaris10 R-release (rhub)
-* solaris10 ods R-release (rhub)
-* windows-server R-release, R-devel (UCRT), R-oldrel, R-patched
+* ubuntu gcc R-oldrel, R-release, R-next, R-devel (rhub, gh-actions)
+* debian gcc/clang R-devel (rhub)
+* fedora gcc/clang R-devel (rhub)
+* macos-monterey clang R-release, R-next (gh-actions)
+* windows gcc R-oldrel, R-release, R-next, R-devel (r-winbuilder, gh-actions)
 
-### Compiled code checks
+## Compiled code checks
 
-* ubuntu-rchk R-devel 
-* ubuntu gcc R-release --use-valgrind 
-* ubuntu gcc R-release --use-gct
+* ubuntu-rchk R-devel (docker)
+* fedora gcc R-devel --use-valgrind (rhub)
+* ubuntu gcc R-4.4 --use-gct (local install)
