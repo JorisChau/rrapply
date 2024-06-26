@@ -190,12 +190,14 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		.xpos_vec = NULL,
 		.xinfo_array = NULL,
 		.ans_row = 0,
-		.xparent_ipx = ipx};
+		.xparent_ipx = ipx,
+		.nms_update = NULL};
 
 	/* fill remaining values, depends on how argument
 	   and presence of special arguments */
 	R_len_t n = Rf_length(X);
 	names = PROTECT(Rf_getAttrib(X, R_NamesSymbol));
+	Rboolean nms_update = FALSE;
 	nprotect++;
 
 	/* how = 'flatten' */
@@ -318,6 +320,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 				ansnames = PROTECT(Rf_duplicate(names));
 
 			fixedArgs.ansnames_ptr = ansnames;
+			localArgs.nms_update = &nms_update;
 			nprotect++;
 		}
 	}
@@ -414,7 +417,10 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 
 		/* reset names */
 		if (fixedArgs.how == 9)
+		{
 			fixedArgs.ansnames_ptr = ansnames;
+			localArgs.nms_update = &nms_update;
+		}
 	}
 
 	if (fixedArgs.how == 3) // prune list
@@ -721,16 +727,12 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		UNPROTECT(nprotect);
 		return newans;
 	}
-	else if (fixedArgs.how == 9)
-	{
-		/* update names */
-		Rf_setAttrib(ans, R_NamesSymbol, ansnames);
-
-		UNPROTECT(nprotect);
-		return ans;
-	}
 	else // other 'how' options
 	{
+		/* update names */
+		if (fixedArgs.how == 9 && nms_update)
+			Rf_setAttrib(ans, R_NamesSymbol, ansnames);
+
 		UNPROTECT(nprotect);
 		return ans;
 	}

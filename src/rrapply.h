@@ -64,6 +64,7 @@ typedef struct LocalArgs
     R_len_t *xinfo_array;        // array with node position information (only for pruning)
     R_len_t ans_row;             // current result row (only used for binding)
     PROTECT_INDEX xparent_ipx;   // xparents protection pointer
+    Rboolean *nms_update;        // update names at current layer (only for names)
 } LocalArgs;
 
 /* prototypes */
