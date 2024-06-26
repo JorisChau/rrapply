@@ -237,7 +237,7 @@ void C_recurse_flatten(
                 UNPROTECT(1);
 
                 (localArgs->xinfo_array)[localArgs->ans_idx] = localArgs->ans_row;
-
+                
                 /* same as for melting */
                 if (!fixedArgs->anysymbol && Rf_isSymbol(fval))
                     fixedArgs->anysymbol = TRUE;

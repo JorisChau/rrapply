@@ -97,6 +97,9 @@ rm(.xpos, .xname, .xparents)
 ## how argument
 xin5 <- list(l1 = unname(xin4))
 xin6 <- list(list(a1 = 1L, a2 = 2L), list(a1 = 1L, a2 = 2L))
+xin7 <- list(list(a = 1L, a = 2L), list(a = 1L, a = 2L))
+xin8 <- list(list(a = 1L, b = 2L, b = 3L), list(b = 2L, a = 1L, b = 3L))
+xin9 <- list(list(a = 1L, b = 2L, c = 3L), list(b = 2L, a = 1L, b = 3L))
 
 xout2.1 <- list(a = -1L, b = list(b1 = 2L, b2 = 3L), c = -4L)
 xout2.2 <- list(a = -1L, b = list(b1 = NULL, b2 = NULL), c = -4L)
@@ -140,7 +143,7 @@ xout2.35 <- list(par_ = list(a_ = 1L, b_ = 2L))
 xout2.36 <- list(a_ = list(a1_ = 1L, a2_ = 2L), a_ = list(a2_ = 2), a_ = list(`1_` = 1L, `2_` = 2L))
 xout2.37 <- list(a = 1L, `2_` = list(b1 = 2L, b2 = 3L), c = 4L)
 xout2.38 <- list(`1_` = list(a = 1L, b = 2L))
-xout2.39 <- list(`1_` = list(a1 = 1L, a2 = 2L), `2_` = list(a2 = 2), `3_` = structure(list(1L, 2L), names = c("", "")))
+xout2.39 <- list(`1_` = list(a1 = 1L, a2 = 2L), `2_` = list(a2 = 2), `3_` = list(1L, 2L))
 xout2.40 <- structure(1:4, names = c("a", "b.b1", "b.b2", "c"))
 xout2.41 <- list(a = 1L, b1 = 2L, b2 = 3L, c = 4L)
 xout2.42 <- list(par.a = 1L, par.b = 2L)
@@ -153,6 +156,11 @@ xout2.48 <- structure(list(L1 = NULL, L2 = NULL, L3 = NULL), row.names = integer
 xout2.49 <- structure(list(l1.1.a1 = 1L, l1.1.a2 = 2L, l1.2.a2 = 2), row.names = 1L, class = "data.frame")
 xout2.50 <- structure(list(L1 = "l1", `1_a1` = 1L, `1_a2` = 2L, `2_a2` = 2), row.names = 1L, class = "data.frame")
 xout2.51 <- list(a = 1L, `2` = list(b1 = 2L, b2 = 3L), c = 4L)
+xout2.52 <- structure(list(a = c(1L, 1L), a.1 = c(2L, 2L)), row.names = 1:2, class = "data.frame")
+xout2.53 <- structure(list(a = c("a", "a"), a.1 = c("a", "a")), row.names = 1:2, class = "data.frame")
+xout2.55 <- structure(list(`1.a` = 1L, `1.a.1` = 2L, `2.a` = 1L, `2.a.1` = 2L), row.names = 1L, class = "data.frame")
+xout2.56 <- structure(list(a = c(1L, 1L), b = c(2L, 2L), b.1 = c(3L, 3L)), row.names = 1:2, class = "data.frame")
+xout2.57 <- structure(list(a = c(1L, 1L), b = c(2L, 2L), c = c(3L, NA), b.1 = c(NA, 3L)), row.names = 1:2, class = "data.frame")
 
 dotest("2.1", rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "replace"), xout2.1)
 dotest("2.2", rrapply(xin, f = `-`, condition = function(x, .xpos) .xpos %in% c(1L, length(xin)), how = "list"), xout2.2)
@@ -207,6 +215,13 @@ dotest("2.48", rrapply(xin5, how = "bind", options = list(namecols = TRUE, colde
 dotest("2.49", rrapply(xin5, condition = function(x, .xname) grepl("a", .xname), how = "bind", options = list(namecols = TRUE, coldepth = 1)), xout2.49)
 dotest("2.50", rrapply(xin5, condition = function(x, .xname) grepl("a", .xname), how = "bind", options = list(namesep = "_", namecols = TRUE, coldepth = 2)), xout2.50)
 dotest("2.51", rrapply(xin, f = identity, condition = is.list, how = "names"), xout2.51)
+
+dotest("2.52", rrapply(xin7, how = "bind"), xout2.52)
+dotest("2.53", rrapply(xin7, f = function(x, .xname) .xname, how = "bind"), xout2.53)
+dotest("2.54", rrapply(xin7, condition = function(x, .xname) .xname == "a", how = "bind"), xout2.52)
+dotest("2.55", rrapply(xin7, how = "bind", options = list(coldepth = 1)), xout2.55)
+dotest("2.56", rrapply(xin8, how = "bind"), xout2.56)
+dotest("2.57", rrapply(xin9, how = "bind"), xout2.57)
 
 ## check for trailing special arguments
 dotest("2.32", exists(".xpos"), FALSE)
@@ -528,7 +543,8 @@ xout9.13 <- list(a = -1L, -2L, c1 = -3L, -4L)
 xout9.14 <- structure(list(c1 = -3L), row.names = 1L, class = "data.frame")
 xout9.15 <- list(`1_` = 1L, 2L, list(`3_` = 3L, 4L))
 xout9.16 <- list(a_ = 1L, `_` = 2L, `_` = list(c1_ = 3L, `_` = 4L))
-
+xout9.18 <- structure(list(1L, 2L, structure(list(3L, 4L), names = c("c1", NA))), names = c("a", NA, NA))
+  
 dotest("9.1", rrapply(xin, f = `-`, condition = function(x, .xname) nzchar(.xname), how = "replace"), xout9.1)
 dotest("9.2", rrapply(xin, f = `-`, condition = function(x, .xname) nzchar(.xname), how = "list"), xout9.2)
 dotest("9.3", rrapply(xin, f = `-`, condition = function(x, .xname) nzchar(.xname), how = "prune"), xout9.3)
@@ -545,6 +561,9 @@ dotest("9.13", rrapply(xin, f = `-`, how = "flatten", options = list(simplify = 
 dotest("9.14", rrapply(xin, f = `-`, condition = function(x, .xname) nzchar(.xname), how = "bind", options = list(coldepth = 2)), xout9.14)
 dotest("9.15", rrapply(xin, f = function(x) paste0(x, "_"), condition = function(x, .xname) nzchar(.xname), how = "names"), xout9.15)
 dotest("9.16", rrapply(xin, f = function(x, .xname) paste0(.xname, "_"), how = "names"), xout9.16)
+dotest("9.17", rrapply(xin, f = function(x, .xname) if(nzchar(.xname)) .xname else NULL, how = "names"), xin)
+dotest("9.18", rrapply(xin, f = function(x, .xname) if(nzchar(.xname)) .xname else NA_character_, how = "names"), xout9.18)
+dotest("9.19", rrapply(xin, f = function(x, .xname) if(nzchar(.xname)) .xname else character(0), how = "names"), xin)
 
 ## partially named list 2
 xin <- list(1L, 2L, list(c1 = 3L, c2 = 4L))
@@ -599,6 +618,7 @@ xin5 <- quote(x[, 1])  ## empty symbol
 xout11.1 <- structure(list(), .Names = character(0))
 xout11.2 <- list()
 xout11.3 <- structure(list(L1 = character(0), value = list()), row.names = integer(0), class = "data.frame")
+xout11.4 <- structure(list(1L), names = "")
 
 dotest("11.1", rrapply(xin1, condition = function(x) FALSE, how = "prune"), xout11.1)
 dotest("11.2", rrapply(xin1, condition = function(x) FALSE, how = "flatten"), xout11.1)
@@ -635,7 +655,8 @@ dotest("11.39", rrapply(xin3, condition = function(x) FALSE, how = "bind", optio
 dotest("11.40", rrapply(xin1, condition = function(x) FALSE, how = "names"), xin1)
 dotest("11.41", rrapply(xin2, condition = function(x) FALSE, how = "names"), xin2)
 dotest("11.42", rrapply(xin5, condition = function(x) FALSE, how = "names"), xin5)
-dotest("11.43", rrapply(xin3, how = "bind", options = list(coldepth = 3)), xout11.1)
+dotest("11.43", rrapply(xin2, f = function(x) NULL, how = "names"), xout11.4)
+dotest("11.44", rrapply(xin3, how = "bind", options = list(coldepth = 3)), xout11.1)
 
 ## check wrong inputs
 tools::assertError(rrapply(xin1, f = `-`, how = "unmelt"))
@@ -765,9 +786,8 @@ xout13.21 <- list(raw.1 = as.raw(TRUE), raw.2 = as.raw(FALSE), lgl.1 = TRUE,
                   lgl.2 = FALSE, int.1 = 1L, int.2 = 0L, real.1 = 1, real.2 = 0, 
                   cplx.1 = 0+1i, cplx.2 = 0+0i, str.1 = "T", str.2 = "F", name.1 = quote(t), 
                   name.2 = quote(f))
-xout13.22 <-  
-  
-  dotest("13.1", rrapply(xin, classes = "raw", how = "flatten"), xout13.1)
+
+dotest("13.1", rrapply(xin, classes = "raw", how = "flatten"), xout13.1)
 dotest("13.2", rrapply(xin, classes = "raw", how = "bind", options = list(coldepth = 1L)), xout13.2)
 dotest("13.3", rrapply(xin, classes = "logical", how = "flatten"), xout13.3)
 dotest("13.4", rrapply(xin, classes = "logical", how = "bind", options = list(coldepth = 1L)), xout13.4)
@@ -793,21 +813,31 @@ dotest("13.21", rrapply(xin, classes = "ANY", how = "flatten", options = list(na
 if(getRversion() < "4.0.0") {
   
   xin <- quote(f1(a = 1L, b = f2(b1 = 2L, b2 = 3L), c = 4L))
+  xin2 <- quote(f(f1(a = 1L, a = 2L), f2(a = 1L, a = 2L)))
   xout14.1 <- list(L1 = c("b", "b", "b"), L2 = c("", "b1", "b2"), value = list(quote(f2), 2L, 3L))
   xout14.2 <- list("b." = list(quote(f2)), "b.b1" = 2L, "b.b2" = 3L)
+  xout14.3 <- list(list(quote(f1), quote(f2)), a = c(1L, 1L), a.1 = c(2L, 2L))
+  xout14.4 <- structure(list(a = c(1L, 1L), a.1 = c(2L, 2L)), row.names = 1:2, class = "data.frame")
   
   dotest("14.1", rrapply(xin, f = identity, condition = function(x, .xpos) length(.xpos) > 1, how = "melt"), xout14.1)
   dotest("14.2", rrapply(xin, f = identity, condition = function(x, .xpos) length(.xpos) > 1, how = "bind"), xout14.2)
+  dotest("14.3", rrapply(xin2, how = "bind", options = list(coldepth = 2)), xout14.3)
+  dotest("14.4", rrapply(xin2, condition = function(x, .xname) .xname == "a", how = "bind", options = list(coldepth = 2)), xout14.4)
   
 } else {
   
   xin1 <- quote(f1(a = 1L, b = f2(b1 = 2L, b2 = 3L), c = 4L))
   xin2 <- expression(a <- 1L, expression(b))
-  xout14.3 <- structure(list(L1 = c("", "b"), L2 = c(NA, ""), value = list(quote(f1), quote(f2))), row.names = 1:2, class = "data.frame")
-  xout14.4 <- structure(list(`1` = list(quote(`<-`), quote(expression)), `2` = list(quote(a), quote(b))), row.names = 1:2, class = "data.frame")
+  xin3 <- quote(f(f1(a = 1L, a = 2L), f2(a = 1L, a = 2L)))
+  xout14.5 <- structure(list(L1 = c("", "b"), L2 = c(NA, ""), value = list(quote(f1), quote(f2))), row.names = 1:2, class = "data.frame")
+  xout14.6 <- structure(list(`1` = list(quote(`<-`), quote(expression)), `2` = list(quote(a), quote(b))), row.names = 1:2, class = "data.frame")
+  xout14.7 <- structure(list(list(quote(f1), quote(f2)), a = c(1L, 1L), a.1 = c(2L, 2L)), row.names = 1:2, class = "data.frame")
+  xout14.8 <- structure(list(a = c(1L, 1L), a.1 = c(2L, 2L)), row.names = 1:2, class = "data.frame")
   
-  dotest("14.3", rrapply(xin1, classes = "name", how = "melt"), xout14.3)
-  dotest("14.4", rrapply(xin2, classes = "name", how = "bind"), xout14.4)
+  dotest("14.5", rrapply(xin1, classes = "name", how = "melt"), xout14.5)
+  dotest("14.6", rrapply(xin2, classes = "name", how = "bind"), xout14.6)
+  dotest("14.7", rrapply(xin3, how = "bind", options = list(coldepth = 2)), xout14.7)
+  dotest("14.8", rrapply(xin3, condition = function(x, .xname) .xname == "a", how = "bind", options = list(coldepth = 2)), xout14.8)
   
 }
 

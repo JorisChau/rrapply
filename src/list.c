@@ -16,7 +16,7 @@ SEXP C_recurse_list(
     SEXP xsym             // principal argument symbol
 )
 {
-    /* initialize SEXPs */
+    /* initialize variables */
     SEXP fval = NULL;
     int nprotect = 0;
 
@@ -222,13 +222,15 @@ SEXP C_recurse_list(
                     if (!Rf_isString(fval))
                     {
                         SEXP fname = PROTECT(Rf_coerceVector(fval, STRSXP));
-                        SET_STRING_ELT(fixedArgs->ansnames_ptr, localArgs->xpos_vec[localArgs->depth] - 1, STRING_ELT(fname, 0));
+                        SET_STRING_ELT(fixedArgs->ansnames_ptr, localArgs->xpos_vec[localArgs->depth] - 1, Rf_isValidString(fname) ? STRING_ELT(fname, 0) : R_BlankString);
                         UNPROTECT(1);
                     }
                     else
-                        SET_STRING_ELT(fixedArgs->ansnames_ptr, localArgs->xpos_vec[localArgs->depth] - 1, STRING_ELT(fval, 0));
-
+                    {
+                        SET_STRING_ELT(fixedArgs->ansnames_ptr, localArgs->xpos_vec[localArgs->depth] - 1, Rf_isValidString(fval) ? STRING_ELT(fval, 0) : R_BlankString);
+                    }
                     fval = Xi;
+                    *(localArgs->nms_update) = TRUE;
                 }
             }
             else
@@ -280,6 +282,7 @@ SEXP C_recurse_list(
 
         /* current element information */
         R_len_t n = Rf_length(fval);
+        Rboolean nms_update = FALSE;
         SEXP names = PROTECT(Rf_getAttrib(fval, R_NamesSymbol));
         SEXP fvalptr = Rf_isPairList(fval) ? fval : NULL;
 
@@ -299,6 +302,7 @@ SEXP C_recurse_list(
                     ansnames = PROTECT(Rf_duplicate(names));
 
                 fixedArgs->ansnames_ptr = ansnames;
+                localArgs->nms_update = &nms_update;
                 nprotect++;
             }
         }
@@ -391,15 +395,18 @@ SEXP C_recurse_list(
                 localArgs->xsiblings_ptr = fval;
 
             /* reset names */
-            if (fixedArgs->how == 9)
+            if (fixedArgs->how == 9) 
+            {
                 fixedArgs->ansnames_ptr = ansnames;
+                localArgs->nms_update = &nms_update;
+            }
         }
 
         /* decrement current depth */
         (localArgs->depth)--;
 
         /* update names */
-        if (fixedArgs->how == 9)
+        if (fixedArgs->how == 9 && nms_update)
             Rf_setAttrib(ans, R_NamesSymbol, ansnames);
 
         UNPROTECT(nprotect);

@@ -4,6 +4,27 @@
 #include <stdio.h>
 #include "rrapply.h"
 
+
+#define INTBITS (8 * (R_len_t)sizeof(R_len_t))
+
+/* set bit in array */
+static void C_setbit(R_len_t *array, R_len_t el)
+{
+	array[el / INTBITS] |= 1 << (el % INTBITS);
+}
+
+/* reset bit array to zeros */
+static void C_resetbits(R_len_t *array, size_t len)
+{
+	memset(array, 0, len * sizeof(R_len_t));
+}
+
+/* test bit in array */
+static int C_testbit(R_len_t *array, R_len_t el)
+{
+	return array[el / INTBITS] & (1 << (el % INTBITS));
+}
+
 SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPred, SEXP classes, SEXP R_how, SEXP deflt, SEXP R_dfaslist, SEXP R_feverywhere, SEXP options)
 {
 	SEXP ans, ansnames = NULL, ansnamecols = NULL, ansptr, xptr, names, xsym, xname, xpos, xparents, xsiblings;
@@ -169,12 +190,14 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		.xpos_vec = NULL,
 		.xinfo_array = NULL,
 		.ans_row = 0,
-		.xparent_ipx = ipx};
+		.xparent_ipx = ipx,
+		.nms_update = NULL};
 
 	/* fill remaining values, depends on how argument
 	   and presence of special arguments */
 	R_len_t n = Rf_length(X);
 	names = PROTECT(Rf_getAttrib(X, R_NamesSymbol));
+	Rboolean nms_update = FALSE;
 	nprotect++;
 
 	/* how = 'flatten' */
@@ -297,6 +320,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 				ansnames = PROTECT(Rf_duplicate(names));
 
 			fixedArgs.ansnames_ptr = ansnames;
+			localArgs.nms_update = &nms_update;
 			nprotect++;
 		}
 	}
@@ -393,7 +417,10 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 
 		/* reset names */
 		if (fixedArgs.how == 9)
+		{
 			fixedArgs.ansnames_ptr = ansnames;
+			localArgs.nms_update = &nms_update;
+		}
 	}
 
 	if (fixedArgs.how == 3) // prune list
@@ -483,7 +510,6 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 			/* melted return object */
 			SEXP newans1 = PROTECT(Rf_allocVector(VECSXP, fixedArgs.ans_depthmax + 2));
 			SEXP newnames_col = PROTECT(Rf_allocVector(STRSXP, localArgs.ans_idx));
-			SEXP *newnames_col_ptr = STRING_PTR(newnames_col);
 			nprotect += 3;
 
 			/* populate columns */
@@ -492,7 +518,7 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 			for (R_len_t j = 0; j < fixedArgs.ans_depthmax + 1; j++)
 			{
 				for (R_len_t i = 0; i < localArgs.ans_idx; i++)
-					newnames_col_ptr[i] = STRING_ELT(VECTOR_ELT(ansnames, i), j);
+					SET_STRING_ELT(newnames_col, i, STRING_ELT(VECTOR_ELT(ansnames, i), j));
 				/* deep copy of column */
 				SET_VECTOR_ELT(newans1, j, Rf_duplicate(newnames_col));
 			}
@@ -516,42 +542,93 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 
 		if (localArgs.ans_idx > 0)
 		{
-			SEXP *ansnames_uniq_ptr = STRING_PTR(ansnames_uniq);
-			SEXP *ansnames_new_ptr = STRING_PTR(ansnames);
+			/* track column assignment through bit array */
+			R_len_t nelem = localArgs.ans_idx / INTBITS + 1;
+			R_len_t *col_matched = (R_len_t *)S_alloc(nelem, sizeof(R_len_t));
 
-			ansnames_uniq_ptr[0] = ansnames_new_ptr[0];
+			/* initial column assignment */
+			SET_STRING_ELT(ansnames_uniq, 0, STRING_ELT(ansnames, 0));
 			col_idx_array[ncol++] = icol++;
+			C_setbit(col_matched, 0);
 
+			/* all column assignments */
 			for (R_len_t i = 1; i < localArgs.ans_idx; i++)
 			{
-				/* fast check, if fails default to slow check */
-				if (icol < ncol && strcmp(CHAR(ansnames_new_ptr[i]), CHAR(ansnames_uniq_ptr[icol])) == 0)
+				/* new row */
+				if (localArgs.xinfo_array[i] != localArgs.xinfo_array[i - 1])
 				{
-					col_idx_array[i] = icol;
-					icol = icol < (ncol - 1) ? icol + 1 : 0;
+					icol = 0;
+					C_resetbits(col_matched, (size_t)(ncol / INTBITS + 1));
+				}
+
+				/* fast check, if fails default to slow check */
+				if (!strcmp(CHAR(STRING_ELT(ansnames, i)), CHAR(STRING_ELT(ansnames_uniq, icol))))
+				{
+					if (!C_testbit(col_matched, icol))
+					{
+						/* set column id */
+						col_idx_array[i] = icol;
+						C_setbit(col_matched, icol);
+					}
+					else if(icol == (ncol - 1))
+					{
+						/* add new column */
+						SET_STRING_ELT(ansnames_uniq, icol + 1, STRING_ELT(ansnames, i));
+						col_idx_array[i] = icol + 1;
+						C_setbit(col_matched, icol + 1);
+						ncol++;
+					}
+					else 
+					{
+						for (R_len_t j = icol + 1; j < ncol; j++)
+						{
+							/* empty column + name match */
+							if (!C_testbit(col_matched, j) && !strcmp(CHAR(STRING_ELT(ansnames, i)), CHAR(STRING_ELT(ansnames_uniq, j)))) 
+							{
+								/* set column id */
+								col_idx_array[i] = j;
+								C_setbit(col_matched, j);
+								break;
+							}
+							if (j == (ncol - 1))
+							{
+								/* add new column */
+								SET_STRING_ELT(ansnames_uniq, j + 1, STRING_ELT(ansnames, i));
+								col_idx_array[i] = j + 1;
+								C_setbit(col_matched, j + 1);
+								ncol++;
+								break;
+							}
+						}
+					}
+					/* update column counter */
+					icol += (icol < (ncol - 1));
 				}
 				else
 				{
 					/* slow check */
 					for (R_len_t j = 0; j < ncol; j++)
 					{
-						/* match already observed column */
-						if (strcmp(CHAR(ansnames_new_ptr[i]), CHAR(ansnames_uniq_ptr[j])) == 0)
+						/* empty column + name match */
+						if (!C_testbit(col_matched, j) && !strcmp(CHAR(STRING_ELT(ansnames, i)), CHAR(STRING_ELT(ansnames_uniq, j)))) 
 						{
+							/* set column id */
 							col_idx_array[i] = j;
-							icol = j < (ncol - 1) ? j + 1 : 0;
+							C_setbit(col_matched, j);
 							break;
 						}
 						/* add new column */
 						if (j == (ncol - 1))
 						{
-							ansnames_uniq_ptr[j + 1] = ansnames_new_ptr[i];
+							SET_STRING_ELT(ansnames_uniq, j + 1, STRING_ELT(ansnames, i));
 							col_idx_array[i] = j + 1;
-							icol = 0;
+							C_setbit(col_matched, j + 1);
 							ncol++;
 							break;
 						}
 					}
+					/* update column counter */
+					icol += (C_testbit(col_matched, icol) && icol < (ncol - 1));
 				}
 			}
 		}
@@ -650,16 +727,12 @@ SEXP C_rrapply(SEXP env, SEXP X, SEXP FUN, SEXP argsFun, SEXP PRED, SEXP argsPre
 		UNPROTECT(nprotect);
 		return newans;
 	}
-	else if (fixedArgs.how == 9)
-	{
-		/* update names */
-		Rf_setAttrib(ans, R_NamesSymbol, ansnames);
-
-		UNPROTECT(nprotect);
-		return ans;
-	}
 	else // other 'how' options
 	{
+		/* update names */
+		if (fixedArgs.how == 9 && nms_update)
+			Rf_setAttrib(ans, R_NamesSymbol, ansnames);
+
 		UNPROTECT(nprotect);
 		return ans;
 	}

@@ -516,15 +516,18 @@ rrapply <- function(object, condition, f, classes = "ANY", deflt = NULL,
   
   if(identical(how, "bind"))
   {
-    ## convert list to data.frame (no format method for names in R < 4.0.0)
+    ## convert list to data.frame 
     if(length(res) > 0 && (getRversion() >= "4.0.0" || !attr(res, "anysymbol")))
     {
       res <- structure(
         res,
-        names = names(res),
+        names = make.unique(names(res)),
         row.names = seq_len(length(res[[1L]])),
         class = "data.frame"
       )
+    } else {
+      ## no format method for names in R < 4.0.0 
+      names(res) <- make.unique(names(res))
     }
     attr(res, "anysymbol") <- NULL
   }
