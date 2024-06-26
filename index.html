@@ -8,10 +8,10 @@
 <meta name="description" content="The minimal rrapply-package contains a single function rrapply(), providing an extended implementation of R-base rapply() by allowing to recursively apply a function to elements of a nested list based on a general condition function and including the possibility to prune or aggregate nested list elements from the result. In addition, special arguments can be supplied to access the name, location, parents and siblings in the nested list of the element under evaluation. The rrapply() function builds upon rapply()s native C' implementation and requires no other package dependencies.">
 <title>Revisiting Base Rapply • rrapply</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="deps/bootstrap-5.1.3/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.1.3/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
+<link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
-<!-- bootstrap-toc --><script src="https://cdn.rawgit.com/afeld/bootstrap-toc/v1.0.1/dist/bootstrap-toc.min.js"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
+<!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js" integrity="sha512-7O5pXpc0oCRrxk8RUfDYFgn0nO1t+jLuIOQdOMRp4APB7uZ4vSjspzp5y6YDtDs4VzUSTbWzBFZ/LKJhnyFOKw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
 <meta property="og:title" content="Revisiting Base Rapply">
 <meta property="og:description" content="The minimal rrapply-package contains a single function rrapply(), providing an extended implementation of R-base rapply() by allowing to recursively apply a function to elements of a nested list based on a general condition function and including the possibility to prune or aggregate nested list elements from the result. In addition, special arguments can be supplied to access the name, location, parents and siblings in the nested list of the element under evaluation. The rrapply() function builds upon rapply()s native C' implementation and requires no other package dependencies.">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
@@ -23,11 +23,11 @@
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
     
 
-    <nav class="navbar fixed-top navbar-light navbar-expand-lg bg-light"><div class="container">
+    <nav class="navbar fixed-top navbar-light navbar-expand-lg bg-light" data-bs-theme="light"><div class="container">
     
     <a class="navbar-brand me-2" href="index.html">rrapply</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.7</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -73,6 +73,7 @@
 <div class="page-header"><h1 id="rrapply-revisiting-r-base-rapply-">{rrapply}: Revisiting R-base rapply() <img style="height: 139px;" src="reference/figures/sticker.svg" align="right"><a class="anchor" aria-label="anchor" href="#rrapply-revisiting-r-base-rapply-"></a>
 </h1></div>
 <!-- badges: start -->
+
 <p>The minimal {rrapply}-package contains a single function <code><a href="reference/rrapply.html">rrapply()</a></code>, providing an extended implementation of R-base’s <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code> function, which applies a function <code>f</code> to all elements of a nested list recursively and controls how to structure the returned result. <code><a href="reference/rrapply.html">rrapply()</a></code> builds upon <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code>’s native C implementation and for this reason requires no external R-package dependencies.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -83,12 +84,14 @@
 <span></span>
 <span><span class="co"># Install the development version from GitHub:</span></span>
 <span><span class="co"># install.packages("devtools")</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"JorisChau/rrapply"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"JorisChau/rrapply"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="cheat-sheet">Cheat sheet<a class="anchor" aria-label="anchor" href="#cheat-sheet"></a>
 </h2>
-<div><p><a href="https://github.com/JorisChau/rrapply/blob/master/vignettes/cheatsheet.pdf" class="external-link"> <img src="reference/figures/cheatsheet.svg" align="center" height="600"></a></p></div>
+<div>
+<p><a href="https://github.com/JorisChau/rrapply/blob/master/vignettes/cheatsheet.pdf" class="external-link"> <img src="reference/figures/cheatsheet.svg" align="center" height="600"></a></p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="when-to-use-rrapply">When to use <code>rrapply()</code>
@@ -98,8 +101,8 @@
 <h3 id="list-pruning-and-unnesting">List pruning and unnesting<a class="anchor" aria-label="anchor" href="#list-pruning-and-unnesting"></a>
 </h3>
 <div class="section level4">
-<h4 id="-how--prune">• <code>how = "prune"</code>
-<a class="anchor" aria-label="anchor" href="#-how--prune"></a>
+<h4 id="id_-how--prune">• <code>how = "prune"</code>
+<a class="anchor" aria-label="anchor" href="#id_-how--prune"></a>
 </h4>
 <p>With base <code><a href="https://rdrr.io/r/base/rapply.html" class="external-link">rapply()</a></code>, there is no convenient way to prune or filter list elements from the input list object. The <code><a href="reference/rrapply.html">rrapply()</a></code> function adds an option <code>how = "prune"</code> to prune all list elements not subject to application of <code>f</code> from a nested list,</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
@@ -158,8 +161,8 @@
 <span><span class="co">#&gt;   .. [list output truncated]</span></span></code></pre></div>
 </div>
 <div class="section level4">
-<h4 id="-how--flatten">• <code>how = "flatten"</code>
-<a class="anchor" aria-label="anchor" href="#-how--flatten"></a>
+<h4 id="id_-how--flatten">• <code>how = "flatten"</code>
+<a class="anchor" aria-label="anchor" href="#id_-how--flatten"></a>
 </h4>
 <p>Instead, use <code>how = "flatten"</code> to return a flattened unnested version of the pruned list,</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
@@ -199,8 +202,8 @@
 <span><span class="co">#&gt;   [list output truncated]</span></span></code></pre></div>
 </div>
 <div class="section level4">
-<h4 id="-how--melt">• <code>how = "melt"</code>
-<a class="anchor" aria-label="anchor" href="#-how--melt"></a>
+<h4 id="id_-how--melt">• <code>how = "melt"</code>
+<a class="anchor" aria-label="anchor" href="#id_-how--melt"></a>
 </h4>
 <p>Or, use <code>how = "melt"</code> to return a melted data.frame of the pruned list similar in format to <code><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">reshape2::melt()</a></code> applied to a nested list.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -244,10 +247,10 @@
 <span><span class="co">#&gt;   .. [list output truncated]</span></span></code></pre></div>
 </div>
 <div class="section level4">
-<h4 id="-how--bind">• <code>how = "bind"</code>
-<a class="anchor" aria-label="anchor" href="#-how--bind"></a>
+<h4 id="id_-how--bind">• <code>how = "bind"</code>
+<a class="anchor" aria-label="anchor" href="#id_-how--bind"></a>
 </h4>
-<p>Nested lists containing repeated observations can be unnested with <code>how = "bind"</code>, which returns a wide data.frame similar in format to <code><a href="https://dplyr.tidyverse.org/reference/bind.html" class="external-link">dplyr::bind_rows()</a></code> applied to a list of data.frames or repeated application of <code><a href="https://tidyr.tidyverse.org/reference/hoist.html" class="external-link">tidyr::unnest_wider()</a></code> to a nested data.frame.</p>
+<p>Nested lists containing repeated observations can be unnested with <code>how = "bind"</code>, which returns a wide data.frame similar in format to <code><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">dplyr::bind_rows()</a></code> applied to a list of data.frames or repeated application of <code><a href="https://tidyr.tidyverse.org/reference/unnest_wider.html" class="external-link">tidyr::unnest_wider()</a></code> to a nested data.frame.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## data: nested list of Pokemon properties in Pokemon GO</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"pokedex"</span><span class="op">)</span></span>
@@ -546,8 +549,8 @@
 <h3 id="recursive-list-updating">Recursive list updating<a class="anchor" aria-label="anchor" href="#recursive-list-updating"></a>
 </h3>
 <div class="section level4">
-<h4 id="-how--recurse">• <code>how = "recurse"</code>
-<a class="anchor" aria-label="anchor" href="#-how--recurse"></a>
+<h4 id="id_-how--recurse">• <code>how = "recurse"</code>
+<a class="anchor" aria-label="anchor" href="#id_-how--recurse"></a>
 </h4>
 <p>If <code>classes = "list"</code> and <code>how = "recurse"</code>, <code><a href="reference/rrapply.html">rrapply()</a></code> applies the <code>f</code> function to any list element that satisfies the <code>condition</code> argument similar to the previous section, but recurses further into any <em>updated</em> list-like element after application of <code>f</code>. This can be useful to e.g. recursively update the class or other attributes of all elements in a nested list:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
@@ -580,8 +583,8 @@
 <span><span class="co">#&gt;   .. [list output truncated]</span></span></code></pre></div>
 </div>
 <div class="section level4">
-<h4 id="-how--names">• <code>how = "names"</code>
-<a class="anchor" aria-label="anchor" href="#-how--names"></a>
+<h4 id="id_-how--names">• <code>how = "names"</code>
+<a class="anchor" aria-label="anchor" href="#id_-how--names"></a>
 </h4>
 <p>The option <code>how = "names"</code> is a special case of <code>how = "recurse"</code>, where the value of <code>f</code> is used to replace the <em>name</em> of the evaluated list element instead of its <em>content</em> (as with all other <code>how</code> options). By default, <code>how = "names"</code> uses <code>classes = c("list", "ANY")</code> in order to allow updating of all names in the nested list.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
@@ -699,7 +702,7 @@
 <div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
-<li><a href="https://www.r-project.org/Licenses/GPL-3" class="external-link">GPL-3</a></li>
+<li><a href="https://www.r-project.org/Licenses/LGPL-3" class="external-link">LGPL-3</a></li>
 </ul>
 </div>
 
@@ -734,13 +737,11 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p></p>
-<p>Developed by Joris Chau.</p>
+  <p>Developed by Joris Chau.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.9.</p>
 </div>
 
     </footer>
