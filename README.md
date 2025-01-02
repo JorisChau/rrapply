@@ -1,15 +1,15 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# {rrapply}: Revisiting R-base rapply() <img src='sticker.svg' align="right" height="139" />
+# {rrapply}: Revisiting R-base rapply() <img style="height: 139px;" src='sticker.svg' align="right" />
 
 <!-- badges: start -->
 
 [![CRAN
-version](http://www.r-pkg.org/badges/version/rrapply)](https://cran.r-project.org/package=rrapply)
+version](https://www.r-pkg.org/badges/version/rrapply)](https://cran.r-project.org/package=rrapply)
 [![R-CMD-check](https://github.com/JorisChau/rrapply/workflows/R-CMD-check/badge.svg)](https://github.com/JorisChau/rrapply/actions)
 [![codecov](https://codecov.io/gh/JorisChau/rrapply/branch/master/graph/badge.svg)](https://app.codecov.io/gh/JorisChau/rrapply)
-[![status](https://tinyverse.netlify.com/badge/rrapply)](https://CRAN.R-project.org/package=rrapply)
+[![status](https://tinyverse.netlify.app/badge/rrapply)](https://CRAN.R-project.org/package=rrapply)
 [![Total
 Downloads](https://cranlogs.r-pkg.org/badges/grand-total/rrapply)](https://cran.r-project.org/package=rrapply)
 <!-- badges: end -->
@@ -36,7 +36,7 @@ devtools::install_github("JorisChau/rrapply")
 
 <div>
 
-<a href='vignettes/cheatsheet.pdf'>
+<a href='https://github.com/JorisChau/rrapply/blob/master/vignettes/cheatsheet.pdf'>
 <img src='cheatsheet.svg' align="center" height="600" /> </a>
 
 </div>
@@ -347,13 +347,13 @@ access its name or location in the nested list from inside `f`.
 `.xparents`, `.xsiblings` inside the `f` and `condition` functions (in
 addition to the principal function argument):
 
--   `.xname` evaluates to the name of the list element;
--   `.xpos` evaluates to the position of the element in the nested list
-    structured as an integer vector;
--   `.xparents` evaluates to a vector of parent list names in the path
-    to the current list element;
--   `.xsiblings` evaluates to the parent list containing the current
-    list element and its direct siblings.
+- `.xname` evaluates to the name of the list element;
+- `.xpos` evaluates to the position of the element in the nested list
+  structured as an integer vector;
+- `.xparents` evaluates to a vector of parent list names in the path to
+  the current list element;
+- `.xsiblings` evaluates to the parent list containing the current list
+  element and its direct siblings.
 
 ``` r
 ## apply f based on element's name
