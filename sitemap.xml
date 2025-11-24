@@ -1,39 +1,15 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>/404.html</loc>
-  </url>
-  <url>
-    <loc>/articles/1-when-to-use-rrapply.html</loc>
-  </url>
-  <url>
-    <loc>/articles/2-efficient-melting-unnesting.html</loc>
-  </url>
-  <url>
-    <loc>/articles/3-calls-and-expressions.html</loc>
-  </url>
-  <url>
-    <loc>/articles/index.html</loc>
-  </url>
-  <url>
-    <loc>/authors.html</loc>
-  </url>
-  <url>
-    <loc>/index.html</loc>
-  </url>
-  <url>
-    <loc>/news/index.html</loc>
-  </url>
-  <url>
-    <loc>/reference/index.html</loc>
-  </url>
-  <url>
-    <loc>/reference/pokedex.html</loc>
-  </url>
-  <url>
-    <loc>/reference/renewable_energy_by_country.html</loc>
-  </url>
-  <url>
-    <loc>/reference/rrapply.html</loc>
-  </url>
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>https://jorischau.github.io/rrapply/404.html</loc></url>
+<url><loc>https://jorischau.github.io/rrapply/articles/1-when-to-use-rrapply.html</loc></url>
+<url><loc>https://jorischau.github.io/rrapply/articles/2-efficient-melting-unnesting.html</loc></url>
+<url><loc>https://jorischau.github.io/rrapply/articles/3-calls-and-expressions.html</loc></url>
+<url><loc>https://jorischau.github.io/rrapply/articles/index.html</loc></url>
+<url><loc>https://jorischau.github.io/rrapply/authors.html</loc></url>
+<url><loc>https://jorischau.github.io/rrapply/index.html</loc></url>
+<url><loc>https://jorischau.github.io/rrapply/news/index.html</loc></url>
+<url><loc>https://jorischau.github.io/rrapply/reference/index.html</loc></url>
+<url><loc>https://jorischau.github.io/rrapply/reference/pokedex.html</loc></url>
+<url><loc>https://jorischau.github.io/rrapply/reference/renewable_energy_by_country.html</loc></url>
+<url><loc>https://jorischau.github.io/rrapply/reference/rrapply.html</loc></url>
 </urlset>
+

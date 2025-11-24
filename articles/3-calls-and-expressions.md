@@ -1,0 +1,585 @@
+# Recursive apply for calls and expressions
+
+## Expressions
+
+Unevaluated R code is always parsed or captured as a set of
+*expressions*, a collective term used to refer to any of the following
+object types: scalar constants e.g. `TRUE` or `1`, symbols
+e.g. `quote(x)`, call objects e.g. `quote(x <- 1)`, expression vectors
+e.g. `expression(a <- 1, 2 * b)` or pairlists
+e.g. `formals(seq.default)`. Call objects and expression vectors are
+hierarchically structured objects (also called *abstract syntax trees*)
+that can be decomposed into symbols and scalar constants as atomic
+building blocks. See also the chapter
+<https://adv-r.hadley.nz/expressions.html> for a general introduction to
+expressions and abstract syntax trees.
+
+Call objects and expression vectors generally behave as nested lists,
+e.g. subsetting a call object is achieved in the same way as subsetting
+a nested list. To illustrate, we can retrieve the abstract syntax tree
+of a call object by recursing through the object in the same way as for
+a nested list:
+
+``` r
+## recurse through call as nested list
+ast <- function(expr) {
+  lapply(expr, function(x) {
+    if(is.call(x) || is.expression(x)) {
+      ast(x) 
+    } else {
+      x
+    }
+  })
+}
+
+## decompose call object
+str(ast(quote(y <- x <- 1 + TRUE)))
+#> List of 3
+#>  $ : symbol <-
+#>  $ : symbol y
+#>  $ :List of 3
+#>   ..$ : symbol <-
+#>   ..$ : symbol x
+#>   ..$ :List of 3
+#>   .. ..$ : symbol +
+#>   .. ..$ : num 1
+#>   .. ..$ : logi TRUE
+```
+
+Given this information, it is perhaps expected that base
+[`rapply()`](https://rdrr.io/r/base/rapply.html) also recurses through
+call objects and expression vectors in the same way as for nested lists,
+but this is unfortunately not the case. To be precise,
+[`rapply()`](https://rdrr.io/r/base/rapply.html) does accept expression
+vectors as inputs, but effectively treats the objects as flat lists of
+call objects similar to
+[`lapply()`](https://rdrr.io/r/base/lapply.html). Call objects are not
+accepted at all by [`rapply()`](https://rdrr.io/r/base/rapply.html) and
+return an error.
+
+``` r
+## rapply on an expression vector
+rapply(expression(y <- x <- 1, f(g(2 * pi))), f = identity)
+#> [[1]]
+#> y <- x <- 1
+#> 
+#> [[2]]
+#> f(g(2 * pi))
+
+## lapply on an expression vector
+lapply(expression(y <- x <- 1, f(g(2 * pi))), FUN = identity)
+#> [[1]]
+#> y <- x <- 1
+#> 
+#> [[2]]
+#> f(g(2 * pi))
+
+## rapply on a call object (not ok!) 
+rapply(quote(y <- x <- 1), f = identity)
+#> Error in rapply(quote(y <- x <- 1), f = identity): 'object' must be a list or expression
+```
+
+## Expressions and `rrapply()`
+
+Starting from version 1.2.0,
+[`rrapply()`](https://jorischau.github.io/rrapply/reference/rrapply.md)
+also supports recursion of call objects and expression vectors, which
+are treated as nested lists based on their internal abstract syntax
+trees. As such, all functionality described in
+`vignette("1-when-to-use-rrapply")` extends directly to call objects and
+expression vectors.
+
+### Structuring the result
+
+When applying
+[`rrapply()`](https://jorischau.github.io/rrapply/reference/rrapply.md)
+(or base [`rapply()`](https://rdrr.io/r/base/rapply.html)) to nested
+lists the difference between `how = "replace"` and `how = "list"` is
+relatively minor. Both choices return a nested list, but only
+`how = "list"` replaces elements not subject to `f` by the argument
+`deflt`. For call objects and expression objects, the difference is more
+important as `how = "replace"` always maintains the type of the object
+after application of
+[`rrapply()`](https://jorischau.github.io/rrapply/reference/rrapply.md),
+whereas `how = "list"` returns the object formatted as a nested list.
+
+With `how = "replace"`, we can for instance directly update the abstract
+syntax tree of a call object:
+
+``` r
+library(rrapply)
+
+call_obj <- quote(y <- x <- 1 + TRUE)
+str(call_obj)
+#>  language y <- x <- 1 + TRUE
+
+## update call object
+rrapply(
+  call_obj, 
+  classes = "logical", 
+  f = as.numeric, 
+  how = "replace"
+) |>
+  str()
+#>  language y <- x <- 1 + 1
+```
+
+Using `how = "list"`, we can update the abstract syntax tree and return
+it as a nested list:
+
+``` r
+## update and decompose call object
+rrapply(
+  call_obj, 
+  f = \(x) ifelse(is.logical(x), as.numeric(x), x), 
+  how = "list"
+) |>
+  str()
+#> List of 3
+#>  $ : symbol <-
+#>  $ : symbol y
+#>  $ :List of 3
+#>   ..$ : symbol <-
+#>   ..$ : symbol x
+#>   ..$ :List of 3
+#>   .. ..$ : symbol +
+#>   .. ..$ : num 1
+#>   .. ..$ : num 1
+```
+
+**Remark**: in the second function call we did not use
+`classes = "logical"` to avoid that all list elements that are not of
+class `"logical"` are replaced by the `deflt` argument (`NULL`).
+
+The choices `how = "prune"`, `how = "flatten"` and `how = "melt"` return
+the pruned abstract syntax tree as: a nested list, a flattened vector or
+list and a melted data.frame respectively. This is identical to
+application of
+[`rrapply()`](https://jorischau.github.io/rrapply/reference/rrapply.md)
+to the abstract syntax tree formatted as a nested list. To illustrate,
+let us return all names in the abstract syntax tree of an expression
+vector that are not part of base R.
+
+``` r
+## example expression
+expr <- expression(y <- x <- 1, f(g(2 * pi)))
+## check if name is not in base environment
+is_new_name <- \(x) !exists(as.character(x), envir = baseenv())
+
+## prune and decompose expression
+rrapply(
+  expr, 
+  classes = "name", 
+  condition = is_new_name, 
+  how = "prune"
+) |>
+  str()
+#> List of 2
+#>  $ :List of 2
+#>   ..$ : symbol y
+#>   ..$ :List of 1
+#>   .. ..$ : symbol x
+#>  $ :List of 2
+#>   ..$ : symbol f
+#>   ..$ :List of 1
+#>   .. ..$ : symbol g
+
+## prune and flatten expression
+rrapply(
+  expr, 
+  classes = "name", 
+  condition = is_new_name, 
+  how = "flatten"
+) |>
+  str()
+#> List of 4
+#>  $ : symbol y
+#>  $ : symbol x
+#>  $ : symbol f
+#>  $ : symbol g
+
+## prune and melt expression
+rrapply(
+  expr, 
+  classes = "name", 
+  condition = is_new_name, 
+  how = "melt"
+)
+#>   L1 L2   L3 value
+#> 1  1  2 <NA>     y
+#> 2  1  3    2     x
+#> 3  2  1 <NA>     f
+#> 4  2  2    1     g
+```
+
+### Avoid recursing into expressions
+
+If `classes = "ANY"` (the default),
+[`rrapply()`](https://jorischau.github.io/rrapply/reference/rrapply.md)
+recurses into any list-like element, which for expression objects are:
+call objects, expression vectors and pairlists. To avoid recursing into
+list elements of a nested list, we can use `classes = "list"`.
+Analogously, to avoid recursing into list-like elements of the abstract
+syntax tree, we should use `classes = "language"`,
+`classes = "expression"`, `classes = "pairlist"` or any combination
+thereof. If the `condition` and `classes` arguments are not satisfied
+for a given list-like element,
+[`rrapply()`](https://jorischau.github.io/rrapply/reference/rrapply.md)
+will recurse further into the object, apply the `f` function to the
+nodes that satisfy `condition` and `classes` and so on. Note that this
+behavior can only be triggered with the `classes` argument and *not*
+through the use of e.g. `condition = is.call`.
+
+To illustrate, we extract all most deeply nested call objects of the
+example expression above and return these as a flat list:
+
+``` r
+## extract all terminal call nodes of AST
+rrapply(
+  expr, 
+  classes = "language", 
+  condition = \(x) !any(sapply(x, is.call)),
+  how = "flatten"
+)
+#> [[1]]
+#> x <- 1
+#> 
+#> [[2]]
+#> 2 * pi
+```
+
+### Additional examples
+
+This section provides several worked out code examples using
+[`rrapply()`](https://jorischau.github.io/rrapply/reference/rrapply.md)
+to recurse through the abstract syntax tree of a call object, mainly
+inspired by the `codetools` package and the chapter
+<https://adv-r.hadley.nz/expressions.html#ast-funs>. Note that all
+examples can also be rewritten using recursive function definitions in
+base R, but the use of
+[`rrapply()`](https://jorischau.github.io/rrapply/reference/rrapply.md)
+makes the code quite concise and straightforward to follow. The examples
+are ordered in increasing degrees of code complexity.
+
+#### Example 1: Replacing `T` and `F`
+
+In <https://adv-r.hadley.nz/expressions.html#ast-funs>, to demonstrate
+recursion of the abstract syntax tree of an expression, a recursive
+function `logical_abbr()` is defined to check for the presence of the
+logical abbreviations `T` and `F` in an expression object:
+
+``` r
+## recursive function to check for T or F
+logical_abbr <- function(x) {
+  if (is.atomic(x)) {
+    FALSE
+  } else if (is.name(x)) {
+    identical(x, quote(T)) || identical(x, quote(F))
+  } else if (is.call(x) || is.pairlist(x)) {
+    for (i in seq_along(x)) {
+      if (logical_abbr(x[[i]])) return(TRUE)
+    }
+    FALSE
+  } else {
+    stop("Don't know how to handle type ", typeof(x), 
+         call. = FALSE)
+  }
+}
+
+call1 <- quote(mean(x, na.rm = T))
+call2 <- quote(f(x = c(TRUE, FALSE)))
+
+## containing a logical abbreviation
+logical_abbr(call1)
+#> [1] TRUE
+## not containing a logical abbreviation
+logical_abbr(call2)
+#> [1] FALSE
+```
+
+Let us revisit this example to not only find, but also replace any
+logical abbreviations by their non-abbreviated counterparts. Using
+[`rrapply()`](https://jorischau.github.io/rrapply/reference/rrapply.md),
+we should set `how = "replace"` in order to maintain the original object
+type after updating the abstract syntax tree:
+
+``` r
+## expand logical abbreviation
+logical_abbr_expand <- function(x) {
+  if(identical(x, quote(T))) {
+    TRUE
+  } else if(identical(x, quote(F))) {
+    FALSE
+  } else {
+    x
+  }
+}
+
+call3 <- expression(f(x = c(T, F)), any(T, FALSE))
+
+rrapply(call1, f = logical_abbr_expand, how = "replace")
+#> mean(x, na.rm = TRUE)
+rrapply(call3, f = logical_abbr_expand, how = "replace")
+#> expression(f(x = c(TRUE, FALSE)), any(TRUE, FALSE))
+```
+
+#### Example 2: Finding local variables
+
+A second demonstrating example of abstract syntax tree recursion in
+<https://adv-r.hadley.nz/expressions.html#ast-funs> deals with finding
+all variables in an expression created by assignment. The recursive
+function `find_assign()` finds all variables created by assignment with
+`<-` and returns them as a character vector:
+
+``` r
+find_assign <- function(x) {
+  if (is.atomic(x) || is.name(x)) {
+    character()
+  } else if (is.call(x)) {
+    if (identical(x[[1]], quote(`<-`)) && is.name(x[[2]])) {
+      lhs <- as.character(x[[2]])
+    } else {
+      lhs <- character()
+    }
+    unique(c(lhs, unlist(lapply(x, find_assign))))
+  } else if (is.pairlist(x)) {
+    unique(unlist(lapply(x, find_assign)))
+  } else {
+    stop("Don't know how to handle type ", typeof(x), call. = FALSE)
+  }
+}
+
+call4 <- quote({
+  l <- list()
+  l$a <- 5
+  names(l) <- "b"
+})
+
+find_assign(call4)
+#> [1] "l"
+```
+
+Revisiting this example using
+[`rrapply()`](https://jorischau.github.io/rrapply/reference/rrapply.md),
+we essentially need to filter any name (i.e. symbol) that is the second
+element of a call to `<-`. Checking the position of the element in the
+call can be done with the `.xpos` argument. To verify that the first
+element of the call is an actual assignment, we can make use of the
+`.xsiblings` argument. We slightly generalize the `find_assign()`
+function to also return variables created by `=`, `for`, `assign` or
+`delayedAssign`.
+
+``` r
+## helper function to check if variable is created by assignment
+is_assign <- function(x, .xpos, .xsiblings) {
+  ## element is second in call
+  tail(.xpos, 1) == 2 &&
+    ## first element in call is assignment
+    as.character(.xsiblings[[1]]) %in% c("<-", "=", "for", "assign", "delayedAssign")
+}
+
+rrapply(call4, condition = is_assign, f = as.character, how = "unlist")
+#> [1] "l"
+```
+
+#### Example 3: Finding global variables
+
+The `codetools` package contains `findGlobals()` to find all global
+variables used by a function. Building on the previous example, we can
+construct our own (simplified) version of `findGlobals()` by searching
+for any variable in the body of a function that is not a local variable
+or a function argument. More precisely,
+
+1.  We collect the variable names that are *not* global variables in a
+    character vector `exclude`. This includes: the function arguments;
+    all variables created by assignment as in the previous example;
+    package names used with `::` or `:::` (e.g. `stats` in
+    [`stats::lm()`](https://rdrr.io/r/stats/lm.html)); and variable
+    names used with `$` or `@` (e.g. `x$a` for a list or `x@a` for an
+    S4-object).
+
+2.  We recurse through the abstract syntax tree similar to the previous
+    example by discarding all variable names that are elements of
+    `exclude` or part of the base environment
+    (i.e. [`baseenv()`](https://rdrr.io/r/base/environment.html)). The
+    remaining *global* variables are returned as a character vector.
+
+**Remark**: for the sake of simplicity we have not been completely
+rigorous in this example. For instance, function arguments of inline
+functions are not excluded from the set of global variables. Also,
+variable names created by
+[`assign()`](https://rdrr.io/r/base/assign.html) or
+[`delayedAssign()`](https://rdrr.io/r/base/delayedAssign.html) could be
+assigned to e.g. `.GlobalEnv`, in which case they should arguably be
+recognized as global variables.
+
+``` r
+## helper function to check for non-global variables
+is_exclude <-function(x, .xpos, .xsiblings) {
+  operator <- as.character(.xsiblings[[1]])
+  if(tail(.xpos, 1) == 2) {
+    operator %in% c("<-", "=", "for", "assign", "delayedAssign", "::", ":::")
+  } else if(tail(.xpos, 1) == 3) {
+    operator %in% c("@", "$")
+  } else {
+    FALSE 
+  }
+}
+
+## helper function to check for global variables
+is_global <- function(x, exclude) {
+  xvar <- as.character(x)
+  ## non-empty element not in exclude or base environment
+  nzchar(xvar) && 
+    !xvar %in% exclude && 
+    !exists(xvar, envir = baseenv())
+}
+
+find_globals <- function(fun) {
+  ## find local variables to exclude
+  exclude <- rrapply(body(fun), condition = is_exclude, f = as.character, how = "unlist")
+  exclude <- c(names(formals(fun)), exclude)
+  ## find global variables             
+  globals <- rrapply(body(fun), classes = "name", condition = is_global, f = as.character, exclude = exclude, how = "unlist")
+  return(unique(globals))
+}
+```
+
+To illustrate our newly defined function `find_globals()`, let us apply
+it to the
+[`rrapply()`](https://jorischau.github.io/rrapply/reference/rrapply.md)
+function itself:
+
+``` r
+find_globals(rrapply)
+#> [1] "C_unmelt"  "C_rrapply"
+```
+
+`C_unmelt()` and `C_rrapply()` are the internal workhorses of
+[`rrapply()`](https://jorischau.github.io/rrapply/reference/rrapply.md)
+and are part of the `rrapply`-package. By default, the codetools
+`findGlobals()` function also returns variable names in the base
+package. Discarding all names present in the base package
+`findGlobals()` produces the same result as `find_globals()`:
+
+``` r
+## update existing findGlobals function
+findGlobals2 <- function(fun, merge = TRUE) {
+  globals <- codetools::findGlobals(fun, merge = merge)
+  globals[sapply(globals, Negate(exists), envir = baseenv())]
+}
+
+findGlobals2(rrapply)
+#> [1] "C_rrapply" "C_unmelt"
+```
+
+Several additional comparisons of `find_globals()` and `findGlobals2()`
+applied to some common R functions:
+
+``` r
+## par is part of formals(plot.default)
+find_globals(plot.default)
+#> [1] "Axis"        "box"         "plot.window" "title"       "xy.coords"  
+#> [6] "dev.hold"    "dev.flush"   "plot.new"    "plot.xy"
+findGlobals2(plot.default)
+#>  [1] "Axis"        "box"         "dev.flush"   "dev.hold"    "par"        
+#>  [6] "plot.new"    "plot.window" "plot.xy"     "title"       "xy.coords"
+
+## model.frame is called as stats::model.frame
+find_globals(lm)
+#> [1] "model.frame"    "model.response" "model.weights"  "model.offset"  
+#> [5] "is.empty.model" "model.matrix"   "lm.fit"         "lm.wfit"       
+#> [9] ".getXlevels"
+findGlobals2(lm)
+#> [1] ".getXlevels"    "is.empty.model" "lm.fit"         "lm.wfit"       
+#> [5] "model.matrix"   "model.offset"   "model.response" "model.weights"
+
+## parallel functions are called as parallel::...
+find_globals(boot::boot)
+#>  [1] "runif"               "empinf"              "isMatrix"           
+#>  [4] "normalize"           "index.array"         "freq.array"         
+#>  [7] "mclapply"            "makePSOCKcluster"    "clusterSetRNGStream"
+#> [10] "parLapply"           "stopCluster"         "boot.return"
+findGlobals2(boot::boot)
+#> [1] "boot.return" "empinf"      "freq.array"  "index.array" "isMatrix"   
+#> [6] "normalize"   "runif"
+```
+
+#### Example 4: Plot abstract syntax tree as dendrogram
+
+To conclude, let us consider plotting abstract syntax trees as
+dendrograms. Base R includes a
+[`plot()`](https://rdrr.io/r/graphics/plot.default.html) method for
+dendrogram objects, therefore it suffices to write a function that
+allows to convert expression objects to dendrogram objects. It turns out
+that a dendrogram object is defined as a nested list with specific
+attributes for each list component to turn it into a dendrogram. As seen
+previously, we can convert the abstract syntax tree of an expression
+object to a nested list with
+[`rrapply()`](https://jorischau.github.io/rrapply/reference/rrapply.md)
+by setting `how = "list"`. In addition, we need to recurse through the
+nested list to add the dendrogram specific attributes. To achieve this
+for a single node, we define a separate helper function
+`add_dend_attrs()` that distinguishes between branch (i.e. list) nodes
+and leaf nodes in the abstract syntax tree.
+
+The `height` attribute in `add_dend_attrs()` is calculated as a function
+of the depth of the node under evaluation and the overall maximum depth
+of the abstract syntax tree. The first can be obtained via the special
+argument `.xpos`, the second is evaluated by recursing once through the
+abstract syntax tree with a call to
+[`rrapply()`](https://jorischau.github.io/rrapply/reference/rrapply.md).
+To apply `add_dend_attrs()` to each (terminal and non-terminal) node of
+the nested list, we set `classes = c("list", "ANY")` and
+`how = "recurse"` in a second call to
+[`rrapply()`](https://jorischau.github.io/rrapply/reference/rrapply.md)
+as explained in `vignette("1-when-to-use-rrapply")`.
+
+``` r
+## helper function to add dendrogram attributes
+add_dend_attrs <- function(x, .xpos, maxdepth) {
+  if(is.list(x)) {
+    x <- rev(x)
+    members <- length(unlist(x))
+    attributes(x) <- list(
+      members = members, 
+      midpoints = members - 1
+    )
+  } else {
+    x <- ifelse(!is.null(x), as.character(x), "NULL")
+    attributes(x) <- list(
+      label = x, 
+      members = 1, 
+      leaf = TRUE
+    )
+  }
+  attr(x, "height") <- 1 + (1 - length(.xpos)) / maxdepth
+  return(x)
+}
+
+## convert expression to dendrogram
+expr_to_dend <- function(expr) {
+  ## update maximum depth by assigning to surrounding scope
+  maxdepth <- integer(1)
+  dend1 <- rrapply(expr, f = function(x, .xpos) { if(length(.xpos) > maxdepth) maxdepth <<- length(.xpos); x }, how = "list")
+  ## recursively update attributes of each node
+  dend2 <- rrapply(list(dend1), classes = c("list", "ANY"), f = add_dend_attrs, maxdepth = maxdepth, how = "recurse")[[1]]
+  class(dend2) <- "dendrogram"
+  return(dend2)
+}
+```
+
+To test the defined function, we provide as call object the body of the
+[`rrapply()`](https://jorischau.github.io/rrapply/reference/rrapply.md)
+function itself and pass it to `expr_to_dend()` to convert it to a
+dendrogram:
+
+``` r
+## plot abstract syntax tree as dendrogram 
+(rrapply_dend <- expr_to_dend(body(rrapply)))
+#> 'dendrogram' with 18 branches and 469 members total, at height 1
+plot(rrapply_dend, horiz = TRUE, type = "triangle", yaxt = "n")
+```
+
+![rrapply body
+dendogram](3-calls-and-expressions_files/figure-html/unnamed-chunk-16-1.png)
