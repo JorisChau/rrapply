@@ -1,4 +1,6 @@
-## CRAN package version 1.2.7
+## CRAN package version 1.2.8
+
+* Removed non-API calls to `Rf_lazy_duplicate` and `Rf_isValidString`
 
 ## Test environments
 

@@ -30,5 +30,8 @@ rchk-run: build
 rdevel-build: build
 	docker build -f Dockerfile --tag $(PKGNAME):$(PKGVERS) $(PWD)
 
+rdevel-chk: rdevel-build
+	docker run --rm $(PKGNAME):$(PKGVERS) Rdevel CMD check $(PKGNAME)_$(PKGVERS).tar.gz
+
 clean:
 	$(RM) -r $(PKGNAME).Rcheck/

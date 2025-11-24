@@ -13,3 +13,4 @@
 ^sticker\.svg$
 ^cheatsheet\.svg$
 ^Makefile$
+^Dockerfile$
