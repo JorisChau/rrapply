@@ -196,7 +196,7 @@ void C_recurse_flatten(
             if (f.evaluate && f.nargs > 0)
                 fval = PROTECT(R_forceAndCall(f.call, f.nargs, env));
             else
-                fval = PROTECT(Rf_lazy_duplicate(Xi));
+                fval = PROTECT(Rf_shallow_duplicate(Xi));
 
             /* update return type flag */
             fixedArgs->ans_flags |= C_answerType(fval);
