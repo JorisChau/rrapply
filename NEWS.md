@@ -1,3 +1,7 @@
+# rrapply 1.2.8
+
+* Removed internal calls to `Rf_lazy_duplicate` and `Rf_isValidString` fixing CRAN warnings
+
 # rrapply 1.2.7
 
 * Removed internal calls to `COMPLEX0` and `STRING_PTR` fixing CRAN warning;  

@@ -360,7 +360,7 @@ expr_to_dend <- function(expr) {
 
 To test the defined function, we provide as call object the body of the `rrapply()` function itself and pass it to `expr_to_dend()` to convert it to a dendrogram:
 
-```{r, fig.height = 80, fig.width = 15, out.width = "100%"}
+```{r, fig.height = 80, fig.width = 15, out.width = "100%", fig.alt="rrapply body dendogram"}
 ## plot abstract syntax tree as dendrogram 
 (rrapply_dend <- expr_to_dend(body(rrapply)))
 plot(rrapply_dend, horiz = TRUE, type = "triangle", yaxt = "n")

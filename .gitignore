@@ -3,6 +3,7 @@ src/Makevars
 src/_Makevars
 doc
 Meta
+rrapply.Rcheck
 .RData
 .Rproj.user
 .Rhistory

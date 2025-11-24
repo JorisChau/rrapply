@@ -1,15 +1,15 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# {rrapply}: Revisiting R-base rapply() <img style="height: 139px;" src='man/figures/sticker.svg' align="right" />
+# {rrapply}: Revisiting R-base rapply() <img style="height: 139px;" src='man/figures/sticker.svg' align="right" alt="rrapply sticker" />
 
 <!-- badges: start -->
 
 [![CRAN
-version](http://www.r-pkg.org/badges/version/rrapply)](https://cran.r-project.org/package=rrapply)
+version](https://www.r-pkg.org/badges/version/rrapply)](https://cran.r-project.org/package=rrapply)
 [![R-CMD-check](https://github.com/JorisChau/rrapply/workflows/R-CMD-check/badge.svg)](https://github.com/JorisChau/rrapply/actions)
 [![codecov](https://codecov.io/gh/JorisChau/rrapply/branch/master/graph/badge.svg)](https://app.codecov.io/gh/JorisChau/rrapply)
-[![status](https://tinyverse.netlify.com/badge/rrapply)](https://CRAN.R-project.org/package=rrapply)
+[![status](https://tinyverse.netlify.app/badge/rrapply)](https://CRAN.R-project.org/package=rrapply)
 [![Total
 Downloads](https://cranlogs.r-pkg.org/badges/grand-total/rrapply)](https://cran.r-project.org/package=rrapply)
 <!-- badges: end -->
@@ -37,7 +37,7 @@ devtools::install_github("JorisChau/rrapply")
 <div>
 
 <a href='https://github.com/JorisChau/rrapply/blob/master/vignettes/cheatsheet.pdf'>
-<img src='man/figures/cheatsheet.svg' align="center" height="600" />
+<img src='man/figures/cheatsheet.svg' align="center" height="600" alt="rrapply cheatsheet" />
 </a>
 
 </div>
@@ -348,13 +348,13 @@ access its name or location in the nested list from inside `f`.
 `.xparents`, `.xsiblings` inside the `f` and `condition` functions (in
 addition to the principal function argument):
 
--   `.xname` evaluates to the name of the list element;
--   `.xpos` evaluates to the position of the element in the nested list
-    structured as an integer vector;
--   `.xparents` evaluates to a vector of parent list names in the path
-    to the current list element;
--   `.xsiblings` evaluates to the parent list containing the current
-    list element and its direct siblings.
+- `.xname` evaluates to the name of the list element;
+- `.xpos` evaluates to the position of the element in the nested list
+  structured as an integer vector;
+- `.xparents` evaluates to a vector of parent list names in the path to
+  the current list element;
+- `.xsiblings` evaluates to the parent list containing the current list
+  element and its direct siblings.
 
 ``` r
 ## apply f based on element's name
@@ -377,6 +377,7 @@ rrapply(
 #>                               Papua New Guinea 
 #> "Renewable energy in Papua New Guinea: 50.34%"
 
+
 ## filter elements by name 
 rrapply(
   renewable_energy_by_country,
@@ -392,6 +393,7 @@ rrapply(
 #>   .. .. ..$ Belgium    : num 9.14
 #>   .. .. ..$ Luxembourg : num 13.5
 #>   .. .. ..$ Netherlands: num 5.78
+
 
 ## filter European countries > 50% using .xpos
 rrapply(
@@ -411,6 +413,7 @@ rrapply(
 #>   .. ..$ Western Europe :List of 1
 #>   .. .. ..$ Liechtenstein: num 62.9
 
+
 ## filter European countries > 50% using .xparents
 rrapply(
   renewable_energy_by_country, 
@@ -429,6 +432,7 @@ rrapply(
 #>   .. ..$ Western Europe :List of 1
 #>   .. .. ..$ Liechtenstein: num 62.9
 
+
 ## return position of element in list
 rrapply(
   renewable_energy_by_country,
@@ -440,6 +444,7 @@ rrapply(
 #> $Sweden
 #> [1]  1  5  2 14
 
+
 ## return siblings of element in list
 rrapply(
   renewable_energy_by_country,
@@ -450,6 +455,7 @@ rrapply(
 
 #> Aland Islands       Denmark       Estonia Faroe Islands       Finland 
 #>            NA         33.06         26.55          4.24         42.03
+
 
 ## filter elements and unnest list  
 rrapply(
@@ -489,6 +495,7 @@ rrapply(
 #>   Europe 
 #> 22.36565
 
+
 ## calculate mean value for each continent
 ## (Antartica's value is missing)
 rrapply(
@@ -507,6 +514,7 @@ rrapply(
 #>   ..$ Asia      : num 17.9
 #>   ..$ Europe    : num 22.4
 #>   ..$ Oceania   : num 17.8
+
 
 ## simplify pokemon evolutions to character vectors 
 rrapply(
@@ -631,6 +639,7 @@ To update the abstract syntax tree of a call object, use
 
 #> y <- x <- 1 + TRUE
 
+
 ## replace logicals by integers 
 rrapply(lang, classes = "logical", f = as.numeric, how = "replace")
 
@@ -684,6 +693,7 @@ rrapply(expr, classes = "name", condition = is_new_name, how = "prune") |>
 #>   ..$ :List of 1
 #>   .. ..$ : symbol g
 
+
 ## prune and flatten expression
 rrapply(expr, classes = "name", condition = is_new_name, how = "flatten") |>
   str()
@@ -693,6 +703,7 @@ rrapply(expr, classes = "name", condition = is_new_name, how = "flatten") |>
 #>  $ : symbol x
 #>  $ : symbol f
 #>  $ : symbol g
+
 
 ## prune and melt expression
 rrapply(expr, classes = "name", condition = is_new_name, f = as.character, how = "melt")

@@ -30,7 +30,6 @@ jobs:
     outputs:
       containers: ${{ steps.rhub-setup.outputs.containers }}
       platforms: ${{ steps.rhub-setup.outputs.platforms }}
-
     steps:
     # NO NEED TO CHECKOUT HERE
     - uses: r-hub/actions/setup@v1
@@ -49,7 +48,9 @@ jobs:
         config: ${{ fromJson(needs.setup.outputs.containers) }}
     container:
       image: ${{ matrix.config.container }}
-
+    env:
+      CHECK_ARGS: --no-build-vignettes --ignore-vignettes
+      BUILD_ARGS: --no-build-vignettes --ignore-vignettes
     steps:
       - uses: r-hub/actions/checkout@v1
       - uses: r-hub/actions/platform-info@v1
@@ -74,7 +75,9 @@ jobs:
       fail-fast: false
       matrix:
         config: ${{ fromJson(needs.setup.outputs.platforms) }}
-
+    env:
+      CHECK_ARGS: --no-build-vignettes --ignore-vignettes
+      BUILD_ARGS: --no-build-vignettes --ignore-vignettes
     steps:
       - uses: r-hub/actions/checkout@v1
       - uses: r-hub/actions/setup-r@v1

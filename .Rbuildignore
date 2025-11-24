@@ -12,3 +12,5 @@
 ^CRAN-SUBMISSION$
 ^sticker\.svg$
 ^cheatsheet\.svg$
+^Makefile$
+^Dockerfile$

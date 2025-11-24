@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include "rrapply.h"
 
+// substitutes Rf_isValidString
+#define validString(x) TYPEOF(x) == STRSXP && LENGTH(x) > 0 && TYPEOF(STRING_ELT(x, 0)) != NILSXP
+
 SEXP C_recurse_list(
     SEXP env,             // evaluation environment
     SEXP Xi,              // current list element
@@ -222,12 +225,12 @@ SEXP C_recurse_list(
                     if (!Rf_isString(fval))
                     {
                         SEXP fname = PROTECT(Rf_coerceVector(fval, STRSXP));
-                        SET_STRING_ELT(fixedArgs->ansnames_ptr, localArgs->xpos_vec[localArgs->depth] - 1, Rf_isValidString(fname) ? STRING_ELT(fname, 0) : R_BlankString);
+                        SET_STRING_ELT(fixedArgs->ansnames_ptr, localArgs->xpos_vec[localArgs->depth] - 1, validString(fname) ? STRING_ELT(fname, 0) : R_BlankString);
                         UNPROTECT(1);
                     }
                     else
                     {
-                        SET_STRING_ELT(fixedArgs->ansnames_ptr, localArgs->xpos_vec[localArgs->depth] - 1, Rf_isValidString(fval) ? STRING_ELT(fval, 0) : R_BlankString);
+                        SET_STRING_ELT(fixedArgs->ansnames_ptr, localArgs->xpos_vec[localArgs->depth] - 1, validString(fval) ? STRING_ELT(fval, 0) : R_BlankString);
                     }
                     fval = Xi;
                     *(localArgs->nms_update) = TRUE;
@@ -260,12 +263,12 @@ SEXP C_recurse_list(
             if (fixedArgs->how == 1 || fixedArgs->how == 2)
             {
                 UNPROTECT(nprotect);
-                return Rf_lazy_duplicate(deflt);
+                return Rf_shallow_duplicate(deflt);
             }
             else
             {
                 UNPROTECT(nprotect);
-                return Rf_lazy_duplicate(Xi);
+                return Rf_shallow_duplicate(Xi);
             }
         }
     }
